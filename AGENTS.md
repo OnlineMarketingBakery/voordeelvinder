@@ -110,8 +110,17 @@ reviewable in about 10 minutes.
 ## Deploys (staging)
 
 Ploi site `voordeelvinder.onlinemarketingbakery.nl` (server sites-prod-02, system user
-`voordeelvinder-9eyyh`). On a push to `main` Ploi runs `git pull` and `scripts/deploy.sh`,
-which runs `npm ci`, builds, reloads PM2 (`ecosystem.config.cjs`, port from `.env`) and fails
-unless `/api/health` answers. Nginx proxies everything to `127.0.0.1:3001`; the Ploi web
+`voordeelvinder-9eyyh`). On a push to `main`, Ploi runs `git pull` and then
+`scripts/deploy.sh`. The deploy script:
+
+- runs `npm ci` only when `package-lock.json` or the Node version changed;
+- builds into `dist.next` (flows are validated first) and swaps it in only on success;
+- reloads PM2 (`ecosystem.config.cjs`, port from `.env`);
+- succeeds only when `/api/health` reports the new commit, and restores the previous build
+  otherwise.
+
+Nginx proxies everything to `127.0.0.1:3001` and must send `Host`, `X-Forwarded-Host`,
+`X-Forwarded-Proto` and `X-Forwarded-For $remote_addr`. Astro only trusts the visitor IP when
+it can validate `X-Forwarded-Host`; the Phase 5 rate limiter depends on this. The Ploi web
 directory `/public` is only certbot's webroot. Don't click "Spawn" in Ploi's NodeJS tab: the
 repo manages the process.
