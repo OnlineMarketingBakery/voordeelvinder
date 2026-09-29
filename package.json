@@ -18,11 +18,14 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "validate:flows": "tsx scripts/validate-flows.ts"
+    "validate:flows": "tsx scripts/validate-flows.ts",
+    "leads:retry": "tsx scripts/leads-retry.ts",
+    "backups:prune": "tsx scripts/backups-prune.ts"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.6",
     "@astrojs/react": "^7.0.0",
+    "@astrojs/sitemap": "^3.7.4",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.3.5",
     "react": "^19.3.0",
@@ -53,6 +56,7 @@
     "vitest": "^4.1.11"
   },
   "allowScripts": {
-    "esbuild@0.28.2": true
+    "esbuild@0.28.2": true,
+    "fsevents": false
   }
 }

@@ -1,15 +1,22 @@
 ---
 import { getEntry } from 'astro:content';
+
+import { isIndexable } from '../lib/seo/indexing';
 import '../styles/global.css';
 
 interface Props {
   title: string;
   description?: string | undefined;
+  /** Keep this page out of search results even in production (thank-you pages, /l/*). */
+  noindex?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description, noindex = false } = Astro.props;
 const site = await getEntry('site', 'site');
 if (!site) throw new Error('src/content/site.json is missing');
+
+// Only production is indexable (brief §4.5); Nginx also sends X-Robots-Tag on staging.
+const robots = noindex || !isIndexable(__SITE_ENV__) ? 'noindex, nofollow' : undefined;
 ---
 
 <!doctype html>
@@ -19,6 +26,7 @@ if (!site) throw new Error('src/content/site.json is missing');
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
+    {robots && <meta name="robots" content={robots} />}
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
   </head>
   <body>
