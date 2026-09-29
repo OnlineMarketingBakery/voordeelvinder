@@ -1,0 +1,20 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+import Hero from './Hero.astro';
+
+type Section = CollectionEntry<'pages'>['data']['sections'][number];
+
+interface Props {
+  sections: Section[];
+}
+
+const { sections } = Astro.props;
+---
+
+{sections.map((section) => {
+  switch (section.type) {
+    case 'hero':
+      return <Hero title={section.title} />;
+  }
+})}

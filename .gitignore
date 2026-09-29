@@ -1,0 +1,29 @@
+# dependencies and build output
+node_modules/
+dist/
+.astro/
+.cache/
+
+# environment (secrets live only in Ploi's .env)
+.env
+.env.*
+!.env.example
+
+# certbot webroot on the server (Ploi web directory is /public)
+public/.well-known/
+
+# test output
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# local lead backups (never commit leads)
+lead-backups/
+*.jsonl
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
