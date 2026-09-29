@@ -1,4 +1,5 @@
 ---
+import { Font } from 'astro:assets';
 import { getEntry } from 'astro:content';
 
 import { isIndexable } from '../lib/seo/indexing';
@@ -28,8 +29,9 @@ const robots = noindex || !isIndexable(__SITE_ENV__) ? 'noindex, nofollow' : und
     {description && <meta name="description" content={description} />}
     {robots && <meta name="robots" content={robots} />}
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <Font cssVariable="--font-bricolage" preload />
   </head>
-  <body>
+  <body class="font-sans">
     <slot />
   </body>
 </html>

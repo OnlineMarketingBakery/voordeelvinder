@@ -1,3 +1,152 @@
 @import 'tailwindcss';
 
-/* Design tokens (colours, type, radii, shadows, motion) arrive in Phase 2. */
+/*
+ * Design tokens (brief §6). Figma has no variables or styles, so every value was sampled
+ * from the frames; near-duplicate values are merged (docs/design/figma-notes/tokens.md §11).
+ * Tokens marked "NEW" are not in the design and are TO CONFIRM with the designer
+ * (docs/CONTENT-TODO.md §5). Tailwind's default palette, radii and shadows are removed so
+ * nothing off-palette can be used.
+ */
+@theme {
+  --color-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+
+  /* Brand */
+  --color-purple-500: #6c5ce7; /* accents: icon tiles, secondary CTA, links, "Stap X van Y" */
+  --color-purple-600: #7051ed; /* surfaces: hero, footer, form panel, CTA band, table header */
+  --color-purple-700: #674bd9; /* progress fill; small purple text on lavender */
+  --color-lavender-50: #f6f4ff; /* answer cards, inputs, light cards */
+  --color-lavender-100: #f2f0ff; /* battery block, icon circles, image placeholders */
+  --color-lavender-300: #ded9f4; /* decorative hairline borders only (1.4:1, not for controls) */
+  --color-lavender-400: #cfcae4; /* dividers */
+  --color-lime-50: #f8fceb; /* solar block */
+  --color-lime-300: #c9e260; /* primary CTAs, top strip, highlight chip */
+  --color-lime-400: #b7e137; /* accents: strips, table column, bars */
+
+  /* Ink */
+  --color-ink-900: #03080f; /* headings, labels, button text */
+  --color-ink-800: #151d30; /* nav, badge labels */
+  --color-ink-600: #3a3c75; /* body and secondary text */
+  --color-white: #ffffff;
+
+  /* NEW, TO CONFIRM: states and accessible variants the design doesn't have */
+  --color-ink-placeholder: #6b6790; /* placeholders: 4.9:1 on lavender-50 (design #aea9c6 is 2.1:1) */
+  --color-control-border: #897dec; /* radio/checkbox/input boundaries: ≥3:1 (design 1.1–1.7:1) */
+  --color-on-purple-muted: rgb(255 255 255 / 0.92); /* body text on purple (design 65% = 3.1:1) */
+  --color-danger: #c62828; /* inline errors: 5.6:1 on white */
+
+  /* Type: one family, weights 400/500/600, -3% tracking on headings, -2% on body */
+  --text-display: 5rem; /* 80/104 */
+  --text-display--line-height: 1.3;
+  --text-display--letter-spacing: -0.03em;
+  --text-display--font-weight: 600;
+  --text-h1: 3.75rem; /* 60/70 */
+  --text-h1--line-height: 1.1667;
+  --text-h1--letter-spacing: -0.03em;
+  --text-h1--font-weight: 600;
+  --text-h2: 3rem; /* 48 */
+  --text-h2--line-height: 1.2;
+  --text-h2--letter-spacing: -0.03em;
+  --text-h2--font-weight: 600;
+  --text-h3: 2.125rem; /* 34 (the design's 27px line-height would overlap when wrapping) */
+  --text-h3--line-height: 1.15;
+  --text-h3--letter-spacing: -0.03em;
+  --text-h3--font-weight: 600;
+  --text-h4: 1.875rem; /* 30/32, form panel */
+  --text-h4--line-height: 1.1;
+  --text-h4--letter-spacing: -0.02em;
+  --text-h4--font-weight: 600;
+  --text-title-lg: 1.5rem; /* 24/27 */
+  --text-title-lg--line-height: 1.125;
+  --text-title-lg--letter-spacing: -0.03em;
+  --text-title-lg--font-weight: 600;
+  --text-title: 1.375rem; /* 22/27 */
+  --text-title--line-height: 1.227;
+  --text-title--letter-spacing: -0.03em;
+  --text-title--font-weight: 600;
+  --text-title-sm: 1.25rem; /* 20/27 */
+  --text-title-sm--line-height: 1.35;
+  --text-title-sm--letter-spacing: -0.03em;
+  --text-title-sm--font-weight: 600;
+  --text-lead: 1.5rem; /* 24/30: eyebrow, badges */
+  --text-lead--line-height: 1.3;
+  --text-lead--letter-spacing: -0.02em;
+  --text-body-xl: 1.25rem; /* 20/30 */
+  --text-body-xl--line-height: 1.5;
+  --text-body-xl--letter-spacing: -0.02em;
+  --text-body-lg: 1.125rem; /* 18/30 */
+  --text-body-lg--line-height: 1.667;
+  --text-body-lg--letter-spacing: -0.02em;
+  --text-body: 1rem; /* 16/24 */
+  --text-body--line-height: 1.5;
+  --text-body--letter-spacing: -0.02em;
+  --text-sm: 0.875rem; /* 14/20 */
+  --text-sm--line-height: 1.4286;
+  --text-sm--letter-spacing: -0.02em;
+  --text-label: 1.125rem; /* 18, form field labels */
+  --text-label--line-height: 1.5;
+  --text-label--letter-spacing: -0.03em;
+  --text-label--font-weight: 600;
+  --text-label-sm: 0.875rem; /* 14/20, progress */
+  --text-label-sm--line-height: 1.4286;
+  --text-label-sm--font-weight: 600;
+  --text-button: 1rem; /* 16 Medium */
+  --text-button--line-height: 1.25;
+  --text-button--font-weight: 500;
+  --text-button-lg: 1.25rem; /* 20 Medium */
+  --text-button-lg--line-height: 1.25;
+  --text-button-lg--font-weight: 500;
+
+  /* Radius (pills and buttons use rounded-full) */
+  --radius-xs: 0.5rem; /* 8: prefix chip, small tiles */
+  --radius-sm: 0.625rem; /* 10: checkbox */
+  --radius-md: 0.75rem; /* 12: form buttons, highlight chip */
+  --radius-lg: 1rem; /* 16: answer cards, inputs, icon tiles */
+  --radius-xl: 1.25rem; /* 18–20: FAQ items, table cells, feature cards */
+  --radius-2xl: 1.5rem; /* 23–26: form cards, why/testimonial cards */
+  --radius-3xl: 1.875rem; /* 30–36: value cards, CTA bands */
+  --radius-4xl: 2.5rem; /* 40: "Hoe het werkt" container */
+
+  /* Shadows */
+  --shadow-header: 0 13px 32px rgb(0 0 0 / 0.13);
+  --shadow-form: 0 29px 64px rgb(41 32 132 / 0.08);
+  --shadow-card: 12px 12px 48px rgb(40 34 88 / 0.07);
+  --shadow-card-lg: 0 15px 50px rgb(40 34 88 / 0.15);
+  --shadow-row: 0 4px 22px rgb(108 92 231 / 0.14);
+  --shadow-soft: 0 18px 27px rgb(0 0 0 / 0.05);
+  --shadow-on-purple: 0 11px 29px rgb(0 0 0 / 0.53); /* step cards on purple: very heavy, to confirm */
+  --shadow-glow-lime: 0 2px 8px rgb(165 202 53 / 0.53);
+  --shadow-glow-purple: 0 7px 19px rgb(108 92 231 / 0.56);
+  --inset-shadow-gloss: inset 0 0 17.4px rgb(255 255 255 / 0.7);
+
+  /* Layout (desktop design is 1440 wide) */
+  --container-content: 73.125rem; /* 1170 */
+  --container-wide: 86.125rem; /* 1378 */
+  --container-form: 72.75rem; /* 1164 = panel 372 + gap 24 + card 767 */
+}
+
+/* The font's CSS variable comes from Astro's Fonts API (astro.config.ts). */
+@theme inline {
+  --font-sans: var(--font-bricolage);
+}
+
+@layer base {
+  html {
+    color: var(--color-ink-900);
+    background-color: var(--color-white);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-purple-500);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-lime-300);
+    color: var(--color-ink-900);
+  }
+}
