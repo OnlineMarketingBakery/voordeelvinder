@@ -28,11 +28,16 @@ The background and reasoning are in [decision 0003](../decisions/0003-ploi-hosti
   # Build, PM2 reload and health check are versioned in the repo:
   bash scripts/deploy.sh
   ```
-- **What `scripts/deploy.sh` does:** checks `.env`, runs `npm ci` and `npm run build` (which
-  validates `.env` and content and fails the deploy if either is invalid), then
-  `pm2 startOrReload ecosystem.config.cjs --update-env` and `pm2 save`. It waits up to 30
-  seconds for `http://127.0.0.1:$PORT/api/health` and fails with the last log lines if the
-  site doesn't answer.
+- **What `scripts/deploy.sh` does:**
+  1. Checks `.env` and reads `PORT` with Node's parser.
+  2. Runs `npm ci` only when `package-lock.json` or the Node version changed.
+  3. Runs `npm run build -- --outDir dist.next`. That validates the flows, `.env` and
+     content first, and fails the deploy if any of them is invalid; the live site isn't
+     touched.
+  4. Swaps `dist.next` → `dist`, keeping the old build as `dist.prev`.
+  5. Runs `pm2 startOrReload ecosystem.config.cjs --update-env`.
+  6. Waits up to 30 seconds for `/api/health` to report the new commit. If it doesn't, it
+     prints the last log lines, restores `dist.prev` and fails.
 - **Don't** click "Spawn" in Ploi's NodeJS tab: the repo manages the process.
 - **Check a deploy:** `curl -s https://voordeelvinder.onlinemarketingbakery.nl/api/health`
   returns `{"ok":true,"commit":"<short sha>","env":"staging"}`.
@@ -64,7 +69,10 @@ change the live file. It contains these changes compared with Ploi's template:
 - the acme-challenge root is `<site>/public`, with `auth_basic off`;
 - the `robots.txt` / `favicon.ico` blocks are removed;
 - `proxy_pass http://127.0.0.1:3001`;
-- the visitor IP is passed as `$remote_addr`, plus the forwarded protocol;
+- the visitor IP is passed as `$remote_addr`, plus the forwarded protocol and
+  `X-Forwarded-Host $host`. Astro only trusts the visitor IP with a valid forwarded host.
+  Added via the API on 2026-09-29; it takes effect at the next Nginx reload, which Ploi
+  does, for example, when a basic auth user is added;
 - `location = /api/health` is exempt from basic auth;
 - HSTS, `Referrer-Policy`, `Permissions-Policy`, and `X-Robots-Tag: noindex, nofollow`
   (staging only).

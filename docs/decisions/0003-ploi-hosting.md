@@ -34,17 +34,26 @@ Checked over SSH as the site user and through the Ploi API:
    - The acme location's `root` points at `<site>/public`, with `auth_basic off`.
    - The robots/favicon blocks are removed.
    - `proxy_pass` goes to `127.0.0.1:3001`.
-   - The visitor IP (`$remote_addr`, overwritten rather than appended) and the forwarded
-     protocol are passed on.
+   - The visitor IP (`$remote_addr`, overwritten rather than appended), the forwarded
+     protocol and `X-Forwarded-Host $host` are passed on. Astro trusts the forwarded
+     protocol and client IP only when `X-Forwarded-Host` matches `security.allowedDomains`.
+     Without it, every visitor would be 127.0.0.1 and the per-IP rate limit would put the
+     whole site in one bucket. The Phase 5 rate limiter must add a test for this against the
+     built server.
    - `location = /api/health` is exempt from basic auth.
    - HSTS, `Referrer-Policy`, `Permissions-Policy` and `X-Robots-Tag: noindex, nofollow`
      (staging only) are added.
 4. **The repo manages the process**, not Ploi's NodeJS tab.
    - Ploi's deploy script only runs `git pull --ff-only origin main` and then
      [`scripts/deploy.sh`](../../scripts/deploy.sh).
-   - `scripts/deploy.sh` runs `npm ci` and the build, then
-     `pm2 startOrReload ecosystem.config.cjs` and `pm2 save`. It fails the deploy unless
-     `/api/health` answers within 30 seconds.
+   - `scripts/deploy.sh` keeps the running site on the previous build until the new one is
+     ready:
+     - `npm ci` runs only when `package-lock.json` or the Node version changed, because it
+       deletes `node_modules` under the live process;
+     - the build goes to `dist.next` and replaces `dist` only on success;
+     - after `pm2 startOrReload ecosystem.config.cjs`, the deploy succeeds only when
+       `/api/health` reports the **new commit** within 30 seconds. Otherwise it restores the
+       previous build and fails.
    - [`server.mjs`](../../server.mjs) loads `.env`, because the Astro adapter never does.
    - Nobody clicks "Spawn" in the NodeJS tab.
 5. **Reboots:** a Ploi cron job `@reboot /usr/bin/pm2 resurrect`, run as the site user,
@@ -60,6 +69,9 @@ Checked over SSH as the site user and through the Ploi API:
 - **Deploys build in place.** While `npm ci` and the build run, staging can return errors for
   about a minute. That's acceptable on staging. Production gets its own decision in Phase 8,
   either zero-downtime releases with a `current` symlink or building in CI.
+- **One PM2 daemon per system user, and a fixed process name (`voordeelvinder`).** The
+  production site must get its **own isolated system user** in Ploi, or its deploy would
+  reload the staging process.
 - **The Nginx edits are made by hand.** Re-check them if Ploi ever regenerates the vhost, for
   example after "Replace NGINX virtual host template" or a web-directory change.
 - **Logs:** app logs are in `~/.pm2/logs/` for the site user, and deploy output is in Ploi's
