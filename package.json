@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "prebuild": "npm run validate:flows",
     "build": "astro build",
     "preview": "astro preview",
     "start": "node server.mjs",

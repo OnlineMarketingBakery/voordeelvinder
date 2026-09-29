@@ -40,7 +40,9 @@ export default defineConfig({
   // Real page loads with native view transitions, never <ClientRouter /> (brief §6.1).
   prefetch: { prefetchAll: true, defaultStrategy: 'viewport' },
   security: {
-    // Nginx forwards the public host and protocol; only trust our own domains.
+    // Nginx talks to Node over plain http and sends Host, X-Forwarded-Host, X-Forwarded-Proto
+    // and X-Forwarded-For. Astro trusts the forwarded protocol and client IP only when
+    // X-Forwarded-Host matches one of these hosts (see docs/ops/nginx-staging.conf).
     allowedDomains: [
       { hostname: 'voordeelvinder.onlinemarketingbakery.nl', protocol: 'https' },
       { hostname: 'voordeelvinder.be', protocol: 'https' },

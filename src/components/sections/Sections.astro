@@ -16,5 +16,10 @@ const { sections } = Astro.props;
   switch (section.type) {
     case 'hero':
       return <Hero title={section.title} />;
+    default: {
+      // A schema type without a component fails astro check here instead of rendering nothing.
+      const unhandled: never = section.type;
+      throw new Error(`No component for section type "${String(unhandled)}"`);
+    }
   }
 })}

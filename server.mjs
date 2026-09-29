@@ -6,6 +6,7 @@ import { existsSync } from 'node:fs';
 const envFile = new URL('./.env', import.meta.url);
 if (existsSync(envFile)) process.loadEnvFile(envFile);
 
-process.env.HOST ??= '127.0.0.1';
+// `||=` also replaces an empty HOST=, which would otherwise bind every interface.
+process.env.HOST ||= '127.0.0.1';
 
 await import('./dist/server/entry.mjs');
