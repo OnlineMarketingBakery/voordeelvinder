@@ -25,9 +25,18 @@ test('home page has no serious accessibility violations', async ({ page }) => {
   expect(serious, JSON.stringify(serious, null, 2)).toEqual([]);
 });
 
+test('non-production builds keep search engines out', async ({ page, request }) => {
+  await page.goto('/');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
+
+  const robots = await request.get('/robots.txt');
+  expect(robots.ok()).toBe(true);
+  expect(await robots.text()).toBe('User-agent: *\nDisallow: /\n');
+});
+
 test('health endpoint answers', async ({ request }) => {
   const response = await request.get('/api/health');
   expect(response.ok()).toBe(true);
   expect(response.headers()['cache-control']).toBe('no-store');
-  expect((await response.json()).ok).toBe(true);
+  expect(await response.json()).toMatchObject({ ok: true });
 });

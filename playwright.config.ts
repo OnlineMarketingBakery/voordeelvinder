@@ -39,10 +39,10 @@ export default defineConfig({
     url: `${baseURL}/api/health`,
     reuseExistingServer: !CI,
     timeout: 30_000,
+    // SITE_ENV comes from the environment (CI) or .env, and must match the build's.
     env: {
       HOST: '127.0.0.1',
       PORT: String(PORT),
-      SITE_ENV: 'ci',
     },
   },
 });
