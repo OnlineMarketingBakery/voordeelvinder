@@ -28,7 +28,8 @@ The background and reasoning are in [decision 0003](../decisions/0003-ploi-hosti
   # Build, PM2 reload and health check are versioned in the repo:
   bash scripts/deploy.sh
   ```
-- **What `scripts/deploy.sh` does:**
+- **What `scripts/deploy.sh` does** (one deploy at a time: a lock in
+  `~/.voordeelvinder-deploy.lock` makes a second deploy wait, because Ploi starts one per push):
   1. Checks `.env` and reads `PORT` with Node's parser.
   2. Runs `npm ci` only when `package-lock.json` or the Node version changed.
   3. Runs `npm run build -- --outDir dist.next`. That validates the flows, `.env` and

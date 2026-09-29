@@ -1,7 +1,7 @@
 # 0005 — GitHub repository and branch policy
 
 - **Date:** 2026-09-29
-- **Status:** Proposed. Waiting for Tanjil to decide on visibility.
+- **Status:** Accepted for branch protection (ruleset "Protect main and production" active since 2026-09-29). Visibility is still open.
 - **Brief:** §4.5 ("GitHub, OnlineMarketingBakery org"), §4.6 (AI agents never push to `main`
   or `production`; CI must pass), §8 (rules are never sent to the browser).
 
