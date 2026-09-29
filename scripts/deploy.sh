@@ -12,6 +12,13 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# Ploi starts one deploy per push, so quick merges overlap. Run them one at a time.
+exec 9>"${HOME}/.voordeelvinder-deploy.lock"
+if ! flock -w 600 9; then
+  echo "Another deploy has been running for 10 minutes; giving up." >&2
+  exit 1
+fi
+
 APP=voordeelvinder
 
 if [ ! -f .env ]; then
