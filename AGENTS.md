@@ -96,8 +96,8 @@ Each type has one component in `src/components/sections/` and one schema in
   (`src/server/rules/`, `docs/RULES.md`) or tracking.
 - Send a real lead from local, CI or staging, or point any non-production environment at a
   real n8n webhook.
-- Push to `main` or `production`, merge a PR, or deploy. Tanjil merges; merging to `main`
-  deploys to staging.
+- Push directly to `main` or `production` (the ruleset blocks it anyway), or merge anything into
+  `production`. Promoting a release to production is Tanjil's call.
 - Add `<ClientRouter />` or Speculation Rules `prerender` (brief §6.1).
 
 ## Pull requests
@@ -106,6 +106,10 @@ Branches `feat/*`, `fix/*`, `content/*` → PR → `main`. Every PR has: a plain
 a staging checklist, desktop + mobile screenshots of changed pages or steps, the DRAFT / TO
 CONFIRM items it touches, the assumptions made, and all CI checks green (`ci-ok`). Keep PRs
 reviewable in about 10 minutes.
+
+**Merging:** the agent may merge its own PRs into `main` once `ci-ok` is green (Tanjil,
+2026-09-29). Merging to `main` deploys to staging; after merging, check that `/api/health` on
+staging reports the merge commit.
 
 ## Deploys (staging)
 
