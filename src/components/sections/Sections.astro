@@ -1,0 +1,25 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+import Hero from './Hero.astro';
+
+type Section = CollectionEntry<'pages'>['data']['sections'][number];
+
+interface Props {
+  sections: Section[];
+}
+
+const { sections } = Astro.props;
+---
+
+{sections.map((section) => {
+  switch (section.type) {
+    case 'hero':
+      return <Hero title={section.title} />;
+    default: {
+      // A schema type without a component fails astro check here instead of rendering nothing.
+      const unhandled: never = section.type;
+      throw new Error(`No component for section type "${String(unhandled)}"`);
+    }
+  }
+})}

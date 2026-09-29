@@ -1,0 +1,15 @@
+---
+import { getEntry } from 'astro:content';
+
+import Sections from '../components/sections/Sections.astro';
+import Base from '../layouts/Base.astro';
+
+const page = await getEntry('pages', 'home');
+if (!page) throw new Error('src/content/pages/home.json is missing');
+---
+
+<Base title={page.data.seo.title} description={page.data.seo.description}>
+  <main>
+    <Sections sections={page.data.sections} />
+  </main>
+</Base>

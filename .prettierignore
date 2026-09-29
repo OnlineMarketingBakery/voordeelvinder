@@ -1,0 +1,9 @@
+dist/
+.astro/
+node_modules/
+coverage/
+playwright-report/
+test-results/
+package-lock.json
+docs/design/
+VoordeelVinder-build-brief.md
