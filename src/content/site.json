@@ -14,6 +14,7 @@
     "logoLabel": "VoordeelVinder – naar de homepage",
     "navLabel": "Hoofdmenu",
     "menuLabel": "Menu",
+    "closeLabel": "Menu sluiten",
     "nav": [
       {
         "label": "Hoe het werkt",

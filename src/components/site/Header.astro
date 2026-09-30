@@ -1,7 +1,13 @@
 ---
 // Site header (Figma 60:118/60:119): lime strip + white bar with logo, centred nav and CTA.
 // The bar is sticky and keeps its place during page transitions (view-transition-name).
-// Below lg the nav moves into a disclosure menu (not designed; proposal, see the PR).
+// Below lg the nav moves into a drawer (not designed; proposal, CONTENT-TODO 5.20): a modal
+// <dialog> whose purple panel springs in from the right, with numbered links, the CTA and the
+// waving fox (docs/MOTION.md "Mobile menu (drawer)").
+import ArrowUpRight from '../../assets/icons/arrow-up-right.svg';
+import Sparkle from '../../assets/images/decor/sparkle.svg';
+// The file itself (as the product pages' hero uses it), so it is fetched and cached once.
+import fox from '../../assets/images/mascot/fox-waving.svg';
 import { contentAvailability, getSite, isLinkVisible } from '../../lib/site';
 import Button from '../ui/Button.astro';
 import Container from '../ui/Container.astro';
@@ -66,6 +72,7 @@ const isCurrent = (href: string) => {
       class="group -mr-2 grid size-11 place-items-center rounded-md text-ink-800 lg:hidden"
       aria-expanded="false"
       aria-controls="mobile-menu"
+      aria-haspopup="dialog"
       data-menu-button
       hidden
     >
@@ -78,80 +85,405 @@ const isCurrent = (href: string) => {
     </button>
   </Container>
 
-  <nav
+  {/*
+    The drawer. The dialog is a transparent stage over the whole viewport (shown with
+    showModal(): the top layer, the page inert); the script sets data-state "open", then
+    "closing" until the panel is out, then closes it. The numbers are CSS counters and the decor
+    is aria-hidden: screen readers hear the links only.
+  */}
+  <dialog
     id="mobile-menu"
-    aria-label={site.header.navLabel}
-    class="absolute inset-x-0 top-full max-h-[calc(100dvh-4.5rem)] overflow-y-auto border-t border-lavender-400 bg-white px-4 pt-2 pb-6 shadow-header motion-safe:animate-[menu-in_var(--motion-duration-fast)_var(--ease-out)] md:px-6 lg:hidden"
-    hidden
+    aria-labelledby="mobile-menu-title"
+    class="menu fixed inset-0 m-0 size-auto max-h-none max-w-none overflow-hidden border-0 bg-transparent p-0 backdrop:bg-transparent"
     data-menu
   >
-    <ul>
-      {nav.map((link) => (
-        <li class="border-b border-lavender-400">
-          <a
-            href={link.href}
-            aria-current={isCurrent(link.href)}
-            class="flex min-h-12 items-center text-body-lg text-ink-800 aria-[current=page]:text-purple-500 aria-[current=true]:text-purple-500"
+    <div class="menu-backdrop absolute inset-0 touch-none bg-ink-900/40" data-menu-backdrop></div>
+    <div
+      class="menu-panel surface-dark absolute inset-y-0 overflow-hidden rounded-l-3xl bg-purple-600 text-white"
+      data-menu-panel
+    >
+      <div class="menu-body flex h-full flex-col overflow-y-auto overscroll-contain">
+        <div class="menu-gutter flex min-h-16 shrink-0 items-center justify-between pt-[env(safe-area-inset-top)]">
+          <p id="mobile-menu-title" class="text-label-sm tracking-widest uppercase">
+            {site.header.menuLabel}
+          </p>
+          <button
+            type="button"
+            class="menu-close menu-in grid size-11 place-items-center rounded-full border border-white/40 hover:bg-white/10"
+            data-menu-close
           >
-            {link.label}
-          </a>
-        </li>
-      ))}
-    </ul>
-    <Button href={ctaHref} size="md" icon="arrow-up-right" fullWidth class="mt-4">
-      {cta.label}
-    </Button>
-  </nav>
+            <span class="sr-only">{site.header.closeLabel}</span>
+            <span class="relative block size-5" aria-hidden="true">
+              <span class="absolute inset-x-0 top-1/2 -mt-px h-0.5 rotate-45 rounded-full bg-current"></span>
+              <span class="absolute inset-x-0 top-1/2 -mt-px h-0.5 -rotate-45 rounded-full bg-current"></span>
+            </span>
+          </button>
+        </div>
+
+        <nav aria-label={site.header.navLabel} class="menu-gutter mt-4">
+          <ul class="menu-list divide-y divide-white/15">
+            {nav.map((link, index) => (
+              <li class="menu-row menu-in" style={`--i: ${index}`}>
+                <a
+                  href={link.href}
+                  aria-current={isCurrent(link.href)}
+                  class="menu-link flex min-h-14 items-center gap-3 rounded-md py-3 pr-1 aria-[current=page]:text-lime-300 aria-[current=true]:text-lime-300"
+                >
+                  <span class="flex flex-1 items-baseline gap-3">
+                    <span
+                      class="menu-index w-5 shrink-0 text-label-sm text-lime-300"
+                      aria-hidden="true"
+                    ></span>
+                    <span class="text-title-lg text-pretty">{link.label}</span>
+                  </span>
+                  <span
+                    class="menu-arrow grid size-8 shrink-0 place-items-center rounded-full bg-lime-300 text-ink-900"
+                    aria-hidden="true"
+                  >
+                    <ArrowUpRight class="size-5 rotate-45" />
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div
+          class="menu-cta menu-in menu-gutter mt-8 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+          style={`--i: ${nav.length}`}
+        >
+          <Button href={ctaHref} size="md" icon="arrow-up-right" fullWidth>
+            {cta.label}
+          </Button>
+        </div>
+
+        {/* The fox (only fetched once the drawer shows) waves from below the panel's edge. */}
+        <div
+          class="menu-decor pointer-events-none relative mt-auto h-60 shrink-0 overflow-hidden"
+          aria-hidden="true"
+        >
+          <div class="absolute right-4 -bottom-12 aspect-[319/347] w-48">
+            <div class="menu-rings menu-in absolute top-1/2 left-1/2 -mt-45 -ml-45 size-90">
+              <span class="absolute inset-0 rounded-full border-12 border-white/8"></span>
+              <span class="absolute inset-12 rounded-full border-12 border-white/8"></span>
+              <span class="absolute inset-24 rounded-full border-12 border-white/8"></span>
+            </div>
+            <div class="menu-fox menu-in absolute inset-0 origin-bottom">
+              <img
+                src={fox.src}
+                width={fox.width}
+                height={fox.height}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                class="menu-wave h-auto w-full origin-[50%_90%] -scale-x-100"
+              />
+              <Sparkle class="menu-sparkle absolute right-[96%] bottom-[70%] h-6 w-[1.1rem] text-lime-300" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
 </header>
 
 <style>
-  @keyframes menu-in {
+  /*
+   * The drawer (docs/MOTION.md "Mobile menu (drawer)"). The script sets `data-state` on the
+   * dialog: none is where every entrance starts, then `open`, then `closing` until the panel is
+   * out. Everyone gets the fades; the slide, the trail and the fox's pop and wave only without
+   * reduced motion. Transform and opacity only.
+   */
+
+  /* `clip`, not `hidden`: nothing (a focus() during the slide) can scroll the stage sideways. */
+  .menu {
+    overflow: clip;
+  }
+
+  /* 2rem past the right edge, so the spring's overshoot never opens a gap there. */
+  .menu-panel {
+    right: -2rem;
+    width: calc(min(100% - 3rem, 24rem) + 2rem);
+    padding-right: 2rem;
+    /* A faint light in the top corner: at most 7% white, so every text on the panel stays AA
+       (tests/unit/header-drawer.test.ts). */
+    background-image: radial-gradient(
+      24rem 18rem at calc(100% - 2rem) 0,
+      rgb(255 255 255 / 0.07),
+      rgb(255 255 255 / 0)
+    );
+  }
+
+  /* 20px: "Veelgestelde vragen" stays on one line from 390px. */
+  .menu-gutter {
+    padding-left: 1.25rem;
+    padding-right: max(1.25rem, env(safe-area-inset-right));
+  }
+
+  /* 01, 02, …: decorative numbering from the order, not copy. */
+  .menu-list {
+    counter-reset: menu-row;
+  }
+
+  .menu-row {
+    counter-increment: menu-row;
+  }
+
+  .menu-index::before {
+    content: counter(menu-row, decimal-leading-zero);
+  }
+
+  /* The rings fade out downwards, like the CTA band's. */
+  .menu-rings {
+    mask-image: linear-gradient(#000 20%, transparent 75%);
+  }
+
+  /* Mirrored with the fox; `transform`, so the twinkle can animate `scale`. */
+  .menu-sparkle {
+    transform: scaleX(-1);
+  }
+
+  /* Short screens (a phone on its side): links and CTA only. */
+  @media (max-height: 37.5rem) {
+    .menu-decor {
+      display: none;
+    }
+  }
+
+  .menu-backdrop,
+  .menu-panel {
+    opacity: 0;
+    transition: opacity var(--motion-duration-fast) var(--ease-out);
+  }
+
+  .menu[data-state='open'] :is(.menu-backdrop, .menu-panel) {
+    opacity: 1;
+    transition-duration: var(--motion-duration-base);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* The panel springs in, and leaves faster with its content fading (no stagger). */
+    .menu-backdrop {
+      transition-duration: var(--motion-duration-base);
+    }
+
+    .menu-panel {
+      opacity: 1;
+      translate: 100% 0;
+      transition: translate var(--motion-duration-base) var(--ease-in-out);
+    }
+
+    .menu[data-state='open'] .menu-panel {
+      translate: 0 0;
+      transition-duration: var(--motion-duration-spring);
+      transition-timing-function: var(--ease-spring);
+    }
+
+    .menu[data-state='closing'] .menu-body {
+      opacity: 0;
+      transition: opacity var(--motion-duration-fast) var(--ease-out);
+    }
+
+    /* Each piece comes in from its own start (`--from-*`, before `open`) after its delay: the
+       close button turns in, the links trail 50 ms apart (5 at most), the CTA rises after them,
+       the rings grow and the fox pops up on the spring. */
+    .menu-in {
+      transition-property: opacity, translate, rotate, scale;
+      transition-duration: var(--in-duration, var(--motion-duration-slow));
+      transition-timing-function: var(--in-easing, var(--ease-out));
+      transition-delay: var(--in-delay, 0ms);
+    }
+
+    .menu:not([data-state]) .menu-in {
+      opacity: var(--from-opacity, 0);
+      translate: var(--from-translate, none);
+      rotate: var(--from-rotate, none);
+      scale: var(--from-scale, none);
+    }
+
+    .menu-close {
+      --from-rotate: -90deg;
+      --in-duration: var(--motion-duration-base);
+      --in-delay: 80ms;
+    }
+
+    .menu-row,
+    .menu-cta {
+      --from-translate: calc(2 * var(--motion-distance-2)) 0;
+      --in-delay: calc(100ms + min(var(--i), 5) * 50ms);
+    }
+
+    .menu-cta {
+      --from-translate: 0 var(--motion-distance-2);
+    }
+
+    .menu-rings {
+      --from-scale: 0.8;
+      --in-delay: var(--motion-duration-fast);
+    }
+
+    .menu-fox {
+      --from-opacity: 1;
+      --from-translate: 0 60%;
+      --from-rotate: 8deg;
+      --in-duration: var(--motion-duration-spring);
+      --in-easing: var(--ease-spring);
+      --in-delay: var(--motion-duration-base);
+    }
+
+    /* Once the fox has landed: one wave, one twinkle. */
+    .menu[data-state='open'] .menu-wave {
+      animation: menu-wave calc(1.5 * var(--motion-duration-slow)) var(--ease-in-out)
+        calc(var(--motion-duration-base) + var(--motion-duration-spring));
+    }
+
+    .menu[data-state='open'] .menu-sparkle {
+      animation: menu-twinkle var(--motion-duration-slow) var(--ease-out)
+        calc(var(--motion-duration-base) + var(--motion-duration-spring)) both;
+    }
+
+    /* A row's arrow slides right on hover, keyboard focus and press. */
+    .menu-arrow {
+      transition: translate var(--motion-duration-fast) var(--ease-out);
+    }
+
+    .menu-link:is(:focus-visible, :active) .menu-arrow {
+      translate: calc(var(--motion-distance-1) / 2) 0;
+    }
+
+    @media (hover: hover) {
+      .menu-link:hover .menu-arrow {
+        translate: calc(var(--motion-distance-1) / 2) 0;
+      }
+    }
+  }
+
+  @keyframes menu-wave {
+    30% {
+      rotate: -5deg;
+    }
+
+    65% {
+      rotate: 5deg;
+    }
+  }
+
+  @keyframes menu-twinkle {
     from {
       opacity: 0;
-      translate: 0 calc(-1 * var(--motion-distance-1));
+      scale: 0.4;
+      rotate: -20deg;
     }
+
+    60% {
+      opacity: 1;
+      scale: 1.15;
+    }
+  }
+
+  /* The page behind the open drawer stays put; the padding takes a classic scrollbar's place, so
+     nothing shifts. */
+  :global(html.menu-open) {
+    overflow: hidden;
+    padding-right: var(--menu-scrollbar, 0px);
   }
 </style>
 
 <script>
-  // Disclosure menu: no focus trap or scroll lock needed. Without JS the button stays hidden and
-  // the footer links remain available.
-  const button = document.querySelector<HTMLButtonElement>('[data-menu-button]');
-  const menu = document.querySelector<HTMLElement>('[data-menu]');
+  // The mobile menu drawer: a modal <dialog> (focus stays inside, the page behind is inert,
+  // Escape is its cancel event). `data-state` runs the motion in CSS: `open`, then `closing`
+  // until the panel is out (transitionend, or the slow duration at the latest), then close().
+  // Focus goes back to the menu button after Escape, the close button or a tap beside the panel,
+  // not after a link. Without JS the button stays hidden and the footer links remain available.
+  import { cssTimeMs } from '../../lib/css-time';
 
-  if (button && menu) {
-    const desktop = window.matchMedia('(min-width: 64rem)');
-    const setOpen = (open: boolean, restoreFocus = false) => {
-      button.setAttribute('aria-expanded', String(open));
-      menu.hidden = !open;
-      if (!open && restoreFocus) button.focus();
+  const button = document.querySelector<HTMLButtonElement>('[data-menu-button]');
+  const dialog = document.querySelector<HTMLDialogElement>('[data-menu]');
+  const panel = dialog?.querySelector<HTMLElement>('[data-menu-panel]');
+  const closeButton = dialog?.querySelector<HTMLButtonElement>('[data-menu-close]');
+  const backdrop = dialog?.querySelector<HTMLElement>('[data-menu-backdrop]');
+
+  if (button && dialog && panel && closeButton && backdrop && 'showModal' in dialog) {
+    const root = document.documentElement;
+    let timer = 0;
+    let returnFocus = false;
+
+    const setLocked = (locked: boolean) => {
+      if (locked === root.classList.contains('menu-open')) return;
+      // A classic scrollbar disappears with overflow: hidden; pad its width so nothing shifts.
+      const scrollbar = window.innerWidth - root.clientWidth;
+      if (locked && scrollbar > 0) root.style.setProperty('--menu-scrollbar', `${scrollbar}px`);
+      else root.style.removeProperty('--menu-scrollbar');
+      root.classList.toggle('menu-open', locked);
+    };
+
+    // Every way out ends here, also when the browser closed the dialog itself.
+    const finish = () => {
+      window.clearTimeout(timer);
+      delete dialog.dataset.state;
+      if (dialog.open) dialog.close();
+      setLocked(false);
+      button.setAttribute('aria-expanded', 'false');
+      if (returnFocus) button.focus({ preventScroll: true });
+      returnFocus = false;
+    };
+
+    const open = () => {
+      if (dialog.dataset.state === 'open') return;
+      window.clearTimeout(timer);
+      if (!dialog.open) {
+        // Nothing focused, so close() restores nothing: this script decides where focus goes.
+        button.blur();
+        dialog.showModal();
+        panel.getBoundingClientRect(); // every entrance starts from the styles without a state
+      }
+      dialog.dataset.state = 'open';
+      setLocked(true);
+      button.setAttribute('aria-expanded', 'true');
+      // No scrolling: the button is still off to the right while the panel slides in.
+      closeButton.focus({ preventScroll: true });
+    };
+
+    const close = (restoreFocus: boolean) => {
+      if (!dialog.open || dialog.dataset.state === 'closing') return;
+      returnFocus = restoreFocus;
+      dialog.dataset.state = 'closing';
+      // At once, before a link's default action: an anchor on this page must be able to scroll.
+      setLocked(false);
+      button.setAttribute('aria-expanded', 'false');
+      const slow = getComputedStyle(root).getPropertyValue('--motion-duration-slow');
+      timer = window.setTimeout(finish, cssTimeMs(slow, 400));
+    };
+
+    const closeNow = () => {
+      if (!dialog.open) return;
+      returnFocus = false;
+      finish();
     };
 
     button.hidden = false;
-    button.addEventListener('click', () => setOpen(menu.hidden === true));
-    menu.addEventListener('click', (event) => {
-      if ((event.target as Element).closest('a')) setOpen(false);
+    button.addEventListener('click', open);
+    closeButton.addEventListener('click', () => close(true));
+    backdrop.addEventListener('click', () => close(true));
+    dialog.addEventListener('click', (event) => {
+      if (event.target instanceof Element && event.target.closest('a[href]')) close(false);
     });
-    document.addEventListener('keydown', (event) => {
-      if (event.key !== 'Escape' || menu.hidden) return;
-      // Return focus to the button unless the visitor already moved it elsewhere. (Safari doesn't
-      // focus a clicked button, so focus may still be on the body.)
-      const active = document.activeElement;
-      const restore =
-        !active || active === document.body || active === button || menu.contains(active);
-      setOpen(false, restore);
+    dialog.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      close(true);
     });
-    // Tabbing out of the open menu closes it, so it can't cover the next focused element.
-    button.closest('header')?.addEventListener('focusout', (event) => {
-      const next = event.relatedTarget as Node | null;
-      if (!menu.hidden && next && !menu.contains(next) && !button.contains(next)) setOpen(false);
+    dialog.addEventListener('close', () => {
+      if (!dialog.open) finish();
     });
-    document.addEventListener('click', (event) => {
-      const target = event.target as Node;
-      if (!menu.hidden && !menu.contains(target) && !button.contains(target)) setOpen(false);
+    panel.addEventListener('transitionend', (event) => {
+      if (event.target === panel && dialog.dataset.state === 'closing') finish();
     });
-    desktop.addEventListener('change', (event) => {
-      if (event.matches) setOpen(false);
+    window.matchMedia('(min-width: 64rem)').addEventListener('change', (event) => {
+      if (event.matches) closeNow();
+    });
+    window.addEventListener('pagehide', closeNow);
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) closeNow();
     });
   }
 </script>

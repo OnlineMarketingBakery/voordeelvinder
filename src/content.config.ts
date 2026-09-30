@@ -31,7 +31,10 @@ const site = defineCollection({
     header: z.strictObject({
       logoLabel: text,
       navLabel: text,
+      /** The menu button below lg (screen-reader only) and the drawer's name and eyebrow. */
       menuLabel: text,
+      /** The drawer's round close button (screen-reader only). */
+      closeLabel: text,
       nav: z.array(navLink).min(1),
       cta: link,
     }),
