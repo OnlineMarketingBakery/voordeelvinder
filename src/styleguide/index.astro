@@ -134,7 +134,7 @@ const buttons: Array<{ variant: ButtonVariant; size: ButtonSize; label: string; 
       <h2 id="shadows" class="text-h4">
         Shadows
       </h2>
-      <ul class="mt-6 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      <ul class="mt-6 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3" data-reveal-stagger>
         {shadows.map((s) => (
           <li class="text-sm text-ink-600">
             <div class="rounded-3xl p-6" style={`background:${shadowSurface(s.name)}`}>
