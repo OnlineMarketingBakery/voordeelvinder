@@ -7,10 +7,16 @@ import Button from '../ui/Button.astro';
 import Container from '../ui/Container.astro';
 import Logo from '../ui/Logo.astro';
 
+interface Props {
+  /** Where the CTA goes, if not site.json's (a campaign variant's own product form). */
+  ctaHref?: string | undefined;
+}
+
 const site = await getSite();
 const available = await contentAvailability();
 const nav = site.header.nav.filter((link) => isLinkVisible(link, available));
 const { cta } = site.header;
+const ctaHref = Astro.props.ctaHref ?? cta.href;
 // Built pages have a trailing slash (/blog/); compare without it. Anchors never match. A
 // section link also marks the pages below it (Blogs on /blog/<post>).
 const strip = (path: string) => (path.length > 1 ? path.replace(/\/+$/, '') : path);
@@ -50,7 +56,7 @@ const isCurrent = (href: string) => {
     </nav>
 
     <div class="hidden justify-self-end lg:block">
-      <Button href={cta.href} size="sm" icon="arrow-up-right">
+      <Button href={ctaHref} size="sm" icon="arrow-up-right">
         {cta.label}
       </Button>
     </div>
@@ -92,7 +98,7 @@ const isCurrent = (href: string) => {
         </li>
       ))}
     </ul>
-    <Button href={cta.href} size="md" icon="arrow-up-right" fullWidth class="mt-4">
+    <Button href={ctaHref} size="md" icon="arrow-up-right" fullWidth class="mt-4">
       {cta.label}
     </Button>
   </nav>

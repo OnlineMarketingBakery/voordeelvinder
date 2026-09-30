@@ -31,6 +31,8 @@ export const postFrontmatter = z
       .strictObject({
         title: text.optional(),
         description: text.optional(),
+        /** The share image (image key); default the cover, else the site's. */
+        ogImage: imageKey.optional(),
         noindex: z.boolean().optional(),
       })
       .optional(),

@@ -67,7 +67,8 @@ for (const slug of variants) {
     );
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
 
-    const links = page.locator('main a[href^="/vergelijken"]');
+    // Every form link, the header CTA included, goes to a product form with the ad's query.
+    const links = page.locator('a[href^="/vergelijken"]');
     expect(await links.count()).toBeGreaterThan(0);
     for (const href of await links.evaluateAll((as) => as.map((a) => a.getAttribute('href')))) {
       expect(href).toMatch(/^\/vergelijken\/(energie|zonnepanelen|thuisbatterij)\?/);

@@ -9,6 +9,7 @@ import { defineConfig, fontProviders } from 'astro/config';
 import { loadEnv } from 'vite';
 
 import { pruneUnusedImagesIntegration } from './src/integrations/prune-unused-images';
+import { sitemapNoindexIntegration } from './src/integrations/sitemap-noindex';
 import { inSitemap } from './src/lib/seo/indexing';
 import { parseServerEnv, type SiteEnv } from './src/server/env';
 
@@ -57,6 +58,8 @@ export default defineConfig({
   integrations: [
     react(),
     sitemap({ filter: (page) => inSitemap(new URL(page).pathname) }),
+    // After the sitemap is written (hooks run in this order): drop pages that opted out.
+    sitemapNoindexIntegration(env.SITE_ENV),
     styleguide(env.SITE_ENV),
     pruneUnusedImagesIntegration(),
   ],

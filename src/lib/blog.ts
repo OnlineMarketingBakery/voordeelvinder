@@ -83,11 +83,17 @@ export function listingPages<T extends PostLike>(
 
 /**
  * The page links: all of them up to 5 pages, else the first, the last and the current one with
- * its neighbours, with a gap where pages are left out (1 … 4 5 6 … 12).
+ * its neighbours, with a gap where pages are left out (1 … 4 5 6 … 12). `compact` (phones) drops
+ * the neighbours, so with both arrows there are at most 7 items (1 … 5 … 12).
  */
-export function pageItems(current: number, total: number): Array<number | 'gap'> {
+export function pageItems(
+  current: number,
+  total: number,
+  { compact = false } = {},
+): Array<number | 'gap'> {
   if (total <= 5) return Array.from({ length: total }, (_, index) => index + 1);
-  const shown = [...new Set([1, current - 1, current, current + 1, total])]
+  const around = compact ? [current] : [current - 1, current, current + 1];
+  const shown = [...new Set([1, ...around, total])]
     .filter((page) => page >= 1 && page <= total)
     .sort((a, b) => a - b);
   const items: Array<number | 'gap'> = [];
@@ -121,9 +127,30 @@ export function relatedPosts<T extends PostLike>(posts: T[], post: T, max = 3): 
   });
 }
 
+/**
+ * `related` slugs that don't resolve on every environment: unknown posts, and drafts (dropped in
+ * production only, so they would pass staging and fail the release build).
+ */
+export function relatedProblems(posts: PostLike[]): string[] {
+  const byId = new Map(posts.map((post) => [post.id, post]));
+  return posts
+    .filter((post) => !post.data.draft)
+    .flatMap((post) =>
+      (post.data.related ?? []).flatMap((slug) => {
+        const other = byId.get(slug);
+        if (!other) return [`blog/${post.id}.md: related post "${slug}" does not exist`];
+        if (other.data.draft) return [`blog/${post.id}.md: related post "${slug}" is a draft`];
+        return [];
+      }),
+    );
+}
+
 /** Published posts, newest first; a production build fails on a placeholder post. */
 export async function getPosts(): Promise<Post[]> {
-  const posts = publishedPosts(await getCollection('blog'), __SITE_ENV__);
+  const all = await getCollection('blog');
+  const broken = relatedProblems(all);
+  if (broken.length > 0) throw new Error(broken.join('\n'));
+  const posts = publishedPosts(all, __SITE_ENV__);
   if (__SITE_ENV__ === 'production') {
     const problems = postPlaceholderProblems(posts);
     if (problems.length > 0) {

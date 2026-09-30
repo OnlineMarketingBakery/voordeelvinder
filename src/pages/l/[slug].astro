@@ -8,7 +8,7 @@ import { getCollection } from 'astro:content';
 
 import Sections from '../../components/sections/Sections.astro';
 import Page from '../../layouts/Page.astro';
-import { landingBasePage, landingSections } from '../../lib/landing';
+import { compareHref, landingBasePage, landingSections } from '../../lib/landing';
 import { failOnPlaceholders, loadPage, overlapsFooter } from '../../lib/pages';
 
 export async function getStaticPaths() {
@@ -42,6 +42,7 @@ failOnPlaceholders(`landing/${variant.id}`, page);
   description={page.seo.description}
   noindex
   footerOverlap={overlapsFooter(page.sections)}
+  ctaHref={compareHref(data.product)}
 >
   <Sections sections={page.sections} />
 </Page>

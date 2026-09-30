@@ -1,6 +1,7 @@
 ---
 // A blog post from src/content/blog/<slug>.md (Figma 118:2067): header, the Markdown body, the
 // links to the neighbouring posts and related posts. BlogPosting JSON-LD from the frontmatter.
+import { getImage } from 'astro:assets';
 import { render } from 'astro:content';
 
 import PostHeader from '../components/blog/PostHeader.astro';
@@ -26,6 +27,24 @@ const { post, newer, older, related } = Astro.props;
 const { title, excerpt, date, updated, cover, author, seo } = post.data;
 const site = await getSite();
 const { Content } = await render(post);
+
+// Share image: seo.ogImage, else the cover, as a 1200 px JPEG (social sites don't take AVIF).
+const shareKey = seo?.ogImage ?? cover?.src;
+const shareSource = shareKey ? image(shareKey) : undefined;
+const share =
+  shareSource && shareSource.format !== 'svg'
+    ? await getImage({
+        src: shareSource,
+        width: Math.min(1200, shareSource.width),
+        format: 'jpg',
+      })
+    : undefined;
+const ogImage = share && {
+  src: share.src,
+  width: Number(share.attributes.width),
+  height: Number(share.attributes.height),
+  alt: cover?.alt ?? title,
+};
 
 const link = (other: Post | undefined) =>
   other && { href: postHref(other.id), title: other.data.title };
@@ -53,6 +72,8 @@ const structuredData = [
   description={seo?.description ?? excerpt}
   noindex={seo?.noindex ?? false}
   {structuredData}
+  {ogImage}
+  ogType="article"
 >
   <article>
     <PostHeader {title} {date} {cover} locale={site.locale} />

@@ -9,6 +9,7 @@ import {
   listingPages,
   neighbours,
   pageItems,
+  relatedProblems,
   type PostLike,
   postPlaceholderProblems,
   publishedPosts,
@@ -175,6 +176,12 @@ describe('listing pages', () => {
     expect(pageItems(2, 5)).toEqual([1, 2, 3, 4, 5]);
     expect(pageItems(1, 12)).toEqual([1, 2, 'gap', 12]);
     expect(pageItems(3, 12)).toEqual([1, 2, 3, 4, 'gap', 12]);
+    // Phones: at most 5 page items, so 7 with both arrows (fits a 358 px row).
+    expect(pageItems(3, 6, { compact: true })).toEqual([1, 2, 3, 'gap', 6]);
+    expect(pageItems(6, 12, { compact: true })).toEqual([1, 'gap', 6, 'gap', 12]);
+    for (let current = 1; current <= 12; current++) {
+      expect(pageItems(current, 12, { compact: true }).length).toBeLessThanOrEqual(5);
+    }
     expect(pageItems(6, 12)).toEqual([1, 'gap', 5, 6, 7, 'gap', 12]);
     expect(pageItems(12, 12)).toEqual([1, 'gap', 11, 12]);
   });
@@ -263,5 +270,24 @@ describe('BlogPosting structured data', () => {
     expect(data.author).toEqual({ '@type': 'Person', name: 'Redactie' });
     expect(data.dateModified).toBe('2026-10-02');
     expect(data.image).toBe('https://voordeelvinder.be/_astro/cover.png');
+  });
+});
+
+describe('related posts', () => {
+  const post = (id: string, data: { draft?: boolean; related?: string[] }) => ({
+    id,
+    data: { draft: false, ...data },
+  });
+
+  it('fails on every environment when a published post points at a draft or an unknown post', () => {
+    const posts = [
+      post('a', { related: ['b', 'c'] }),
+      post('b', { draft: true }),
+      post('d', { draft: true, related: ['b'] }),
+    ];
+    expect(relatedProblems(posts as never)).toEqual([
+      'blog/a.md: related post "b" is a draft',
+      'blog/a.md: related post "c" does not exist',
+    ]);
   });
 });
