@@ -69,7 +69,9 @@ test.describe('home sections', () => {
 
   test('shows one h2 per section, in order', async ({ page }) => {
     await page.goto('/');
-    const expected = home.sections.filter((s) => s.type !== 'hero').map((s) => s.title);
+    const expected = (home.sections as Section[])
+      .filter((s) => s.type !== 'hero' && !s.hidden && 'title' in s)
+      .map((s) => (s as { title: string }).title);
     await expect(page.locator('main h2')).toHaveText(expected);
   });
 });

@@ -1,5 +1,5 @@
-# dependencies and build output
-node_modules/
+# dependencies and build output (no trailing slash: also matches a symlinked node_modules)
+node_modules
 dist/
 dist.*/
 .astro/
