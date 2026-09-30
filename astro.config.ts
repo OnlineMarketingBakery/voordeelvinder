@@ -9,6 +9,7 @@ import { defineConfig, fontProviders } from 'astro/config';
 import { loadEnv } from 'vite';
 
 import { pruneUnusedImagesIntegration } from './src/integrations/prune-unused-images';
+import { inSitemap } from './src/lib/seo/indexing';
 import { parseServerEnv, type SiteEnv } from './src/server/env';
 
 /** Internal token/component overview at /styleguide. Never part of a production build. */
@@ -55,7 +56,7 @@ export default defineConfig({
   session: false,
   integrations: [
     react(),
-    sitemap({ filter: (page) => !new URL(page).pathname.startsWith('/styleguide') }),
+    sitemap({ filter: (page) => inSitemap(new URL(page).pathname) }),
     styleguide(env.SITE_ENV),
     pruneUnusedImagesIntegration(),
   ],

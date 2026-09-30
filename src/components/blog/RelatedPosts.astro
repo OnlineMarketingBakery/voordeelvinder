@@ -1,0 +1,41 @@
+---
+// "Misschien vind je dit ook leuk" (Figma 134:2636, cards 134:2649…): up to three cards under a
+// divider. Two columns on tablets (the third card hidden). Nothing without related posts.
+import type { CardPost } from '../../lib/blog';
+import Container from '../ui/Container.astro';
+import BlogCard from './BlogCard.astro';
+
+interface Props {
+  heading: string;
+  posts: CardPost[];
+  readMore: string;
+}
+
+const { heading, posts, readMore } = Astro.props;
+---
+
+{posts.length > 0 && (
+  <section aria-labelledby="related-title" class="pb-20 lg:pb-38">
+    <Container>
+      <div class="mt-8 border-t border-ink-600/43" aria-hidden="true"></div>
+      <h2
+        id="related-title"
+        class="mt-14 text-center text-h3 text-ink-800 md:text-h2 lg:mt-23"
+        data-reveal
+      >
+        {heading}
+      </h2>
+      <ul
+        role="list"
+        class="mt-10 grid gap-y-12 md:grid-cols-2 md:gap-x-6 md:max-lg:[&>*:nth-child(3)]:hidden lg:grid-cols-3"
+        data-reveal-stagger
+      >
+        {posts.map((post) => (
+          <li class="group flex">
+            <BlogCard {post} {readMore} />
+          </li>
+        ))}
+      </ul>
+    </Container>
+  </section>
+)}

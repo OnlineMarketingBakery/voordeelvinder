@@ -1,0 +1,9 @@
+---
+// Not found (not designed; proposal, Phase 3 spec §12). The copy is src/content/pages/404.json
+// (noindex). Prerendered to dist/client/404.html: the Node adapter serves that file with HTTP
+// 404 for every URL that matches no route or static file. The sitemap leaves it out, and it
+// has no canonical of its own.
+import ContentPage from '../layouts/ContentPage.astro';
+---
+
+<ContentPage id="404" canonical={false} />

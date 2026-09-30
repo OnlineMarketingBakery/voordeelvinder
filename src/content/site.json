@@ -106,5 +106,35 @@
       "display": "335 224 654",
       "todo": true
     }
+  },
+  "blog": {
+    "listing": {
+      "title": "Blogs",
+      "pagedTitle": "Blogs – pagina {n}",
+      "description": "Tips en uitleg over energie, zonnepanelen en thuisbatterijen, zodat je makkelijker ziet waar je kunt besparen.",
+      "featuredHeading": "Recent bericht",
+      "gridHeading": "Onze blogs en artikelen",
+      "perPage": 9
+    },
+    "readMore": "Lees meer",
+    "relatedHeading": "Misschien vind je dit ook leuk",
+    "postNav": {
+      "label": "Meer artikelen",
+      "previous": "Terug",
+      "next": "Volgende",
+      "previousHint": "(vorig artikel: {title})",
+      "nextHint": "(volgend artikel: {title})"
+    },
+    "pagination": {
+      "label": "Paginering",
+      "page": "Pagina {n}",
+      "previous": "Vorige pagina",
+      "next": "Volgende pagina"
+    }
+  },
+  "legal": {
+    "tocLabel": "Inhoudsopgave",
+    "lastUpdated": "Laatst bijgewerkt: {date}",
+    "placeholderNotice": "Voorlopige tekst: deze pagina wordt nog juridisch nagekeken en kan nog wijzigen."
   }
 }

@@ -1,0 +1,41 @@
+---
+// A post's cover in a rounded slot: the image (frontmatter `cover`, cropped to the slot) or,
+// without one, the design's placeholder box. The slot's aspect ratio comes from `class`.
+import { image } from '../../lib/assets';
+import Illustration from '../ui/Illustration.astro';
+import ImagePlaceholder from '../ui/ImagePlaceholder.astro';
+
+interface Props {
+  cover?: { src: string; alt: string } | undefined;
+  glyph?: 'sm' | 'lg';
+  widths: number[];
+  sizes: string;
+  /** The likely LCP image (featured post on page 1, post hero). */
+  priority?: boolean;
+  class?: string;
+}
+
+const { cover, glyph = 'sm', widths, sizes, priority = false, class: className } = Astro.props;
+// Never upscale; an image smaller than every slot width is served at its own width.
+const intrinsic = cover && image(cover.src).width;
+const srcWidths = intrinsic
+  ? widths.some((width) => width <= intrinsic)
+    ? widths
+    : [intrinsic]
+  : widths;
+---
+
+{cover ? (
+  <div class:list={['relative overflow-hidden rounded-2xl bg-lavender-100', className]}>
+    <Illustration
+      src={cover.src}
+      alt={cover.alt}
+      widths={srcWidths}
+      {sizes}
+      {priority}
+      class="absolute inset-0 size-full object-cover"
+    />
+  </div>
+) : (
+  <ImagePlaceholder {glyph} class={className} />
+)}

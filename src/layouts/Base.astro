@@ -12,16 +12,27 @@ interface Props {
   description?: string | undefined;
   /** Keep this page out of search results even in production (thank-you pages, /l/*). */
   noindex?: boolean;
+  /**
+   * Link rel=canonical (and og:url) to this path. Off for the 404, which is served at any
+   * unknown URL: its own path (/404) is not a page to point search engines at.
+   */
+  canonical?: boolean;
   /** schema.org objects for this page (JSON-LD). */
   structuredData?: object[];
 }
 
-const { title, description, noindex = false, structuredData = [] } = Astro.props;
+const {
+  title,
+  description,
+  noindex = false,
+  canonical: hasCanonical = true,
+  structuredData = [],
+} = Astro.props;
 const site = await getSite();
 
 const fullTitle = pageTitle(title, site.name, site.seo.titleTemplate);
 const metaDescription = description ?? site.seo.defaultDescription;
-const canonical = new URL(Astro.url.pathname, Astro.site);
+const canonical = hasCanonical ? new URL(Astro.url.pathname, Astro.site) : undefined;
 const ogImage = new URL(defaultOgImage.src, Astro.site);
 
 // Only production is indexable (brief §4.5); Nginx also sends X-Robots-Tag on staging.
@@ -36,14 +47,14 @@ const robots = noindex || !isIndexable(__SITE_ENV__) ? 'noindex, nofollow' : und
     <title>{fullTitle}</title>
     <meta name="description" content={metaDescription} />
     {robots && <meta name="robots" content={robots} />}
-    <link rel="canonical" href={canonical} />
+    {canonical && <link rel="canonical" href={canonical} />}
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={site.name} />
     <meta property="og:locale" content="nl_BE" />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={metaDescription} />
-    <meta property="og:url" content={canonical} />
+    {canonical && <meta property="og:url" content={canonical} />}
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content={String(defaultOgImage.width)} />
     <meta property="og:image:height" content={String(defaultOgImage.height)} />

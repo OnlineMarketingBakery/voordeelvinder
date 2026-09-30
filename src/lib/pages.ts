@@ -34,17 +34,27 @@ export function pagePlaceholderProblems(id: string, page: PageData): string[] {
   return problems;
 }
 
-/** Loads a page; a production build fails while it still shows placeholders. */
-export async function getPage(id: string): Promise<PageData> {
+/** Fails a production build while a page still shows placeholders (staging shows them). */
+export function failOnPlaceholders(id: string, page: PageData): void {
+  if (__SITE_ENV__ !== 'production') return;
+  const problems = pagePlaceholderProblems(id, page);
+  if (problems.length > 0) {
+    throw new Error(
+      `Placeholders on a production build (docs/CONTENT-TODO.md): ${problems.join('; ')}`,
+    );
+  }
+}
+
+/** Loads a page as it is in its content file, placeholders included. */
+export async function loadPage(id: string): Promise<PageData> {
   const entry = await getEntry('pages', id);
   if (!entry) throw new Error(`src/content/pages/${id}.json is missing`);
-  if (__SITE_ENV__ === 'production') {
-    const problems = pagePlaceholderProblems(id, entry.data);
-    if (problems.length > 0) {
-      throw new Error(
-        `Placeholders on a production build (docs/CONTENT-TODO.md): ${problems.join('; ')}`,
-      );
-    }
-  }
   return entry.data;
+}
+
+/** Loads a page; a production build fails while it still shows placeholders. */
+export async function getPage(id: string): Promise<PageData> {
+  const page = await loadPage(id);
+  failOnPlaceholders(id, page);
+  return page;
 }

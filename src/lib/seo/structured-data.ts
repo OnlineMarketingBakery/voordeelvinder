@@ -1,5 +1,5 @@
 // schema.org structured data (brief §11): Organization and WebSite on the homepage; FAQPage on
-// every page with a visible FAQ block.
+// every page with a visible FAQ block; BlogPosting on blog posts.
 export interface OrganizationInput {
   name: string;
   url: URL;
@@ -40,6 +40,42 @@ export function faqPage(items: Array<{ question: string; answer: string }>) {
       name: question,
       acceptedAnswer: { '@type': 'Answer', text: answer },
     })),
+  };
+}
+
+export interface BlogPostingInput {
+  headline: string;
+  description: string;
+  url: URL;
+  datePublished: string;
+  dateModified?: string | undefined;
+  image?: URL | undefined;
+  /** A named author; without one the organisation is the author. */
+  author?: string | undefined;
+  publisher: { name: string; url: URL; logo: URL };
+  inLanguage: string;
+}
+
+export function blogPosting(input: BlogPostingInput) {
+  const publisher = {
+    '@type': 'Organization',
+    name: input.publisher.name,
+    url: input.publisher.url.href,
+    logo: { '@type': 'ImageObject', url: input.publisher.logo.href },
+  };
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: input.headline,
+    description: input.description,
+    url: input.url.href,
+    mainEntityOfPage: input.url.href,
+    datePublished: input.datePublished,
+    dateModified: input.dateModified ?? input.datePublished,
+    ...(input.image ? { image: input.image.href } : {}),
+    author: input.author ? { '@type': 'Person', name: input.author } : publisher,
+    publisher,
+    inLanguage: input.inLanguage,
   };
 }
 

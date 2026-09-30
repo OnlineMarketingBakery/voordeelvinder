@@ -1,0 +1,19 @@
+---
+// /privacybeleid, /cookiebeleid, /algemene-voorwaarden: one page per file in src/content/legal.
+// Static routes (/zonnepanelen, …) take precedence over this one.
+import LegalPage from '../layouts/LegalPage.astro';
+import { getLegalPages, type LegalEntry } from '../lib/legal';
+
+export async function getStaticPaths() {
+  const pages = await getLegalPages();
+  return pages.map((entry) => ({ params: { legal: entry.id }, props: { entry } }));
+}
+
+interface Props {
+  entry: LegalEntry;
+}
+
+const { entry } = Astro.props;
+---
+
+<LegalPage {entry} />

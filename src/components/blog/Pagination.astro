@@ -1,0 +1,77 @@
+---
+// Page links under the post grid (Figma 118:1994–118:2005): numbered lime circles and a "next"
+// arrow. Not designed, proposed: the current page in purple (not a link), a "previous" arrow
+// from page 2, no "next" on the last page, gaps from 6 pages. Nothing with a single page.
+import { pageItems } from '../../lib/blog';
+import { fill } from '../../lib/copy';
+import Icon from '../ui/Icon.astro';
+
+interface Props {
+  current: number;
+  total: number;
+  /** The URL of page n. */
+  href: (page: number) => string;
+  labels: { label: string; page: string; previous: string; next: string };
+}
+
+const { current, total, href, labels } = Astro.props;
+const items = pageItems(current, total);
+
+const circle =
+  'grid size-11 place-items-center rounded-full text-label text-ink-900 md:size-[50px]';
+const press =
+  'transition-[scale,background-color] duration-(--motion-duration-fast) motion-safe:active:scale-[0.97]';
+---
+
+{total > 1 && (
+  <nav aria-label={labels.label} class="mt-16 border-t border-ink-600/43 pt-7 lg:mt-28">
+    <ol role="list" class="flex flex-wrap gap-1.5">
+      {current > 1 && (
+        <li>
+          <a
+            href={href(current - 1)}
+            aria-label={labels.previous}
+            class:list={[circle, press, 'bg-lime-400 hover:bg-lime-300']}
+          >
+            <Icon name="chevron-left" class="size-6" />
+          </a>
+        </li>
+      )}
+      {items.map((item) =>
+        item === 'gap' ? (
+          <li class={circle} aria-hidden="true">
+            …
+          </li>
+        ) : item === current ? (
+          <li>
+            <span aria-current="page" class:list={[circle, 'bg-purple-600 text-white']}>
+              <span class="sr-only">{fill(labels.page, { n: item })}</span>
+              <span aria-hidden="true">{item}</span>
+            </span>
+          </li>
+        ) : (
+          <li>
+            <a
+              href={href(item)}
+              aria-label={fill(labels.page, { n: item })}
+              class:list={[circle, press, 'bg-lime-400/18 hover:bg-lime-400/40']}
+            >
+              {item}
+            </a>
+          </li>
+        ),
+      )}
+      {current < total && (
+        <li>
+          <a
+            href={href(current + 1)}
+            aria-label={labels.next}
+            class:list={[circle, press, 'bg-lime-400 hover:bg-lime-300']}
+          >
+            <Icon name="chevron-right" class="size-6" />
+          </a>
+        </li>
+      )}
+    </ol>
+  </nav>
+)}

@@ -1,0 +1,36 @@
+---
+// Top of a post (Figma 118:2589 date, 118:2588 h1, 118:2587 cover): the page's only h1, at the
+// h2 size. The cover is the LCP candidate; flatter than the design's 1170/566 on phones.
+import { formatDate, isoDate } from '../../lib/dates';
+import Container from '../ui/Container.astro';
+import PostCover from './PostCover.astro';
+
+interface Props {
+  title: string;
+  date: Date;
+  cover?: { src: string; alt: string } | undefined;
+  locale: string;
+}
+
+const { title, date, cover, locale } = Astro.props;
+---
+
+<header>
+  <Container class="pt-10 md:pt-16 lg:pt-32">
+    <time
+      datetime={isoDate(date)}
+      class="block text-body leading-tight text-purple-500 md:text-body-xl md:leading-tight"
+    >
+      {formatDate(date, locale)}
+    </time>
+    <h1 class="mt-3 max-w-[62.25rem] text-h4 text-ink-800 md:text-h3 lg:text-h2">{title}</h1>
+    <PostCover
+      {cover}
+      glyph="lg"
+      class="mt-6 aspect-[16/10] w-full md:aspect-video lg:mt-7 lg:aspect-[1170/566]"
+      widths={[768, 1170, 2340]}
+      sizes="(min-width: 1170px) 1170px, 100vw"
+      priority
+    />
+  </Container>
+</header>

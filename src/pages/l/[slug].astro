@@ -1,0 +1,51 @@
+---
+// Campaign landing variant (brief §4.4, §5): src/content/landing/<slug>.md. Its hero copy and
+// images from the frontmatter, then the sections of the product's own page (home for energie),
+// with every CTA to the form preselecting the product. Always noindex (brief §11). The ad's
+// query string is carried over to the form links in the browser (src/scripts/keep-query.ts).
+// With no Markdown files there are no /l/ routes.
+import { getCollection } from 'astro:content';
+
+import Sections from '../../components/sections/Sections.astro';
+import Page from '../../layouts/Page.astro';
+import { landingBasePage, landingSections } from '../../lib/landing';
+import { failOnPlaceholders, loadPage, overlapsFooter } from '../../lib/pages';
+
+export async function getStaticPaths() {
+  const variants = await getCollection('landing');
+  return variants.map((variant) => ({ params: { slug: variant.id }, props: { variant } }));
+}
+
+const { variant } = Astro.props;
+const { data } = variant;
+
+// The Markdown body (optional extra text, brief §4.4) needs the Prose component, which isn't
+// here yet: fail instead of silently dropping copy.
+if (variant.body?.trim()) {
+  throw new Error(
+    `src/content/landing/${variant.id}.md: a Markdown body is not rendered yet; move the copy into the frontmatter`,
+  );
+}
+
+const base = await loadPage(landingBasePage[data.product]);
+// Unit tests check that a composed page passes the page schema (tests/unit/landing.test.ts).
+const page = {
+  seo: { ...data.seo, noindex: true },
+  sections: landingSections(data, base.sections),
+};
+// The product page's placeholders count, unless the variant replaced them (its own mascot).
+failOnPlaceholders(`landing/${variant.id}`, page);
+---
+
+<Page
+  title={page.seo.title}
+  description={page.seo.description}
+  noindex
+  footerOverlap={overlapsFooter(page.sections)}
+>
+  <Sections sections={page.sections} />
+</Page>
+
+<script>
+  import '../../scripts/keep-query';
+</script>
