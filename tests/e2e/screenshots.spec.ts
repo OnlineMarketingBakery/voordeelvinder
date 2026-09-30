@@ -4,6 +4,8 @@ import { test } from '@playwright/test';
 // test-results/screenshots/ and uploaded as a CI artifact.
 const PAGES = [
   { name: 'home', path: '/' },
+  { name: 'zonnepanelen', path: '/zonnepanelen' },
+  { name: 'thuisbatterij', path: '/thuisbatterij' },
   { name: 'styleguide', path: '/styleguide' },
 ];
 

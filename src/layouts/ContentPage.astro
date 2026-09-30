@@ -1,0 +1,30 @@
+---
+// A page built from src/content/pages/<id>.json: its SEO fields and section blocks, the
+// FAQPage JSON-LD of the questions it shows, and the footer overlap when it ends in a CTA band
+// that reaches into the footer. getPage() fails a production build on placeholders.
+import Sections from '../components/sections/Sections.astro';
+import { visibleFaqItems } from '../lib/faq';
+import { getPage, overlapsFooter } from '../lib/pages';
+import { faqPage } from '../lib/seo/structured-data';
+import Page from './Page.astro';
+
+interface Props {
+  /** The content file, e.g. "zonnepanelen" for src/content/pages/zonnepanelen.json. */
+  id: string;
+  /** Page-specific schema.org objects, before the FAQPage (the homepage's Organization, WebSite). */
+  structuredData?: object[];
+}
+
+const { id, structuredData = [] } = Astro.props;
+const page = await getPage(id);
+const faq = faqPage(visibleFaqItems(page.sections));
+---
+
+<Page
+  title={page.seo.title}
+  description={page.seo.description}
+  structuredData={[...structuredData, ...(faq ? [faq] : [])]}
+  footerOverlap={overlapsFooter(page.sections)}
+>
+  <Sections sections={page.sections} />
+</Page>

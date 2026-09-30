@@ -63,4 +63,15 @@ export const page = z
         message: `duplicate block id "${duplicate}"`,
       });
     }
+    // A band that reaches into the footer must be the last thing on the page.
+    const lastVisible = value.sections.findLastIndex((s) => !s.hidden);
+    value.sections.forEach((s, index) => {
+      if (s.type === 'ctaBand' && s.overlapFooter && !s.hidden && index !== lastVisible) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['sections', index, 'overlapFooter'],
+          message: 'only on the last visible block (it overlaps the footer)',
+        });
+      }
+    });
   });

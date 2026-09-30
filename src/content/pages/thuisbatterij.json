@@ -1,0 +1,164 @@
+{
+  "seo": {
+    "title": "Thuisbatterij vergelijken",
+    "description": "Een thuisbatterij maakt je nog onafhankelijker van het net. VoordeelVinder vergelijkt de beste thuisbatterijen voor jouw situatie."
+  },
+  "sections": [
+    {
+      "type": "hero",
+      "variant": "product",
+      "title": "Sla je energie op.\nGebruik het wanneer jij wil.",
+      "body": "Een thuisbatterij maakt je nog onafhankelijker van het net. Sla de stroom op die je zonnepanelen overdag produceren en gebruik die 's avonds — wanneer het jou uitkomt. VoordeelVinder vergelijkt de beste thuisbatterijen voor jouw situatie.",
+      "cta": {
+        "label": "Ontdek jouw voordeel",
+        "href": "/vergelijken/thuisbatterij"
+      },
+      "art": {
+        "preset": "battery",
+        "product": {
+          "src": "illustrations/hero-battery-units",
+          "alt": ""
+        },
+        "mascot": {
+          "src": "mascot/fox-waving",
+          "alt": "",
+          "mirror": true
+        }
+      }
+    },
+    {
+      "type": "features",
+      "title": "Meer uit je eigen energie halen",
+      "intro": "Met alleen zonnepanelen profiteer je vooral overdag. Een thuisbatterij laat je ook 's avonds en 's nachts genieten van je eigen stroom — en verkleint je afhankelijkheid van het net nog verder.",
+      "cardStyle": "solid",
+      "items": [
+        {
+          "icon": "renewable-energy",
+          "tone": "purple",
+          "title": "Maximale zelfvoorzienendheid",
+          "body": "Gebruik de energie die je zelf opwekt ook als de zon niet schijnt. Jij bepaalt wanneer en hoe je je eigen stroom verbruikt."
+        },
+        {
+          "icon": "home-bolt",
+          "tone": "lime",
+          "title": "Minder terugleveren aan het net",
+          "body": "Sla op wat je anders zou teruggeven en verbruik het zelf. Zo haal je het maximale rendement uit je zonnepanelen."
+        },
+        {
+          "icon": "shield-bolt",
+          "tone": "purple",
+          "title": "Buffer bij stroompieken",
+          "body": "Bescherm jezelf tegen dure piekuurtarieven. Je batterij levert stroom op het moment dat het er echt toe doet."
+        }
+      ]
+    },
+    {
+      "type": "steps",
+      "id": "hoe-het-werkt",
+      "align": "center",
+      "title": "Zo werkt het",
+      "intro": "Drie stappen naar meer energie-onafhankelijkheid.",
+      "items": [
+        {
+          "label": "Stap 01",
+          "tone": "purple",
+          "icon": "contract",
+          "title": "Vertel ons over je situatie",
+          "body": "Heb je al zonnepanelen? Wat is je gemiddeld dagelijks verbruik? Een schatting volstaat om te starten."
+        },
+        {
+          "label": "Stap 02",
+          "tone": "lime",
+          "icon": "compare",
+          "title": "Wij zoeken de beste match",
+          "body": "We vergelijken capaciteit, technologie en prijs voor jouw woning. Transparant, zonder voorkeur voor één merk of leverancier."
+        },
+        {
+          "label": "Stap 03",
+          "tone": "purple",
+          "icon": "decision-making",
+          "title": "Jij kiest, wij begeleiden",
+          "body": "Helder overzicht, geen druk. Jij beslist wanneer je de stap zet. Wij regelen de rest — van offerte tot installatie."
+        }
+      ]
+    },
+    {
+      "type": "benefits",
+      "layout": "list",
+      "background": "clouds",
+      "title": "Wat je van ons mag verwachten",
+      "intro": "Eerlijk advies, heldere vergelijking en begeleiding op jouw tempo.",
+      "image": {
+        "src": "mascot/fox-cheering",
+        "alt": ""
+      },
+      "items": [
+        {
+          "icon": "advice",
+          "title": "Onafhankelijk advies",
+          "body": "Wij werken niet voor één fabrikant. Je krijgt een eerlijk overzicht van de beste thuisbatterij voor jouw situatie.",
+          "tone": "purple"
+        },
+        {
+          "icon": "label",
+          "title": "Vergelijk capaciteit en prijs",
+          "body": "Batterijen verschillen sterk. Wij leggen de technische verschillen helder uit zodat je een weloverwogen keuze maakt.",
+          "tone": "lime"
+        },
+        {
+          "icon": "book",
+          "title": "Optimaal gecombineerd",
+          "body": "Zonnepanelen én thuisbatterij? We berekenen het gecombineerde voordeel in één overzicht — zonder jargon.",
+          "tone": "purple"
+        },
+        {
+          "icon": "check",
+          "title": "Gratis en vrijblijvend",
+          "body": "Vergelijken kost je niets. Je beslist pas op het einde of je verder wil gaan.",
+          "tone": "lime"
+        }
+      ]
+    },
+    {
+      "type": "faq",
+      "id": "veelgestelde-vragen",
+      "tone": "white",
+      "eyebrow": "Veelgestelde vragen",
+      "title": "Veelgestelde vraag",
+      "items": [
+        {
+          "question": "Heb ik zonnepanelen nodig voor een thuisbatterij?",
+          "answer": null
+        },
+        {
+          "question": "Welke capaciteit heb ik nodig?",
+          "answer": "Dat hangt af van je dagelijks verbruik en het aantal zonnepanelen. Op basis van jouw situatie berekenen we welke capaciteit het meeste rendement oplevert.",
+          "open": true
+        },
+        {
+          "question": "Wat kost een thuisbatterij gemiddeld?",
+          "answer": null
+        },
+        {
+          "question": "Zijn er premies of subsidies beschikbaar?",
+          "answer": null
+        },
+        {
+          "question": "Hoe lang gaat een thuisbatterij mee?",
+          "answer": null
+        }
+      ]
+    },
+    {
+      "type": "ctaBand",
+      "tone": "lime",
+      "title": "Ontdek wat een thuisbatterij voor jou betekent.",
+      "body": "In een paar minuten zie je welke thuisbatterij het beste past bij jouw situatie en verbruik. Gratis, vrijblijvend en zonder verkoopgesprek.",
+      "cta": {
+        "label": "Start je berekening",
+        "href": "/vergelijken/thuisbatterij"
+      },
+      "overlapFooter": true
+    }
+  ]
+}

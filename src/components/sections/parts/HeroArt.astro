@@ -54,6 +54,26 @@ const layouts = {
 
 const layout = layouts[preset];
 const vector = mascot.src.endsWith('fox-waving');
+
+// The product image's rendered width per breakpoint (art box × its share), and which layer is
+// the LCP image: the mascot raster on home, the product art on the product pages (whose fox is
+// a small SVG). Art boxes (Hero.astro): home 778 (xl), solar 555, battery 523; below lg at most
+// 480 (md) and 358 (phones).
+const productImage = {
+  home: {
+    widths: [483, 725, 966],
+    sizes: '(min-width: 1280px) 483px, (min-width: 1024px) 32vw, (min-width: 768px) 340px, 62vw',
+  },
+  solar: {
+    widths: [285, 441, 570, 882],
+    sizes: '(min-width: 1280px) 441px, (min-width: 1024px) 30vw, (min-width: 768px) 382px, 285px',
+  },
+  battery: {
+    widths: [358, 523, 716, 1046],
+    sizes: '(min-width: 1280px) 523px, (min-width: 1024px) 36vw, (min-width: 768px) 480px, 358px',
+  },
+}[preset];
+const productIsLcp = preset !== 'home';
 const ringEntrance =
   'motion-safe:animate-[ring-in_var(--motion-duration-slow)_var(--ease-out)_120ms_both]';
 ---
@@ -79,9 +99,10 @@ const ringEntrance =
     <Illustration
       src={product.src}
       alt={product.alt}
-      widths={[483, 725, 966]}
-      sizes="(min-width: 1280px) 483px, (min-width: 1024px) 32vw, (min-width: 768px) 340px, 62vw"
+      widths={productImage.widths}
+      sizes={productImage.sizes}
       eager
+      priority={productIsLcp}
       class="h-auto w-full"
     />
   </div>
@@ -91,7 +112,8 @@ const ringEntrance =
       alt={mascot.alt}
       widths={[308, 460, 615]}
       sizes="(min-width: 1280px) 615px, (min-width: 1024px) 41vw, (min-width: 768px) 430px, 79vw"
-      priority
+      eager
+      priority={!productIsLcp}
       mirror={mascot.mirror ?? false}
       class="h-auto w-full"
     />

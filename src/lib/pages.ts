@@ -1,7 +1,15 @@
 // Page content helpers (src/content/pages/*.json).
 import { type CollectionEntry, getEntry } from 'astro:content';
 
+import type { Section } from '../schemas/page';
+
 export type PageData = CollectionEntry<'pages'>['data'];
+
+/** The page ends in a CTA band that reaches into the footer (Page `footerOverlap`). */
+export function overlapsFooter(sections: Section[]): boolean {
+  const last = sections.findLast((section) => !section.hidden);
+  return last?.type === 'ctaBand' && last.overlapFooter === true;
+}
 
 /**
  * Placeholder content that must never reach production (brief §2): a hero image marked

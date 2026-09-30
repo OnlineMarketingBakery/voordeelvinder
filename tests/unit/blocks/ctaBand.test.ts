@@ -59,8 +59,13 @@ describe('ctaBand block', () => {
     expect(parse({ ...homeBand, subtitle: 'x' })).toBe(false);
     expect(parse({ ...homeBand, eyebrow: 'x' })).toBe(false);
     expect(parse({ ...homeBand, cta: { ...homeBand.cta, variant: 'white' } })).toBe(false);
-    // Overlapping the footer is not part of this block yet.
-    expect(parse({ ...productBand, overlapFooter: true })).toBe(false);
+  });
+
+  it('reaches into the footer only as the lime band (a purple one would vanish into it)', () => {
+    expect(parse({ ...productBand, overlapFooter: true })).toBe(true);
+    expect(parse({ ...productBand, overlapFooter: false })).toBe(true);
+    expect(parse({ ...homeBand, overlapFooter: true })).toBe(false);
+    expect(parse({ ...productBand, overlapFooter: 'yes' })).toBe(false);
   });
 
   it('rejects missing or bad values', () => {
@@ -126,6 +131,14 @@ describe('CtaBand component', () => {
     expect(html).toMatch(/<div class="[^"]*\bcta-band-rings\b[^"]*"[^>]*aria-hidden="true"/);
     expect(count(html, /<circle /g)).toBe(3);
     expect(html).not.toContain('<img');
+  });
+
+  it('pulls the footer up under the band only with overlapFooter, and stays above it', async () => {
+    const section = (html: string) => html.match(/<section [^>]*>/)![0];
+    const overlapping = section(await render({ ...productBand, overlapFooter: true }));
+    expect(overlapping).toMatch(/class="relative z-10 [^"]* -mb-12 lg:-mb-\[81px\]"/);
+    expect(section(await render(productBand))).not.toContain('-mb-');
+    expect(section(await render(homeBand))).not.toContain('-mb-');
   });
 
   it('uses the anchor id from content for the section and its heading', async () => {
