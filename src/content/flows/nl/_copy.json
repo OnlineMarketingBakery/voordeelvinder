@@ -1,6 +1,8 @@
 {
   "buttons": { "back": "Terug", "next": "Volgende", "submit": "Verstuur" },
+  "reset": { "button": "Opnieuw beginnen", "done": "Formulier gewist", "undo": "Ongedaan maken" },
   "progress": "Stap {step} van {total}",
+  "progressJump": "Ga terug naar stap {step}: {title}",
   "yesNo": { "yes": "Ja", "no": "Nee" },
   "phonePrefix": "+32",
   "panel": {

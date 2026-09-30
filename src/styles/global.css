@@ -149,13 +149,89 @@
 @theme static {
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* The one spring (stiffness 400, damping 32) for CSS: springEasing(spring) in
+     src/lib/form/motion.ts as a linear() easing over the time it takes to settle. */
+  --ease-spring: linear(
+    0,
+    0.0606,
+    0.1966,
+    0.3583,
+    0.516,
+    0.6542,
+    0.7667,
+    0.853,
+    0.9157,
+    0.9587,
+    0.9865,
+    1.0029,
+    1.0114,
+    1.0148,
+    1.015,
+    1.0134,
+    1.0111,
+    1.0086,
+    1.0064,
+    1.0044,
+    1.0029,
+    1.0018,
+    1.001,
+    1.0004,
+    1
+  );
   --motion-duration-fast: 150ms;
   --motion-duration-base: 250ms;
   --motion-duration-slow: 400ms;
   --motion-duration-page: 200ms; /* page crossfade ("about 200 ms") */
+  --motion-duration-spring: 464ms; /* the spring above, settled */
   --motion-distance-1: 8px;
   --motion-distance-2: 16px;
   --motion-distance-3: 24px;
+}
+
+/* linear() needs Safari 17.2+: older browsers run the spring as the ease-out token. */
+@supports not (transition-timing-function: linear(0, 1)) {
+  :root {
+    --ease-spring: var(--ease-out);
+  }
+}
+
+/*
+ * The form's selection state (docs/MOTION.md "Answer cards"): an element inside the box that
+ * directly holds a checked radio or checkbox (the card, chip or checkbox label, and the visual
+ * copy of an outgoing step, which keeps the inputs). `pick-hover` and `pick-focus` are that box
+ * hovered or holding keyboard focus. Declared in this order so a picked style wins over a
+ * hover style of the same property (later variants come later in the CSS).
+ */
+@custom-variant pick-hover {
+  @media (hover: hover) {
+    :where(:has(> input):hover) & {
+      @slot;
+    }
+  }
+}
+@custom-variant pick-focus (:where(:has(> input:focus-visible)) &);
+@custom-variant picked (:where(:has(> input:checked)) &);
+
+/*
+ * The selection fill: a layer of the box (which clips it) scaled in from the left, on the
+ * spring when picked, back at `fast` when not. Reduced motion: it switches at once.
+ */
+@utility sweep {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  scale: 0 1;
+  transition: scale var(--motion-duration-fast) var(--ease-out);
+
+  :where(:has(> input:checked)) & {
+    scale: 1 1;
+    transition-duration: var(--motion-duration-spring);
+    transition-timing-function: var(--ease-spring);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 /* The font's CSS variable comes from Astro's Fonts API (astro.config.ts). */
@@ -311,6 +387,48 @@
     :where(.group):hover > & {
       translate: 0 calc(-1 * var(--motion-distance-1) / 2);
     }
+  }
+}
+
+/*
+ * Form motion (docs/MOTION.md; the React side is src/components/form/motion.tsx). Keyframes the
+ * form's CSS uses; each is applied under `motion-safe:` or switched off with reduced motion.
+ */
+
+/* The light that drifts across the purple panel, very slowly (a pseudo-element, transform only). */
+@keyframes form-ambient {
+  0% {
+    translate: -45% -35%;
+  }
+
+  50% {
+    translate: 55% 10%;
+  }
+
+  100% {
+    translate: 5% 60%;
+  }
+}
+
+/* "Verstuur" on the last step: one ring that grows out of the button and fades. */
+@keyframes form-ping {
+  from {
+    opacity: 0.7;
+    scale: 1;
+  }
+
+  to {
+    opacity: 0;
+    scale: 1.08 1.4;
+  }
+}
+
+/* The steps bar's label (the step you drag or point to): rises in (a transform: its own
+   translate places it over the track). */
+@keyframes form-label-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--motion-distance-1) / 2));
   }
 }
 

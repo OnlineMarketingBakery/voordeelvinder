@@ -1,9 +1,17 @@
 // select: a native <select> styled like Figma 89:8432 (74 px, chevron #7051ED). Native, so the
-// phone's own picker opens, also in in-app browsers (brief §7.6).
+// phone's own picker opens, also in in-app browsers (brief §7.6). The focus ring grows in like
+// the inputs' (FocusRing).
 import type { Field } from '../../../lib/flow/schema';
 import { domId, fieldLabel, UI_ICONS } from '../../../lib/form/labels';
 import { cx, MaskIcon } from '../ui';
-import { describedBy, FieldHint, FieldMessage, labelClass, type FieldProps } from './shared';
+import {
+  describedBy,
+  FieldHint,
+  FieldMessage,
+  FocusRing,
+  labelClass,
+  type FieldProps,
+} from './shared';
 
 type SelectFieldType = Extract<Field, { type: 'select' }>;
 
@@ -39,7 +47,8 @@ export function SelectField({
           aria-invalid={error ? 'true' : undefined}
           aria-required={field.required ? 'true' : undefined}
           className={cx(
-            'h-[74px] w-full min-w-0 cursor-pointer appearance-none truncate rounded-lg border bg-lavender-50 pr-14 pl-6 text-body-lg',
+            'peer h-[74px] w-full min-w-0 cursor-pointer appearance-none truncate rounded-lg border bg-lavender-50 pr-14 pl-6 text-body-lg focus-visible:outline-hidden',
+            'transition-[border-color] duration-(--motion-duration-fast) ease-out',
             error ? 'border-danger' : 'border-control-border',
             selected === '' ? 'text-ink-placeholder' : 'text-ink-900',
           )}
@@ -53,6 +62,7 @@ export function SelectField({
             </option>
           ))}
         </select>
+        <FocusRing />
         <MaskIcon
           src={icons[UI_ICONS.next]}
           className="pointer-events-none absolute top-1/2 right-6 size-6 -translate-y-1/2 rotate-90 text-purple-600"

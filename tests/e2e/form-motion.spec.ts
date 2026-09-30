@@ -4,7 +4,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import copy from '../../src/content/flows/nl/_copy.json' with { type: 'json' };
-import { AUTO_ADVANCE_DELAY_MS } from '../../src/lib/form/motion';
+import { AUTO_ADVANCE_DELAY_MS, AUTO_ADVANCE_GUARD_MS } from '../../src/lib/form/motion';
 import { stubLead, stubTurnstile } from '../support/form-submit';
 
 const { buttons } = copy;
@@ -82,6 +82,12 @@ async function tapThenClick(page: Page, card: string, button: string) {
 /** Longer than the auto-advance delay plus a step change: enough to see it didn't happen. */
 const settle = (page: Page) => page.waitForTimeout(AUTO_ADVANCE_DELAY_MS * 3);
 
+/**
+ * A tap within AUTO_ADVANCE_GUARD_MS of an auto-advance counts as the second half of a double
+ * tap and doesn't move on again; people take longer to read the new step. Wait it out.
+ */
+const readStep = (page: Page) => page.waitForTimeout(AUTO_ADVANCE_GUARD_MS);
+
 async function fillContact(page: Page) {
   await control(page, 'Voornaam').fill('Jan');
   await control(page, 'Achternaam').fill('Peeters');
@@ -94,7 +100,10 @@ async function fillContact(page: Page) {
   await expect(terms).toBeChecked();
 }
 
-/** The solar flow by taps: auto-advance where the step has one choice, "Volgende" elsewhere. */
+/**
+ * The solar flow by taps: auto-advance where every question of the step is a choice (once all
+ * are answered), "Volgende" elsewhere.
+ */
 async function solarByTaps(page: Page) {
   await open(page, '/vergelijken/zonnepanelen');
   await control(page, 'Wat is je postcode?').fill('3000');
@@ -103,13 +112,13 @@ async function solarByTaps(page: Page) {
   await tap(page, 'Eigenaar');
   await expect(heading(page)).toHaveText('Wat voor dak heb je?');
   await expect(heading(page)).toBeFocused();
-  // Two questions: no auto-advance.
+  // Two questions: the first answer doesn't move on, the second does.
   await tap(page, 'Hellend dak');
-  await tap(page, 'Zuid');
   await settle(page);
   await expect(heading(page)).toHaveText('Wat voor dak heb je?');
-  await next(page).click();
+  await tap(page, 'Zuid');
   await expect(heading(page)).toHaveText('Ken je je jaarlijks energieverbruik?');
+  await readStep(page);
   await tap(page, 'Ja');
   await expect(heading(page)).toHaveText('Je jaarverbruik');
   await control(page, 'Elektriciteit (kWh per jaar)').fill('3500');
@@ -184,6 +193,65 @@ test.describe('form motion: auto-advance', () => {
     await expect(heading(page)).toHaveText('Heb je een digitale meter?');
   });
 
+  test('a step with two questions moves on once both are tapped (digital meter + solar)', async ({
+    page,
+  }) => {
+    await open(page, '/vergelijken/energie?energie=both');
+    await control(page, 'Wat is je postcode?').fill('9000');
+    await next(page).click();
+    await expect(heading(page)).toHaveText('Wie is je huidige energieleverancier?');
+    await control(page, 'Wie is je huidige energieleverancier?').selectOption('luminus');
+    await next(page).click();
+    await expect(heading(page)).toHaveText('Wat voor meter heb je?');
+    await tap(page, 'Dagmeter (enkelvoudig tarief)');
+    await expect(heading(page)).toHaveText('Heb je een digitale meter?');
+    await readStep(page);
+    // One of the two: the step stays.
+    await tap(page, 'Ja', 'Heb je een digitale meter?');
+    await settle(page);
+    await expect(heading(page)).toHaveText('Heb je een digitale meter?');
+    // Both: it moves on like "Volgende" (focus on the new title, "Volgende" still there).
+    await tap(page, 'Nee', 'Heb je zonnepanelen?');
+    await expect(heading(page)).toHaveText('Heb je een sociaal tarief?');
+    await expect(heading(page)).toBeFocused();
+    await expect(next(page)).toBeVisible();
+    // The tariff step (yes/no + three cards) does the same, in either order.
+    await readStep(page);
+    await tap(page, 'Weet ik niet', 'Heb je een budgetmeter?');
+    await settle(page);
+    await expect(heading(page)).toHaveText('Heb je een sociaal tarief?');
+    await tap(page, 'Nee', 'Heb je een sociaal tarief?');
+    await expect(heading(page)).toHaveText('Ken je je jaarlijks energieverbruik?');
+    // Back to the step: both still answered, and a new answer moves on again.
+    await page.getByRole('button', { name: buttons.back, exact: true }).click();
+    await expect(heading(page)).toHaveText('Heb je een sociaal tarief?');
+    await expect(radio(page, 'Weet ik niet', 'Heb je een budgetmeter?')).toBeChecked();
+    await tap(page, 'Nee', 'Heb je een budgetmeter?');
+    await expect(heading(page)).toHaveText('Ken je je jaarlijks energieverbruik?');
+  });
+
+  test('never on keyboard input on a two-question step', async ({ page }) => {
+    await open(page, '/vergelijken/zonnepanelen');
+    await control(page, 'Wat is je postcode?').fill('3000');
+    await next(page).click();
+    await expect(heading(page)).toHaveText('Ben je eigenaar van de woning?');
+    await tap(page, 'Huurder');
+    await expect(heading(page)).toHaveText('Wat voor dak heb je?');
+    for (const [name, group] of [
+      ['Plat dak', 'Wat voor dak heb je?'],
+      ['Oost-West', 'Waar is je dak op gericht?'],
+    ] as const) {
+      const option = radio(page, name, group);
+      await option.focus();
+      await page.keyboard.press('Space');
+      await expect(option).toBeChecked();
+    }
+    await settle(page);
+    await expect(heading(page)).toHaveText('Wat voor dak heb je?');
+    await next(page).click();
+    await expect(heading(page)).toHaveText('Ken je je jaarlijks energieverbruik?');
+  });
+
   test('"Terug" right after a click cancels the pending step', async ({ page }) => {
     await open(page, '/vergelijken/zonnepanelen');
     await control(page, 'Wat is je postcode?').fill('3000');
@@ -218,8 +286,10 @@ test.describe('form motion: the double-tap guard', () => {
     await tap(page, 'Eigenaar');
     await expect(heading(page)).toHaveText('Wat voor dak heb je?');
     await tap(page, 'Hellend dak');
+    await readStep(page);
     await tap(page, 'Zuid');
-    await next(page).click();
+    await expect(heading(page)).toHaveText('Ken je je jaarlijks energieverbruik?');
+    await readStep(page);
     await tap(page, 'Ja');
     // Straight after that auto-advance: answer, "Volgende" and a tap, well within the guard.
     await expect(heading(page)).toHaveText('Je jaarverbruik');
@@ -265,13 +335,11 @@ test.describe('form motion: hydration', () => {
   /** Boxes of the parts that could move at hydration, rounded to whole pixels. */
   const boxes = (page: Page) =>
     page.evaluate(() =>
-      // The form card, the progress fill (translateX) and the step title.
-      ['section[data-morph="form-card"]', '[class*="bg-purple-700/13"] > div', 'main h2'].map(
-        (selector) => {
-          const box = document.querySelector(selector)!.getBoundingClientRect();
-          return [box.x, box.y, box.width, box.height].map(Math.round);
-        },
-      ),
+      // The form card, the steps bar's pill (a translate) and the step title.
+      ['section[data-morph="form-card"]', '[data-steps-pill]', 'main h2'].map((selector) => {
+        const box = document.querySelector(selector)!.getBoundingClientRect();
+        return [box.x, box.y, box.width, box.height].map(Math.round);
+      }),
     );
 
   test('the island hydrates without moving anything', async ({ browser, page, baseURL }) => {

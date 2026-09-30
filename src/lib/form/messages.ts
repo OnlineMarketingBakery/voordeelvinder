@@ -49,6 +49,17 @@ export function progressLabel(
   return fill(copy.progress, { step, total });
 }
 
+/**
+ * The name of a completed step on the progress bar, "Ga terug naar stap 2: Wat is je postcode?":
+ * `index` is its 0-based place on the visitor's path, so {step} is index + 1 (the X of "Stap X").
+ */
+export function progressJumpLabel(
+  copy: Pick<FormCopy, 'progressJump'>,
+  { index, title }: { index: number; title: string },
+): string {
+  return fill(copy.progressJump, { step: index + 1, title });
+}
+
 /** "Bedoel je jan@gmail.com?". */
 export function suggestionLabel(
   copy: Pick<FormCopy, 'emailSuggestion'>,

@@ -1,6 +1,7 @@
 // day_slot, "Wanneer mogen we je bellen?" (brief §7.5): two linked single-choice groups, the
 // days and the time slots, as chips in the answer-card style. Not designed (CONTENT-TODO 5.6):
-// a proposal to show on staging.
+// a proposal to show on staging. The answer cards' selection in miniature (docs/MOTION.md): the
+// purple fill sweeps in from the left and the text turns white; the chip gives on press.
 import type { Field } from '../../../lib/flow/schema';
 import type { DaySlotAnswer } from '../../../lib/flow/types';
 import { domId, fieldLabel } from '../../../lib/form/labels';
@@ -48,13 +49,7 @@ function Chips({
         {options.map((option) => (
           <label
             key={option.code}
-            className={cx(
-              'relative flex min-h-11 cursor-pointer items-center justify-center rounded-lg border bg-lavender-50 px-3 text-center text-body text-ink-900',
-              'transition-[border-color,background-color,color] duration-(--motion-duration-fast) ease-out',
-              'hover:border-control-border has-checked:border-purple-600 has-checked:bg-purple-600 has-checked:text-white',
-              'has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-purple-500',
-              invalid ? 'border-danger' : 'border-lavender-300',
-            )}
+            className="relative block cursor-pointer rounded-lg transition-[scale] duration-(--motion-duration-fast) ease-out select-none motion-safe:active:scale-[0.96]"
           >
             <input
               type="radio"
@@ -67,7 +62,22 @@ function Chips({
               // On each chip too: focus lands on a radio (see ChoiceField).
               aria-describedby={described}
             />
-            {option.label}
+            {/* The chip's face: border, focus ring and the sweep it clips. */}
+            <span
+              aria-hidden="true"
+              className={cx(
+                'absolute inset-0 overflow-clip rounded-lg border bg-lavender-50',
+                'transition-[border-color] duration-(--motion-duration-fast) ease-out',
+                'pick-hover:border-control-border picked:border-purple-600',
+                'pick-focus:outline-2 pick-focus:outline-offset-2 pick-focus:outline-purple-500',
+                invalid ? 'border-danger' : 'border-lavender-300',
+              )}
+            >
+              <span className="sweep bg-purple-600" />
+            </span>
+            <span className="relative flex min-h-11 items-center justify-center px-3 text-center text-body text-ink-900 transition-[color] duration-(--motion-duration-fast) ease-out picked:text-white">
+              {option.label}
+            </span>
           </label>
         ))}
       </div>

@@ -23,16 +23,16 @@ import {
   isNewShake,
   pickVia,
   POINTER_PICK_WINDOW_MS,
-  progressOffset,
   progressParts,
-  progressPercent,
-  progressTransition,
   revealVariants,
   SHAKE_PX,
   shakeKeyframes,
   shouldAutoAdvance,
   springEasing,
-  stepVariants,
+  pushDistance,
+  STEP_SLIDE_PX,
+  stepEnterFrames,
+  stepExitFrames,
   travelBetween,
   TRAVEL,
   withinAutoAdvanceGuard,
@@ -48,12 +48,43 @@ describe('direction of travel', () => {
     expect(travelBetween(4, 4)).toBe(TRAVEL.none);
   });
 
-  it('slides forward steps in from the right and "Terug" from the left', () => {
-    const { enter } = stepVariants(false);
-    expect(enter(TRAVEL.forward)).toEqual({ opacity: 0, x: distance[3] });
-    expect(enter(TRAVEL.back)).toEqual({ opacity: 0, x: -distance[3] });
-    expect(enter(TRAVEL.none)).toEqual({ opacity: 0, x: 0 });
-    expect(stepVariants(false).center.transition).toMatchObject({ x: spring });
+  it('slides forward steps in from the right and "Terug" from the left, the old one out', () => {
+    expect(STEP_SLIDE_PX).toBe(distance[3] * 2);
+    expect(stepEnterFrames(TRAVEL.forward, false)).toEqual([
+      { transform: `translateX(${STEP_SLIDE_PX}px)` },
+      { transform: 'none' },
+    ]);
+    expect(stepEnterFrames(TRAVEL.back, false)?.[0]).toEqual({
+      transform: `translateX(${-STEP_SLIDE_PX}px)`,
+    });
+    // A restore after hydration doesn't move.
+    expect(stepEnterFrames(TRAVEL.none, false)).toBeNull();
+    // The outgoing step leaves the other way, from where it is on screen.
+    expect(stepExitFrames(TRAVEL.forward)).toEqual([
+      { transform: 'none' },
+      { transform: `translateX(${-STEP_SLIDE_PX}px)` },
+    ]);
+    expect(stepExitFrames(TRAVEL.back, 'matrix(1, 0, 0, 1, 12, 0)')).toEqual([
+      { transform: 'matrix(1, 0, 0, 1, 12, 0)' },
+      { transform: `translateX(${STEP_SLIDE_PX}px)` },
+    ]);
+  });
+
+  it('pushes the steps across the whole form card, so they never overlap', () => {
+    expect(pushDistance(612.4)).toBe(612);
+    // Not measured (no card): the short slide.
+    expect(pushDistance(undefined)).toBe(STEP_SLIDE_PX);
+    expect(pushDistance(0)).toBe(STEP_SLIDE_PX);
+    expect(stepEnterFrames(TRAVEL.forward, false, 358)).toEqual([
+      { transform: 'translateX(358px)' },
+      { transform: 'none' },
+    ]);
+    expect(stepExitFrames(TRAVEL.forward, 'none', 358)).toEqual([
+      { transform: 'none' },
+      { transform: 'translateX(-358px)' },
+    ]);
+    expect(stepExitFrames(TRAVEL.back, 'none', 358)[1]).toEqual({ transform: 'translateX(358px)' });
+    expect(stepEnterFrames(TRAVEL.back, true, 358)).toBeNull();
   });
 
   it('runs the card height on the token spring as a linear() easing', () => {
@@ -101,6 +132,8 @@ describe('auto-advance guard', () => {
     via: 'pointer',
     fieldId: 'meter_type',
     fields: [choice],
+    complete: true,
+    wasComplete: false,
     isLast: false,
     busy: false,
   };
@@ -127,14 +160,36 @@ describe('auto-advance guard', () => {
     expect(shouldAutoAdvance({ ...base, busy: true })).toBe(false);
   });
 
-  it('waits for "Volgende" on steps with more than one question or other field types', () => {
+  it('advances a step of several choice questions once all are answered', () => {
     const twoQuestions = [
       { id: 'digital_meter', type: 'yes_no' as const },
       { id: 'has_solar', type: 'yes_no' as const },
     ];
-    expect(shouldAutoAdvance({ ...base, fieldId: 'digital_meter', fields: twoQuestions })).toBe(
-      false,
-    );
+    const both = { ...base, fieldId: 'has_solar', fields: twoQuestions };
+    expect(shouldAutoAdvance(both)).toBe(true);
+    // The first answer of the two leaves the step open: no move yet.
+    expect(shouldAutoAdvance({ ...both, fieldId: 'digital_meter', complete: false })).toBe(false);
+    // Answered in the other order: the first question's tap completes the step.
+    expect(shouldAutoAdvance({ ...both, fieldId: 'digital_meter' })).toBe(true);
+    // Back on the complete step: changing the first answer waits (the second may change too),
+    // changing the last one moves on, and so does a single question.
+    expect(shouldAutoAdvance({ ...both, fieldId: 'digital_meter', wasComplete: true })).toBe(false);
+    expect(shouldAutoAdvance({ ...both, wasComplete: true })).toBe(true);
+    expect(shouldAutoAdvance({ ...base, wasComplete: true })).toBe(true);
+    // A single choice and a yes/no together (the tariff step) count the same.
+    expect(
+      shouldAutoAdvance({
+        ...base,
+        fieldId: 'budget_meter',
+        fields: [
+          { id: 'social_tariff', type: 'yes_no' },
+          { id: 'budget_meter', type: 'single_choice' },
+        ],
+      }),
+    ).toBe(true);
+  });
+
+  it('waits for "Volgende" on steps with any other field type, or an incomplete step', () => {
     expect(
       shouldAutoAdvance({
         ...base,
@@ -142,6 +197,19 @@ describe('auto-advance guard', () => {
         fields: [{ id: 'supplier', type: 'select' }],
       }),
     ).toBe(false);
+    // The business bands next to the postcode and its checkbox: typing fields keep "Volgende".
+    expect(
+      shouldAutoAdvance({
+        ...base,
+        fieldId: 'business_electricity_band',
+        fields: [
+          { id: 'postcode', type: 'postcode' },
+          { id: 'is_business', type: 'checkbox' },
+          { id: 'business_electricity_band', type: 'single_choice' },
+        ],
+      }),
+    ).toBe(false);
+    expect(shouldAutoAdvance({ ...base, complete: false })).toBe(false);
     expect(shouldAutoAdvance({ ...base, fieldId: 'other' })).toBe(false);
     expect(shouldAutoAdvance({ ...base, fields: [] })).toBe(false);
   });
@@ -176,11 +244,10 @@ describe('auto-advance guard', () => {
 
 describe('reduced motion keeps only short fades', () => {
   it('fades the step in without a slide', () => {
-    const { enter, center } = stepVariants(true);
+    // StepStage fades the new step in at `fast` and makes no copy of the old one to slide out.
     for (const travel of [TRAVEL.forward, TRAVEL.back, TRAVEL.none]) {
-      expect(enter(travel)).toEqual({ opacity: 0, x: 0 });
+      expect(stepEnterFrames(travel, true)).toBeNull();
     }
-    expect(center.transition).toEqual({ duration: 0.15, ease: [0.22, 1, 0.36, 1] });
   });
 
   it('changes answer cards instantly, without the spring or the drawing check mark', () => {
@@ -197,9 +264,7 @@ describe('reduced motion keeps only short fades', () => {
     expect(revealVariants(false).collapsed.overflow).toBe('clip');
   });
 
-  it('jumps the progress bar and never shakes', () => {
-    expect(progressTransition(true)).toBe(INSTANT);
-    expect(progressTransition(false)).toBe(spring);
+  it('never shakes', () => {
     expect(shakeKeyframes(true)).toBeNull();
   });
 
@@ -224,15 +289,6 @@ describe('reduced motion keeps only short fades', () => {
 });
 
 describe('progress', () => {
-  it('fills the bar with a translate of a full-width fill', () => {
-    expect(progressPercent(1, 10)).toBe(10);
-    expect(progressPercent(2, 3)).toBe(66.7);
-    expect(progressPercent(12, 10)).toBe(100);
-    expect(progressPercent(1, 0)).toBe(0);
-    expect(progressOffset(1, 10)).toBe('-90%');
-    expect(progressOffset(9, 9)).toBe('0%');
-  });
-
   it('splits "Stap {step} van {total}" so the numbers can roll', () => {
     expect(progressParts('Stap {step} van {total}')).toEqual([
       { text: 'Stap ' },
@@ -327,11 +383,11 @@ describe('server render: nothing moves at hydration', () => {
     }),
   );
 
-  it('renders the progress fill at its place and the first step fully visible', () => {
-    expect(html).toContain('style="transform:translateX(-90%)"');
-    // The step is rendered in its final state (initial={false}): no opacity 0, no offset.
-    expect(html).toContain('<div style="opacity:1;transform:none">');
-    expect(html).not.toMatch(/<(div|h2|label)[^>]*style="[^"]*opacity:0/);
+  it('renders the steps bar pill at its place and the first step fully visible', () => {
+    // Step 1 of 10: the pill rides on the centre of the first segment.
+    expect(html).toContain('style="translate:calc(5% + var(--gap) * -0.45) 0"');
+    // The step is rendered in its final state: no opacity 0, no offset.
+    expect(html).not.toMatch(/<(div|h2|label|span)[^>]*style="[^"]*(opacity:0|translateX)/);
   });
 
   it('names the form card for the page transition, once', () => {
