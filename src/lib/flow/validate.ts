@@ -559,19 +559,51 @@ function copyIssues(copyFile: SourceFile, flows: Flow[]): FlowIssue[] {
       ),
     ),
   );
+  const issues: FlowIssue[] = [];
   if (soft && !parsed.data.warnings?.outside_typical) {
-    return [
-      {
-        file: copyFile.path,
-        message: 'warnings.outside_typical is needed: a number field has softMin/softMax',
-      },
-    ];
+    issues.push({
+      file: copyFile.path,
+      message: 'warnings.outside_typical is needed: a number field has softMin/softMax',
+    });
   }
-  return [];
+  // Placeholders a message may use: the island fills only these from the field.
+  const messages: Array<[string, string]> = [
+    ...Object.entries(parsed.data.errors).map(([code, text]): [string, string] => [
+      `errors.${code}`,
+      text,
+    ]),
+    ...Object.entries(parsed.data.warnings ?? {}).map(([code, text]): [string, string] => [
+      `warnings.${code}`,
+      text,
+    ]),
+  ];
+  for (const [key, text] of messages) {
+    const allowed = MESSAGE_PLACEHOLDERS[key.split('.')[1]!] ?? [];
+    for (const [, token] of text.matchAll(/\{(\w+)\}/g)) {
+      if (!allowed.includes(token!)) {
+        issues.push({
+          file: copyFile.path,
+          message: `${key}: unknown placeholder {${token}} (allowed: ${allowed.length ? allowed.map((name) => `{${name}}`).join(', ') : 'none'})`,
+        });
+      }
+    }
+  }
+  return issues;
 }
 
+/** The placeholders each message can use (filled in from the field by the island). */
+const MESSAGE_PLACEHOLDERS: Record<string, readonly string[]> = {
+  number_too_low: ['min', 'max', 'unit'],
+  number_too_high: ['min', 'max', 'unit'],
+  text_too_long: ['maxLength'],
+  outside_typical: ['min', 'max', 'unit'],
+};
+
 /** Validates every locale's shared steps, copy and flows; an empty list means all is well. */
-export function validateFlowSources(locales: LocaleSources[]): FlowIssue[] {
+export function validateFlowSources(
+  locales: LocaleSources[],
+  { requireCopy = false }: { requireCopy?: boolean } = {},
+): FlowIssue[] {
   const issues: FlowIssue[] = [];
   const byLocale = new Map<string, Map<string, Resolved>>();
 
@@ -638,6 +670,12 @@ export function validateFlowSources(locales: LocaleSources[]): FlowIssue[] {
       flow.steps.forEach((step, index) => {
         const where = 'use' in file.steps[index]! ? sharedFile!.path : path;
         choices.push(...productChoices(step, where));
+      });
+    }
+    if (!copyFile && requireCopy && flows.length > 0) {
+      issues.push({
+        file: `${locale}/_copy.json`,
+        message: 'is missing: the form needs its interface copy for every locale with flows',
       });
     }
     if (copyFile) {

@@ -67,8 +67,8 @@ const contact: Answers = {
 
 /** Answers per step for a full energy run (both, knows the consumption); tests override steps. */
 const energyScript: Record<string, Answers> = {
-  // The island writes the implied answer together with the chosen card.
-  product: { product_choice: 'both', energy_type: 'both' },
+  // The island stores only the visitor's own answer; the engine derives energy_type from `sets`.
+  product: { product_choice: 'both' },
   energy_choice: { energy_choice: 'both' },
   postcode: { postcode: '9000', is_business: false },
   supplier: { supplier: 'luminus' },
@@ -211,7 +211,7 @@ describe('real flows: energy (brief §7.3)', () => {
   it('electricity only: no gas kWh', () => {
     const run = play(energie, {
       ...energyScript,
-      product: { product_choice: 'electricity', energy_type: 'electricity' },
+      product: { product_choice: 'electricity' },
       consumption_kwh: { electricity_kwh: 3500 },
     });
     expect(run.ids).toEqual(ENERGY_YES);
@@ -596,7 +596,7 @@ describe('real flows: the gas switch (brief §7.3 "must be a config switch")', (
     expect(clearAbandoned(energieNoGas, { energy_type: 'gas' }, preselected)).toEqual({});
     const run = play(energieNoGas, {
       ...energyScript,
-      product: { product_choice: 'electricity', energy_type: 'electricity' },
+      product: { product_choice: 'electricity' },
       consumption_kwh: { electricity_kwh: 3500 },
     });
     expect(run.ids).toEqual(ENERGY_YES);

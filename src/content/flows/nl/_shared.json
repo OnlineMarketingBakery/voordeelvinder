@@ -1,10 +1,18 @@
 {
-  "switches": { "gas": true },
+  "switches": {
+    "gas": true
+  },
   "steps": [
     {
       "id": "product",
       "title": "Wat wil je vergelijken?",
-      "visibleIf": { "!": [{ "var": "derived.preselected" }] },
+      "visibleIf": {
+        "!": [
+          {
+            "var": "derived.preselected"
+          }
+        ]
+      },
       "fields": [
         {
           "id": "product_choice",
@@ -17,14 +25,18 @@
               "label": "Elektriciteit",
               "icon": "renewable-energy",
               "product": "energie",
-              "sets": { "energy_type": "electricity" }
+              "sets": {
+                "energy_type": "electricity"
+              }
             },
             {
               "code": "gas",
               "label": "Gas",
               "icon": "home",
               "product": "energie",
-              "sets": { "energy_type": "gas" },
+              "sets": {
+                "energy_type": "gas"
+              },
               "requires": "gas"
             },
             {
@@ -32,7 +44,9 @@
               "label": "Elektriciteit + gas",
               "icon": "home-bolt",
               "product": "energie",
-              "sets": { "energy_type": "both" },
+              "sets": {
+                "energy_type": "both"
+              },
               "requires": "gas"
             },
             {
@@ -62,7 +76,11 @@
           "payload": "derived",
           "placeholder": "Voer je postcode in"
         },
-        { "id": "is_business", "type": "checkbox", "label": "Dit is een zakelijk adres." },
+        {
+          "id": "is_business",
+          "type": "checkbox",
+          "label": "Dit is een zakelijk adres."
+        },
         {
           "id": "business_electricity_band",
           "type": "single_choice",
@@ -70,13 +88,31 @@
           "required": true,
           "visibleIf": {
             "and": [
-              { "var": "is_business" },
-              { "in": [{ "var": "energy_type" }, ["electricity", "both"]] }
+              {
+                "var": "is_business"
+              },
+              {
+                "in": [
+                  {
+                    "var": "energy_type"
+                  },
+                  [
+                    "electricity",
+                    "both"
+                  ]
+                ]
+              }
             ]
           },
           "options": [
-            { "code": "under_100k", "label": "Minder dan 100.000 kWh per jaar" },
-            { "code": "over_100k", "label": "Meer dan 100.000 kWh per jaar" }
+            {
+              "code": "under_100k",
+              "label": "Minder dan 100.000 kWh per jaar"
+            },
+            {
+              "code": "over_100k",
+              "label": "Meer dan 100.000 kWh per jaar"
+            }
           ]
         },
         {
@@ -85,11 +121,32 @@
           "label": "Aardgas: wat is je geschat jaarverbruik?",
           "required": true,
           "visibleIf": {
-            "and": [{ "var": "is_business" }, { "in": [{ "var": "energy_type" }, ["gas", "both"]] }]
+            "and": [
+              {
+                "var": "is_business"
+              },
+              {
+                "in": [
+                  {
+                    "var": "energy_type"
+                  },
+                  [
+                    "gas",
+                    "both"
+                  ]
+                ]
+              }
+            ]
           },
           "options": [
-            { "code": "under_100k", "label": "Minder dan 100.000 kWh per jaar" },
-            { "code": "over_100k", "label": "Meer dan 100.000 kWh per jaar" }
+            {
+              "code": "under_100k",
+              "label": "Minder dan 100.000 kWh per jaar"
+            },
+            {
+              "code": "over_100k",
+              "label": "Meer dan 100.000 kWh per jaar"
+            }
           ]
         }
       ]
@@ -97,7 +154,13 @@
     {
       "id": "knows_consumption",
       "title": "Ken je je jaarlijks energieverbruik?",
-      "fields": [{ "id": "knows_consumption", "type": "yes_no", "required": true }]
+      "fields": [
+        {
+          "id": "knows_consumption",
+          "type": "yes_no",
+          "required": true
+        }
+      ]
     },
     {
       "id": "household",
@@ -109,11 +172,26 @@
           "required": true,
           "placeholder": "Selecteer het aantal personen",
           "options": [
-            { "code": "1", "label": "1 persoon" },
-            { "code": "2", "label": "2 personen" },
-            { "code": "3", "label": "3 personen" },
-            { "code": "4", "label": "4 personen" },
-            { "code": "5_plus", "label": "5 of meer" }
+            {
+              "code": "1",
+              "label": "1 persoon"
+            },
+            {
+              "code": "2",
+              "label": "2 personen"
+            },
+            {
+              "code": "3",
+              "label": "3 personen"
+            },
+            {
+              "code": "4",
+              "label": "4 personen"
+            },
+            {
+              "code": "5_plus",
+              "label": "5 of meer"
+            }
           ]
         },
         {
@@ -123,10 +201,22 @@
           "required": true,
           "placeholder": "Selecteer woningtype",
           "options": [
-            { "code": "apartment", "label": "Appartement" },
-            { "code": "terraced", "label": "Rijwoning (gesloten bebouwing)" },
-            { "code": "semi_detached", "label": "Halfopen bebouwing" },
-            { "code": "detached", "label": "Open bebouwing" }
+            {
+              "code": "apartment",
+              "label": "Appartement"
+            },
+            {
+              "code": "terraced",
+              "label": "Rijwoning (gesloten bebouwing)"
+            },
+            {
+              "code": "semi_detached",
+              "label": "Halfopen bebouwing"
+            },
+            {
+              "code": "detached",
+              "label": "Open bebouwing"
+            }
           ]
         }
       ]
@@ -135,7 +225,11 @@
       "id": "appliances",
       "title": "Heb je een warmtepomp?",
       "fields": [
-        { "id": "heat_pump", "type": "yes_no", "required": true },
+        {
+          "id": "heat_pump",
+          "type": "yes_no",
+          "required": true
+        },
         {
           "id": "electric_car",
           "type": "yes_no",
@@ -155,7 +249,8 @@
           "placeholder": "Vul hier je voornaam in",
           "required": true,
           "payload": "contact",
-          "autocomplete": "given-name"
+          "autocomplete": "given-name",
+          "maxLength": 100
         },
         {
           "id": "last_name",
@@ -164,7 +259,8 @@
           "placeholder": "Vul hier je achternaam in",
           "required": true,
           "payload": "contact",
-          "autocomplete": "family-name"
+          "autocomplete": "family-name",
+          "maxLength": 100
         },
         {
           "id": "phone",
@@ -191,20 +287,56 @@
           "required": true,
           "payload": "call_preference",
           "days": [
-            { "code": "mon", "label": "Maandag" },
-            { "code": "tue", "label": "Dinsdag" },
-            { "code": "wed", "label": "Woensdag" },
-            { "code": "thu", "label": "Donderdag" },
-            { "code": "fri", "label": "Vrijdag" }
+            {
+              "code": "mon",
+              "label": "Maandag"
+            },
+            {
+              "code": "tue",
+              "label": "Dinsdag"
+            },
+            {
+              "code": "wed",
+              "label": "Woensdag"
+            },
+            {
+              "code": "thu",
+              "label": "Donderdag"
+            },
+            {
+              "code": "fri",
+              "label": "Vrijdag"
+            }
           ],
           "slots": [
-            { "code": "09-10", "label": "09:00–10:00" },
-            { "code": "10-11", "label": "10:00–11:00" },
-            { "code": "11-12", "label": "11:00–12:00" },
-            { "code": "12-13", "label": "12:00–13:00" },
-            { "code": "13-14", "label": "13:00–14:00" },
-            { "code": "14-15", "label": "14:00–15:00" },
-            { "code": "15-16", "label": "15:00–16:00" }
+            {
+              "code": "09-10",
+              "label": "09:00–10:00"
+            },
+            {
+              "code": "10-11",
+              "label": "10:00–11:00"
+            },
+            {
+              "code": "11-12",
+              "label": "11:00–12:00"
+            },
+            {
+              "code": "12-13",
+              "label": "12:00–13:00"
+            },
+            {
+              "code": "13-14",
+              "label": "13:00–14:00"
+            },
+            {
+              "code": "14-15",
+              "label": "14:00–15:00"
+            },
+            {
+              "code": "15-16",
+              "label": "15:00–16:00"
+            }
           ]
         },
         {
@@ -212,8 +344,14 @@
           "type": "consent",
           "label": "Ik ga akkoord met de algemene voorwaarden en het privacybeleid en geef toestemming dat VoordeelVinder en haar partners mij contacteren over mijn vergelijking.",
           "links": [
-            { "text": "algemene voorwaarden", "href": "/algemene-voorwaarden" },
-            { "text": "privacybeleid", "href": "/privacybeleid" }
+            {
+              "text": "algemene voorwaarden",
+              "href": "/algemene-voorwaarden"
+            },
+            {
+              "text": "privacybeleid",
+              "href": "/privacybeleid"
+            }
           ],
           "required": true,
           "payload": "consent"

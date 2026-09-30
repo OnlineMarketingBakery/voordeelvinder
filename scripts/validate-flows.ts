@@ -14,7 +14,11 @@ import { loadFlowSources } from './lib/flow-sources';
 
 const root = resolve(process.argv[2] ?? join(import.meta.dirname, '..', 'src', 'content', 'flows'));
 const { locales, issues: readIssues } = loadFlowSources(root);
-const issues = [...readIssues, ...validateFlowSources(locales)];
+// The site's own flows must ship their copy; fixture folders (tests) may leave it out.
+const issues = [
+  ...readIssues,
+  ...validateFlowSources(locales, { requireCopy: process.argv[2] === undefined }),
+];
 const flowCount = locales.reduce((count, locale) => count + locale.flows.length, 0);
 
 if (issues.length > 0) {

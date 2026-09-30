@@ -191,3 +191,29 @@ describe('the copy file (_copy.json)', () => {
     ]);
   });
 });
+
+describe('copy checks (PR 15 review)', () => {
+  it('rejects placeholders the island cannot fill and requires the copy for the site', async () => {
+    const { validateFlowSources } = await import('../../src/lib/flow/validate');
+    const { loadFlowSources } = await import('../../scripts/lib/flow-sources');
+    const { join } = await import('node:path');
+    const { locales } = loadFlowSources(join(process.cwd(), 'src/content/flows'));
+    const nl = locales.find((locale) => locale.locale === 'nl')!;
+    const copy = structuredClone(nl.copy!.data) as { errors: Record<string, string> };
+    copy.errors.required = 'Vul {veld} in.';
+    copy.errors.text_too_long = 'Hoogstens {maxlength} tekens.';
+    const broken = [{ ...nl, copy: { ...nl.copy!, data: copy } }];
+    expect(validateFlowSources(broken).map(({ message }) => message)).toEqual([
+      'errors.required: unknown placeholder {veld} (allowed: none)',
+      'errors.text_too_long: unknown placeholder {maxlength} (allowed: {maxLength})',
+    ]);
+    const withoutCopy = [{ ...nl, copy: undefined }];
+    expect(validateFlowSources(withoutCopy)).toEqual([]);
+    expect(validateFlowSources(withoutCopy, { requireCopy: true })).toEqual([
+      {
+        file: 'nl/_copy.json',
+        message: 'is missing: the form needs its interface copy for every locale with flows',
+      },
+    ]);
+  });
+});

@@ -26,9 +26,12 @@ flows raised four points the brief doesn't settle:
    Switches must match across locales.
 2. **Energy preselect without `?energie=`.** The energy flow has its own step `energy_choice`
    right after the shared `product` step: the same title and the three energy cards
-   (`payload: none`, setting `energy_type`). It shows only when `derived.preselected` is true and
-   `energy_type` is unknown, or once it has been answered, so it stays on the visitor's path.
-   Plain flow conditions, no engine change; with `?energie=` it is skipped as the brief says.
+   (`payload: none`, setting `energy_type`). It shows when `derived.preselected` is true and
+   `derived.energy_preselected` is false. The island sets both once, at mount
+   (`energy_preselected` only when a valid `?energie=` survives `clearAbandoned`), so they never
+   change during the session and the step stays on the visitor's path once answered. With a valid
+   `?energie=` it is skipped, as the brief says. (A condition on `energy_type` itself can't tell a
+   preselect from the visitor's own choice, which broke the progress count and "Terug".)
 3. **Interface copy** lives in one file per locale, `src/content/flows/<locale>/_copy.json`
    (schema `flowCopyFile`, collection `flowCopy`, checked by `validate:flows`): one message per
    validator error code (the schema requires them all), optional per-field-type `required`
@@ -48,7 +51,8 @@ and home battery drafts reuse them (brief §7.4), so their codes can't drift bet
 - Turning gas off is a one-line change in `_shared.json` plus a redeploy. With gas off,
   `/vergelijken/energie` without `?energie=` asks a single "Elektriciteit" card; the island may
   later auto-select a lone option.
-- The island must pass `derived.preselected` as a boolean and write a card's implied answer
-  (`energy_type`) together with the choice (docs/FLOWS.md).
+- The island passes `derived.preselected` and `derived.energy_preselected` as booleans, set once
+  at mount, and stores only the visitor's own answers: the engine derives `energy_type` from the
+  chosen card's `sets` (docs/FLOWS.md).
 - Phase 5: `answerLabels` only knows yes/no labels set on the field; the server should fall back
   to `_copy.json` `yesNo` for the sheet's labels.
