@@ -1,0 +1,48 @@
+---
+// In <head> of the thank-you pages (render-blocking, before the first render): when the visit
+// comes from the form, <html> gets `from-form`, and CSS names the thank-you card `form-card`
+// (global.css) so the browser morphs the form card into it. The name is cleared once the page is
+// shown, and on leaving, so nothing morphs back. "From the form": the one-time marker the form
+// leaves just before it navigates (src/lib/form/submit.ts MORPH_MARKER), else the Navigation
+// API or the referrer.
+---
+
+<script is:inline>
+  (function () {
+    const root = window.document.documentElement;
+    let fromForm = false;
+    try {
+      fromForm = window.sessionStorage.getItem('voordeelvinder:morph') === 'form-card';
+      window.sessionStorage.removeItem('voordeelvinder:morph');
+    } catch {
+      // No storage: only the Navigation API or the referrer can tell.
+    }
+    if (!fromForm) {
+      const activation = window.navigation && window.navigation.activation;
+      const from =
+        (activation && activation.from && activation.from.url) || window.document.referrer;
+      try {
+        const url = new URL(from);
+        fromForm =
+          url.origin === window.location.origin &&
+          /^\/vergelijken(\/[^/]+)?\/?$/.test(url.pathname);
+      } catch {
+        fromForm = false;
+      }
+    }
+    if (!fromForm) return;
+    root.classList.add('from-form');
+    function clear() {
+      root.classList.remove('from-form');
+    }
+    window.addEventListener(
+      'pagereveal',
+      function (event) {
+        if (event.viewTransition) event.viewTransition.finished.finally(clear);
+        else clear();
+      },
+      { once: true },
+    );
+    window.addEventListener('pageswap', clear);
+  })();
+</script>

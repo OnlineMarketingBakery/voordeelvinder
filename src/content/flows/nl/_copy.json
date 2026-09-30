@@ -66,5 +66,6 @@
     "consent": "Vink dit vakje aan om verder te gaan.",
     "day_slot": "Kies een dag en een tijdstip."
   },
-  "emailSuggestion": "Bedoel je {suggestion}?"
+  "emailSuggestion": "Bedoel je {suggestion}?",
+  "settings": { "autoAdvance": true }
 }

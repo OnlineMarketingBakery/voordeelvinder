@@ -8,13 +8,13 @@ lead sheet and the Meta forms (AGENTS.md rule 4: never change a code once live).
 
 ## Files
 
-| File                    | Holds                                                                                                                                                                         |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `nl/_shared.json`       | `switches` (`{ "gas": true }`) and the shared steps: `product`, `postcode`, `knows_consumption`, `household`, `appliances`, `contact`                                         |
-| `nl/energie.json`       | The energy flow (brief §7.3)                                                                                                                                                  |
-| `nl/zonnepanelen.json`  | The solar panel flow (§7.4 DRAFT, outcome `pending`)                                                                                                                          |
-| `nl/thuisbatterij.json` | The home battery flow (§7.4 DRAFT, outcome `pending`)                                                                                                                         |
-| `nl/_copy.json`         | The form's interface copy: buttons, progress, yes/no labels, error messages, e-mail suggestion, `phonePrefix`, the side `panel` per product and the form pages' SEO (`pages`) |
+| File                    | Holds                                                                                                                                                                                                                                        |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nl/_shared.json`       | `switches` (`{ "gas": true }`) and the shared steps: `product`, `postcode`, `knows_consumption`, `household`, `appliances`, `contact`                                                                                                        |
+| `nl/energie.json`       | The energy flow (brief §7.3)                                                                                                                                                                                                                 |
+| `nl/zonnepanelen.json`  | The solar panel flow (§7.4 DRAFT, outcome `pending`)                                                                                                                                                                                         |
+| `nl/thuisbatterij.json` | The home battery flow (§7.4 DRAFT, outcome `pending`)                                                                                                                                                                                        |
+| `nl/_copy.json`         | The form's interface copy: buttons, progress, yes/no labels, error messages, e-mail suggestion, `phonePrefix`, the side `panel` per product and the form pages' SEO (`pages`); `settings.autoAdvance` switches auto-advance (docs/MOTION.md) |
 
 ## How the form island reads them
 
@@ -104,12 +104,20 @@ with `client:load`. Both are indexable (brief §11: only the thank-you pages and
   forward, with nothing answered in between, is ignored (`isRepeatSubmit`): a double click or
   double tap moves one step, and never validates or submits the next step unseen.
 - **Submit (Phase 4):** "Verstuur" validates, builds the submission (`buildSubmission`), locks
-  the button, clears the sessions and goes to `/bedankt/<product>`. Nothing is sent
+  the button, clears the sessions and goes to `/bedankt/<product>` (the thank-you page,
+  `src/content/pages/bedankt.json`: same copy for every product, noindex, nothing personal on
+  it). Nothing is sent
   (`sendLead` in `src/lib/form/submit.ts` is a stub until Phase 5) and nothing is logged. When
   the submission can't be built (an answer on the path no longer validates), the form goes to the
   first invalid step and shows its errors. Phase 5 adds the error for a failed send (TODO in
   `FormIsland.tsx`) and keeps `?test=1` for the session with the TESTMODUS badge (TODO in
   `submissionContext`, brief §9.4).
+- **Motion (PR 17, docs/MOTION.md):** step slides, answer-card feedback, revealed questions,
+  progress, error shake and the submit spinner; only visual, nothing waits for it. **Auto-advance**
+  (`settings.autoAdvance`, on): a tap or click on a card of a step whose only visible field is a
+  single-choice or yes/no question acts as "Volgende" after 300 ms; never on keyboard input and
+  never before the session is restored. The double-click guard covers it too: an auto-advance
+  and a "Volgende" within `STEP_GUARD_MS` of each other move one step, not two.
 - **"Terug"** keeps the answers; on the first shown step it goes to the product page (`/` for
   energy) when preselected, else back in history (same site) or to `/`.
 

@@ -5,9 +5,10 @@
 // body, illustration last); on md the illustration stays in flow after the list; from lg it
 // sits absolutely in the corner, behind the text column.
 //
-// Signature morph (brief §6.1, docs/MOTION.md, Phase 7): the card carries `data-morph` so the
-// page-transition script can set `view-transition-name: form-card` on the card whose CTA was
-// clicked. The name is never set here: two cards share the page and names must be unique.
+// Signature morph (brief §6.1, docs/MOTION.md): the card carries `data-morph` so
+// src/scripts/morph.ts can set `view-transition-name: form-card` on the card whose CTA was
+// clicked (in `pageswap`); it morphs into the form card. The name is never set here: two cards
+// share the page and names must be unique.
 import type { ProductSpotlightBlock } from '../../schemas/blocks/productSpotlight';
 import Button from '../ui/Button.astro';
 import Container from '../ui/Container.astro';
@@ -132,3 +133,7 @@ const art = {
     </div>
   </Container>
 </section>
+
+<script>
+  import '../../scripts/morph';
+</script>

@@ -5,7 +5,14 @@ import type { Submission, SubmissionContext } from '../flow/engine';
 import type { Derived, Product } from '../flow/types';
 import { isTestVisit } from './initial';
 
-/** The thank-you page per product (brief §5; built in PR 18). */
+/** The thank-you page per product (brief §5; src/pages/bedankt/[product].astro). */
+/**
+ * A one-time marker the form leaves just before it goes to the thank-you page, so that page
+ * names its card for the form-card morph (ThankYou.astro reads and removes it). More reliable
+ * than the referrer, which privacy settings and some browsers drop.
+ */
+export const MORPH_MARKER = 'voordeelvinder:morph';
+
 export function thanksPath(product: Product): string {
   return `/bedankt/${product}`;
 }
@@ -60,9 +67,9 @@ export function submissionContext({
 export const STEP_GUARD_MS = 350;
 
 /**
- * Whether a "Volgende" is the second half of a double click/tap: `advancedAt` is the time
- * (the submit event's timeStamp) the previous one moved forward, or null when the visitor has answered or
- * gone back since.
+ * Whether a "Volgende" (or an auto-advance) is the second half of a double click/tap:
+ * `advancedAt` is the time (event.timeStamp or performance.now(), the same clock) the form last
+ * moved forward, or null when the visitor has answered or gone back since.
  */
 export function isRepeatSubmit(advancedAt: number | null, now: number): boolean {
   return advancedAt !== null && now - advancedAt >= 0 && now - advancedAt < STEP_GUARD_MS;

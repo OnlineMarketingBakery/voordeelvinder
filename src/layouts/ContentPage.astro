@@ -3,6 +3,7 @@
 // FAQPage JSON-LD of the questions it shows, and the footer overlap when it ends in a CTA band
 // that reaches into the footer. getPage() fails a production build on placeholders.
 // `seo.noindex` keeps a page (the 404) out of search results in every environment.
+import FormArrival from '../components/sections/parts/FormArrival.astro';
 import Sections from '../components/sections/Sections.astro';
 import { visibleFaqItems } from '../lib/faq';
 import { getPage, overlapsFooter } from '../lib/pages';
@@ -31,5 +32,6 @@ const faq = faqPage(visibleFaqItems(page.sections));
   structuredData={[...structuredData, ...(faq ? [faq] : [])]}
   footerOverlap={overlapsFooter(page.sections)}
 >
+  {page.sections.some((section) => section.type === 'thankYou') && <FormArrival slot="head" />}
   <Sections sections={page.sections} />
 </Page>

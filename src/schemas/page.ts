@@ -14,6 +14,7 @@ import { notFoundBlock } from './blocks/notFound';
 import { productSpotlightBlock } from './blocks/productSpotlight';
 import { stepsBlock } from './blocks/steps';
 import { testimonialsBlock } from './blocks/testimonials';
+import { thankYouBlock } from './blocks/thankYou';
 import { text } from './primitives';
 
 export const section = z.discriminatedUnion('type', [
@@ -28,32 +29,33 @@ export const section = z.discriminatedUnion('type', [
   testimonialsBlock,
   ctaMascotBlock,
   notFoundBlock,
+  thankYouBlock,
 ]);
 
 export type Section = z.infer<typeof section>;
 
 /** Blocks that hold the page's only h1: every page starts with exactly one of them. */
-const h1Types: ReadonlySet<Section['type']> = new Set(['hero', 'notFound']);
+const h1Types: ReadonlySet<Section['type']> = new Set(['hero', 'notFound', 'thankYou']);
 
 export const page = z
   .strictObject({
     seo: z.strictObject({
       title: text,
       description: text.optional(),
-      /** Keep the page out of search results even in production (the 404). */
+      /** Keep the page out of search results even in production (the 404, the thank-you pages). */
       noindex: z.boolean().optional(),
     }),
     sections: z.array(section).min(1),
   })
   .superRefine((value, ctx) => {
-    // The hero (or the 404 block) holds the page's only h1, so it can't be hidden.
+    // The hero (or the 404 or thank-you block) holds the page's only h1, so it can't be hidden.
     const heroes = value.sections.filter((s) => h1Types.has(s.type));
     const first = value.sections[0];
     if (heroes.length !== 1 || !first || !h1Types.has(first.type) || first.hidden) {
       ctx.addIssue({
         code: 'custom',
         path: ['sections'],
-        message: 'exactly one visible hero (or notFound), as the first block',
+        message: 'exactly one visible hero (or notFound or thankYou), as the first block',
       });
     }
     const ids = value.sections.map((s) => s.id).filter((id): id is string => id !== undefined);

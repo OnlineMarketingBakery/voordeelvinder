@@ -31,7 +31,10 @@ type ButtonProps = {
   icon: string | undefined;
   iconPosition: 'start' | 'end';
   onClick?: () => void;
-  /** Locked while sending: stays focusable, ignores clicks (FormIsland checks the lock too). */
+  /**
+   * Locked while sending: stays focusable, ignores clicks (FormIsland checks the lock too), and
+   * shows a spinner in place of the icon at once (brief §6.1; it doesn't spin with reduced motion).
+   */
   busy?: boolean;
   /**
    * Really disabled (not only aria-disabled): until the island has restored its session. A
@@ -54,7 +57,13 @@ export function FormButton({
   busy = false,
   disabled = false,
 }: ButtonProps) {
-  const glyph = <MaskIcon src={icon} className="size-6" />;
+  const glyph = busy ? (
+    <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center">
+      <span className="size-[18px] rounded-full border-2 border-current border-r-transparent motion-safe:animate-spin" />
+    </span>
+  ) : (
+    <MaskIcon src={icon} className="size-6" />
+  );
   return (
     <button
       type={type}

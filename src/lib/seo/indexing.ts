@@ -12,8 +12,9 @@ export function robotsTxt(siteEnv: SiteEnv, site: URL): string {
 
 /**
  * Whether a built page belongs in the sitemap: not the internal styleguide and not the noindex
- * campaign variants (/l/*, brief §11). The sitemap integration leaves the 404 out itself.
+ * campaign variants (/l/*) and thank-you pages (/bedankt/*, brief §11). The sitemap integration
+ * leaves the 404 out itself.
  */
 export function inSitemap(pathname: string): boolean {
-  return !/^\/(styleguide|l)(\/|$)/.test(pathname);
+  return !/^\/(styleguide|l|bedankt)(\/|$)/.test(pathname);
 }

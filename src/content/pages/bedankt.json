@@ -1,0 +1,28 @@
+{
+  "seo": {
+    "title": "Bedankt voor je aanvraag",
+    "noindex": true
+  },
+  "sections": [
+    {
+      "type": "thankYou",
+      "title": "Bedankt! We gaan voor je aan de slag.",
+      "body": [
+        "We hebben je gegevens goed ontvangen.",
+        {
+          "text": "We vergelijken de mogelijkheden en nemen zo snel mogelijk contact met je op.",
+          "hidden": false,
+          "claim": "1.12"
+        }
+      ],
+      "cta": {
+        "label": "Terug naar de startpagina",
+        "href": "/"
+      },
+      "image": {
+        "src": "mascot/fox-thumbsup",
+        "alt": ""
+      }
+    }
+  ]
+}

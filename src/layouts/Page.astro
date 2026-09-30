@@ -23,6 +23,7 @@ const { footerOverlap = false, ctaHref, ...base } = Astro.props;
 ---
 
 <Base {...base}>
+  <slot name="head" slot="head" />
   <Header {ctaHref} />
   <main id="main" tabindex="-1" class="focus:outline-none">
     <slot />
