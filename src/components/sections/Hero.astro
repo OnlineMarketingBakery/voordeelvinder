@@ -55,7 +55,9 @@ const rise =
 const preset = {
   solar: {
     padding: 'xl:pt-[140px] xl:pb-[121px]',
-    art: 'lg:w-[clamp(28rem,38vw,34.6875rem)] xl:-mr-[34px]',
+    // The art (468 tall) reaches into the padding (Figma y184–652 in a 615 band), so it must not
+    // set the row height: negative block margins keep the band text-driven.
+    art: 'lg:w-[clamp(28rem,38vw,34.6875rem)] xl:-my-14 xl:-mr-[34px]',
   },
   battery: {
     padding: 'xl:pt-[116px] xl:pb-[91px]',
@@ -78,7 +80,7 @@ const spacing = isHome
           : ['pb-14 lg:pb-24', preset.padding],
       ]}
     >
-      <div class:list={['max-w-[574px]', isHome && 'xl:pt-[13px]']}>
+      <div class:list={[isHome ? 'max-w-[574px] xl:pt-[13px]' : 'max-w-[580px]']}>
         {eyebrow && (
           <p class:list={['text-body-lg md:text-lead', enter[0]]}>
             {eyebrow.emoji && (
@@ -95,9 +97,13 @@ const spacing = isHome
         <h1
           id="hero-title"
           class:list={[
-            'text-h3 text-balance md:text-h2 lg:text-h1',
+            'text-h3 md:text-h2 lg:text-h1',
+            // Home balances its two lines; product titles break as designed (battery 80:3141),
+            // only avoiding a single-word last line on phones.
+            isHome ? 'text-balance' : 'text-pretty',
             eyebrow && 'mt-3 md:mt-4 lg:mt-4.5',
-            isHome ? 'max-w-[29rem]' : 'max-w-[545px]',
+            // Product: the h1 may use the column (battery 80:3141 is 573 wide: "Gebruik het wanneer").
+            isHome ? 'max-w-[29rem]' : 'max-w-[574px]',
           ]}
         >
           {/* "\n" in the title is a designed line break (battery 80:3141). */}
