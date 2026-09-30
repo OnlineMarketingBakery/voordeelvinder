@@ -2,8 +2,12 @@
 // so art no page uses (placeholders, unlicensed stock) would still be published under _astro/.
 // After the build, delete the image files that no page, stylesheet or script references.
 //
-// Only the prerendered client output counts. On-demand routes (the API) render no images; if
-// one ever does, its images would be pruned here and this needs to account for dist/server.
+// Only the prerendered client output counts. The on-demand form pages (/vergelijken/<product>)
+// get their images from the image endpoint at request time (/_image?href=/_astro/<original>),
+// so the original of every image a prerendered page uses is kept too: a transform of it
+// (`<name>.<hash>_<transform>.<ext>`) is referenced. The form pages use the same images as the
+// prerendered /vergelijken (header, footer, every panel); an image used only on an on-demand
+// page would be pruned (tests/e2e/form.spec.ts checks that every image there loads).
 import { readdirSync, readFileSync, rmSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,6 +37,8 @@ export function pruneUnusedImages(clientDir: string): string[] {
     if (!file.startsWith(assetsDir) || !IMAGE.has(extname(file).toLowerCase())) continue;
     const name = file.slice(assetsDir.length + 1);
     if (text.includes(name)) continue;
+    // The original of a transformed image that is used: the image endpoint reads it.
+    if (text.includes(`${name.slice(0, -extname(name).length)}_`)) continue;
     rmSync(file);
     pruned.push(name);
   }

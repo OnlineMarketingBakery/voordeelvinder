@@ -50,29 +50,66 @@ lead sheet and the Meta forms (AGENTS.md rule 4: never change a code once live).
 step) and `/vergelijken/<product>` (`entry: "<product>"`, that flow only, `preselected`) render
 `Form.astro`, which loads the content (`src/lib/form-content.ts`), resolves the icons (masks from
 `src/assets/icons`), the panel mascot (AVIF/WebP) and the +32 flag, and renders `FormIsland`
-with `client:load`. The pages are prerendered and indexable (brief §11: only the thank-you pages
-and `/l/*` are `noindex`).
+with `client:load`. Both are indexable (brief §11: only the thank-you pages and `/l/*` are
+`noindex`).
 
-- **First render = server render.** `serverStart()` (`src/lib/form/initial.ts`) uses only the
-  page: no query, no storage. Right after mounting, `restoreStart()` runs once: it fixes
-  `preselected` / `energy_preselected`, applies `?energie=` and restores the stored session.
-  With `?energie=` or a stored session the step can change right after hydration.
+- **Rendering.** `/vergelijken` is prerendered. `/vergelijken/<product>` renders on demand
+  (`prerender = false`) so the server knows `?energie=`; an unknown product is a 404, the
+  canonical is `/vergelijken/<product>/` with or without the slash, and `astro.config.ts` lists
+  the three pages in the sitemap (`customPages`: the sitemap integration only sees prerendered
+  pages). Their images come from the image endpoint (`/_image`), resized on the first request
+  and then kept in memory (`cache` + `routeRules` in `astro.config.ts`); the prune integration
+  keeps the originals of the images the prerendered pages use, which covers the form pages
+  (e2e: "every image on an on-demand form page loads").
+- **First render = server render.** `Form.astro` works out the URL preselect
+  (`urlPreselects`, so an unknown value or gas with the switch off is dropped) and passes only
+  that to the island, never the rest of the query. `serverStart()` (`src/lib/form/initial.ts`)
+  renders the first step from the page and that preselect: `/vergelijken/energie?energie=both`
+  starts on the postcode, "Stap 1 van 9", in the HTML. `startFlags()` sets
+  `energy_preselected` the same way on the server and after hydration. Right after mounting,
+  `restoreStart()` runs once with the same preselect and the stored session. Without a stored
+  session nothing changes after hydration; with one the step can.
+- **Before hydration** the form is inert: "Volgende" has the real `disabled` attribute until
+  the session is restored (so Enter in a field doesn't submit either), and an inline script in
+  `Form.astro` cancels every native `submit` of the form (capture phase; the island's own handler
+  still runs). Nothing typed before hydration ends up in the URL, and the landing query
+  (`?energie=`, `utm_*`, click ids, `?test=1`) stays.
 - **Flow switching:** on `/vergelijken`, choosing a card whose `product` differs switches to that
   product's flow at once (its progress, its next steps). The answers object is shared; each
   flow's `clearAbandoned` drops what doesn't belong to it.
 - **Storage:** `sessionStorage["voordeelvinder:form:<entry>"]` =
-  `{ version: 1, product, flowVersion, step, answers, leadId, eventId }`
+  `{ version: 2, product, flow, step, answers, leadId, eventId }`
   (`src/lib/form/storage.ts`). `answers` are the visitor's own answers after `clearAbandoned`,
-  without implied answers. A record of another `version` or `flowVersion` is ignored. `leadId`
-  and `eventId` are made once per form session (`crypto.randomUUID`) and kept until the submit,
-  which clears the record.
+  without implied answers. `flow` is `flowFingerprint()`: the flow's version plus the switches
+  that are on and take options away in it (`"v1+gas"`). A record of another `version` or `flow`
+  is ignored, so turning gas off drops the sessions stored with gas on.
+- **Restore:** back to the stored step when it is on the visitor's path (else the first open
+  step), but never past a step whose stored answers don't validate: the visitor resumes at the
+  first such step (`firstInvalidStep`). That catches content tightened without a version bump.
+- **Lead ids:** `leadId` and `eventId` are made once per form session (`crypto.randomUUID`) and
+  kept until the submit. A step-1 card that switches the flow (on `/vergelijken`) makes new
+  ones: a new product is a new lead. A successful submit clears every form page's record (every
+  `voordeelvinder:form:` key), not only its own.
+- **Duplicated tabs (known limitation):** browsers copy `sessionStorage` into a duplicated tab,
+  so the copy continues with the same `leadId`/`eventId`. When both tabs submit the same
+  product, the second lead looks like a double submit to `/api/lead` (idempotent on `lead_id`,
+  Phase 5) and Meta dedupes the two events. Switching product in one tab avoids it (new ids);
+  telling the tabs apart would need a per-tab token and a BroadcastChannel check.
 - **Validation:** text-like fields validate on blur once something is typed; "Volgende" runs
-  `validateStep`, shows every error under its field (`aria-describedby`), focuses the first and
-  scrolls it into view. A valid step focuses the next step's title (h2) and announces "title.
-  Stap X van Y" in an `aria-live` region.
+  `validateStep`, shows every error under its field (`aria-describedby`; for cards and chips on
+  the group and on each radio, since focus lands on a radio), focuses the first, scrolls it into
+  view and announces its message in the `aria-live` region (again on a repeat: `liveText`). A
+  valid step focuses the next step's title (h2) and announces "title. Stap X van Y" there.
+- **Double click:** a "Volgende" within `STEP_GUARD_MS` (350 ms) of the previous one moving
+  forward, with nothing answered in between, is ignored (`isRepeatSubmit`): a double click or
+  double tap moves one step, and never validates or submits the next step unseen.
 - **Submit (Phase 4):** "Verstuur" validates, builds the submission (`buildSubmission`), locks
-  the button, clears the session and goes to `/bedankt/<product>`. Nothing is sent
-  (`sendLead` in `src/lib/form/submit.ts` is a stub until Phase 5) and nothing is logged.
+  the button, clears the sessions and goes to `/bedankt/<product>`. Nothing is sent
+  (`sendLead` in `src/lib/form/submit.ts` is a stub until Phase 5) and nothing is logged. When
+  the submission can't be built (an answer on the path no longer validates), the form goes to the
+  first invalid step and shows its errors. Phase 5 adds the error for a failed send (TODO in
+  `FormIsland.tsx`) and keeps `?test=1` for the session with the TESTMODUS badge (TODO in
+  `submissionContext`, brief §9.4).
 - **"Terug"** keeps the answers; on the first shown step it goes to the product page (`/` for
   energy) when preselected, else back in history (same site) or to `/`.
 

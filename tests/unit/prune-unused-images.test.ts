@@ -22,4 +22,20 @@ describe('pruneUnusedImages', () => {
     expect(existsSync(join(dir, '_astro', 'app.d4.js'))).toBe(true);
     expect(existsSync(join(dir, '_astro', 'placeholder.c3.png'))).toBe(false);
   });
+
+  it('keeps the original of a used transformed image, for the image endpoint', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vv-prune-'));
+    mkdirSync(join(dir, '_astro'));
+    const names = [
+      'fox.Ab_c1234.png',
+      'fox.Ab_c1234_Zx9.webp',
+      'fox.Ab_c1234_Qq1.avif',
+      'old.e5.png',
+    ];
+    for (const name of names) writeFileSync(join(dir, '_astro', name), '');
+    writeFileSync(join(dir, 'index.html'), '<img src="/_astro/fox.Ab_c1234_Zx9.webp">');
+
+    expect(pruneUnusedImages(dir).sort()).toEqual(['fox.Ab_c1234_Qq1.avif', 'old.e5.png']);
+    expect(existsSync(join(dir, '_astro', 'fox.Ab_c1234.png'))).toBe(true);
+  });
 });

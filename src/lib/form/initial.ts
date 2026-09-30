@@ -1,12 +1,13 @@
 // Where the form starts (docs/FLOWS.md, brief §7.6 "Preselect", "Persistence").
 //
-// The server renders the first step from the page alone (serverStart): no URL query, no
-// storage, so hydration matches. Right after mounting, the island calls restoreStart once with
-// the URL and the stored session: that fixes the session flags (preselected,
-// energy_preselected), applies ?energie= and puts the visitor back on the step they were on.
-import { clearAbandoned, pathSoFar, startStep } from '../flow/engine';
+// The server renders the first step from the page and its URL preselect (serverStart; the
+// preselected form pages render on demand so ?energie= is known): no storage, so hydration
+// matches and nothing flashes without a stored session. Right after mounting, the island calls
+// restoreStart once with the same preselect and the stored session: that puts the visitor back
+// on the step they were on, or on the first earlier step whose answers no longer validate.
+import { clearAbandoned, pathSoFar, startStep, validateStep } from '../flow/engine';
 import type { Flow } from '../flow/schema';
-import type { Answers, Product } from '../flow/types';
+import type { Answers, Derived, Product } from '../flow/types';
 import { engineDerived, settersOf, withoutImplied } from './answers';
 import type { StoredSession } from './storage';
 import type { FormFlags, FormFlows } from './types';
@@ -32,10 +33,49 @@ function firstStep(flow: Flow, answers: Answers, flags: FormFlags): string {
   return startStep(flow, answers, engineDerived(flags, answers)) ?? flow.firstStep;
 }
 
-/** The server-rendered state: the page's product, no answers, its first shown step. */
-export function serverStart(flows: FormFlows, product: Product, preselected: boolean): FormStart {
-  const flags: FormFlags = { preselected, energy_preselected: false };
-  return { product, answers: {}, step: firstStep(flowFor(flows, product), {}, flags), flags };
+/**
+ * The session flags (docs/FLOWS.md): `energy_preselected` only when a valid energy_type came
+ * from the URL (`preselect` is urlPreselects' result, so it survived clearAbandoned).
+ */
+export function startFlags(preselected: boolean, preselect: Answers): FormFlags {
+  return {
+    preselected,
+    energy_preselected: preselected && typeof preselect.energy_type === 'string',
+  };
+}
+
+/**
+ * The server-rendered state: the page's product, only the URL's preselected answers
+ * (urlPreselects), and its first shown step.
+ */
+export function serverStart(
+  flows: FormFlows,
+  product: Product,
+  preselected: boolean,
+  preselect: Answers = {},
+): FormStart {
+  const answers = preselected ? { ...preselect } : {};
+  const flags = startFlags(preselected, answers);
+  return { product, answers, step: firstStep(flowFor(flows, product), answers, flags), flags };
+}
+
+/**
+ * The first step on the visitor's path whose answers don't validate (validateStep), looking at
+ * the steps before `before` only when it is given; null when they all do. A stored session can
+ * hold answers the flow no longer accepts (content tightened without a version bump), and
+ * buildSubmission refuses those.
+ */
+export function firstInvalidStep(
+  flow: Flow,
+  answers: Answers,
+  derived: Derived,
+  before?: string,
+): string | null {
+  for (const id of pathSoFar(flow, answers, derived)) {
+    if (id === before) return null;
+    if (!validateStep(flow, id, answers, derived).valid) return id;
+  }
+  return null;
 }
 
 /**
@@ -62,41 +102,43 @@ export type RestoreInput = {
   /** The page's product (energie on /vergelijken). */
   product: Product;
   preselected: boolean;
-  /** location.search */
-  search: string;
+  /** The URL's preselected answers, as passed to serverStart (urlPreselects). */
+  preselect: Answers;
   stored: StoredSession | null;
 };
 
-/** The state right after mounting: session flags fixed, URL preselect applied, session restored. */
+/**
+ * The state right after mounting: the server's start plus the stored session. The visitor goes
+ * back to the stored step when it is on their path, else to the first open step, but never past
+ * a step whose stored answers don't validate: they resume there.
+ */
 export function restoreStart({
   flows,
   product,
   preselected,
-  search,
+  preselect,
   stored,
 }: RestoreInput): FormStart {
   // On /vergelijken the stored flow is the one the visitor chose on step 1.
   const active = !preselected && stored && flows[stored.product] ? stored.product : product;
   const flow = flowFor(flows, active);
-  const fromUrl = urlPreselects(flow, search, preselected);
-  const flags: FormFlags = {
-    preselected,
-    energy_preselected: preselected && typeof fromUrl.energy_type === 'string',
-  };
+  const fromUrl: Answers = preselected ? preselect : {};
+  const flags = startFlags(preselected, fromUrl);
+  const same = stored?.product === active;
 
   // A stored choice of what the URL now preselects (energy_choice) is dropped: the URL wins.
-  const own: Record<string, unknown> =
-    stored?.product === active ? { ...withoutImplied(flow, stored.answers) } : {};
+  const own: Record<string, unknown> = same ? { ...withoutImplied(flow, stored.answers) } : {};
   for (const id of settersOf(flow, Object.keys(fromUrl))) delete own[id];
   const answers = { ...own, ...fromUrl } as Answers;
 
-  const path = pathSoFar(flow, answers, engineDerived(flags, answers));
-  const step =
-    stored?.product === active && stored.step && path.includes(stored.step)
+  const derived = engineDerived(flags, answers);
+  const path = pathSoFar(flow, answers, derived);
+  if (!same) return { product: active, answers, step: firstStep(flow, answers, flags), flags };
+  const resume =
+    stored.step && path.includes(stored.step)
       ? stored.step
-      : stored?.product === active
-        ? (path[path.length - 1] ?? firstStep(flow, answers, flags))
-        : firstStep(flow, answers, flags);
+      : (path[path.length - 1] ?? firstStep(flow, answers, flags));
+  const step = firstInvalidStep(flow, answers, derived, resume) ?? resume;
   return { product: active, answers, step, flags };
 }
 

@@ -33,6 +33,11 @@ type ButtonProps = {
   onClick?: () => void;
   /** Locked while sending: stays focusable, ignores clicks (FormIsland checks the lock too). */
   busy?: boolean;
+  /**
+   * Really disabled (not only aria-disabled): until the island has restored its session. A
+   * disabled default button also blocks implicit submission (Enter in a field).
+   */
+  disabled?: boolean;
 };
 
 /**
@@ -47,12 +52,14 @@ export function FormButton({
   iconPosition,
   onClick,
   busy = false,
+  disabled = false,
 }: ButtonProps) {
   const glyph = <MaskIcon src={icon} className="size-6" />;
   return (
     <button
       type={type}
       onClick={onClick}
+      disabled={disabled}
       aria-disabled={busy ? 'true' : undefined}
       aria-busy={busy ? 'true' : undefined}
       className={cx(

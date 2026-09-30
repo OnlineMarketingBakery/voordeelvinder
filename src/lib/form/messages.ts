@@ -56,3 +56,12 @@ export function suggestionLabel(
 ): string {
   return fill(copy.emailSuggestion, { suggestion });
 }
+
+/**
+ * The text for the aria-live region. A region only speaks when its text changes, so the same
+ * message twice in a row (a second "Volgende" with the same error) gets a trailing no-break
+ * space to be read again.
+ */
+export function liveText(previous: string, text: string): string {
+  return previous === text ? `${text}\u00a0` : text;
+}

@@ -5,7 +5,7 @@ import { clearAbandoned } from '../flow/engine';
 import type { Field, Flow } from '../flow/schema';
 import type { AnswerValue, Answers, Derived, Product } from '../flow/types';
 import { derive } from '../flow/validators/postcode';
-import type { FormFlags, OwnAnswers } from './types';
+import type { FormFlags, FormFlows, OwnAnswers } from './types';
 
 /** Keys set by options' `sets` in this flow (energy_type). */
 export function impliedKeys(flow: Flow): Set<string> {
@@ -75,4 +75,20 @@ export function withAnswer(answers: Answers, id: string, value: AnswerValue | un
 export function productOf(field: Field, code: string): Product | undefined {
   if (field.type !== 'single_choice') return undefined;
   return field.options.find((option) => option.code === code)?.product;
+}
+
+/**
+ * The flow the visitor is in after answering `value` on `field`: on /vergelijken (not
+ * preselected), a card of another product on step 1 switches to that product's flow
+ * (docs/FLOWS.md); otherwise `current` stays.
+ */
+export function flowAfter(
+  flows: FormFlows,
+  current: Product,
+  preselected: boolean,
+  field: Field,
+  value: AnswerValue | undefined,
+): Product {
+  const switchTo = typeof value === 'string' ? productOf(field, value) : undefined;
+  return !preselected && switchTo && flows[switchTo] ? switchTo : current;
 }

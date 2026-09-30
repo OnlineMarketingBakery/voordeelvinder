@@ -1,22 +1,43 @@
 // The form island (brief §7.6, §12): /vergelijken and /vergelijken/<product>. Phase 4: the submit
 // builds the lead but sends nothing, and goes to /bedankt/<product> (a 404 until PR 18).
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Route } from '@playwright/test';
 
 import copy from '../../src/content/flows/nl/_copy.json' with { type: 'json' };
+import { STEP_GUARD_MS } from '../../src/lib/form/submit';
 
 const { buttons, errors, requiredByType } = copy;
 const progress = (step: number, total: number) =>
   copy.progress.replace('{step}', String(step)).replace('{total}', String(total));
 
+// "Volgende"/"Verstuur" (the form's submit button; the footer has a form too).
+const formSubmit = (page: Page) => page.getByRole('main').locator('form button[type="submit"]');
+
+/** Waits until the island has hydrated and restored its session ("Volgende" is enabled then). */
+async function hydrated(page: Page) {
+  await expect(page.locator('astro-island[ssr]')).toHaveCount(0);
+  await expect(formSubmit(page)).toBeEnabled();
+}
+
 /** Opens a form page and waits until the island has hydrated and restored its session. */
 async function open(page: Page, path: string) {
   await page.goto(path);
-  await expect(page.locator('astro-island[ssr]')).toHaveCount(0);
+  await hydrated(page);
 }
+
+/**
+ * Right after "Volgende" moved on, another "Volgende" without an answer in between counts as a
+ * double click and is ignored for STEP_GUARD_MS: wait that out before pressing it on purpose.
+ */
+const settle = (page: Page) => page.waitForTimeout(STEP_GUARD_MS + 50);
 
 // The question title (the footer has h2s too).
 const heading = (page: Page) => page.getByRole('main').getByRole('heading', { level: 2 });
+// An error line under a field (the live region, outside the form, repeats the first one).
+const errorText = (page: Page, text: string) =>
+  page.getByRole('main').locator('form').getByText(text);
+// The island's aria-live region (step changes and failed validation).
+const live = (page: Page) => page.getByRole('main').locator('p[aria-live="polite"]');
 const progressLine = (page: Page) => page.getByText(/^Stap \d+ van \d+$/);
 // A form control by its label (a question card is labelled by the same title as its input).
 const control = (page: Page, name: string | RegExp, options?: { exact?: boolean }) =>
@@ -226,7 +247,7 @@ test.describe('form: energy flow', () => {
     await expect(page.getByRole('radiogroup')).toHaveCount(2);
     await control(page, 'Wat is je postcode?').fill('9000');
     await next(page).click();
-    await expect(page.getByText(requiredByType.single_choice)).toHaveCount(2);
+    await expect(errorText(page, requiredByType.single_choice)).toHaveCount(2);
     await tick(page, 'Dit is een zakelijk adres.', false);
     await goNext(page, 'Wie is je huidige energieleverancier?');
   });
@@ -236,16 +257,28 @@ test.describe('form: validation', () => {
   test('shows errors inline, focuses the first one and links it to its field', async ({ page }) => {
     await open(page, '/vergelijken');
     await next(page).click();
-    await expect(page.getByText(requiredByType.single_choice)).toBeVisible();
+    await expect(errorText(page, requiredByType.single_choice)).toBeVisible();
     await expect(page.getByRole('radio', { name: 'Elektriciteit', exact: true })).toBeFocused();
     await expect(heading(page)).toHaveText('Wat wil je vergelijken?');
     const group = page.getByRole('radiogroup', { name: 'Wat wil je vergelijken?' });
     await expect(group).toHaveAttribute('aria-invalid', 'true');
     await expect(group).toHaveAccessibleDescription(requiredByType.single_choice);
+    // The focused radio carries the error too, and the error is announced.
+    await expect(
+      page.getByRole('radio', { name: 'Elektriciteit', exact: true }),
+    ).toHaveAccessibleDescription(requiredByType.single_choice);
+    await expect(live(page)).toHaveText(requiredByType.single_choice);
+    // A second "Volgende" with the same error is announced again.
+    await next(page).click();
+    // (toHaveText trims whitespace, so read the raw text: a trailing no-break space.)
+    await expect
+      .poll(() => live(page).evaluate((element) => element.textContent))
+      .toBe(`${requiredByType.single_choice}\u00a0`);
 
     await choose(page, 'Zonnepanelen');
-    await expect(page.getByText(requiredByType.single_choice)).toHaveCount(0);
+    await expect(errorText(page, requiredByType.single_choice)).toHaveCount(0);
     await goNext(page, 'Wat is je postcode?');
+    await settle(page);
     await next(page).click();
     const postcode = control(page, 'Wat is je postcode?');
     await expect(postcode).toBeFocused();
@@ -263,7 +296,7 @@ test.describe('form: validation', () => {
     const phone = control(page, 'Telefoonnummer');
     await phone.fill('04484620944');
     await phone.blur();
-    await expect(page.getByText(errors.phone_invalid)).toBeVisible();
+    await expect(errorText(page, errors.phone_invalid)).toBeVisible();
     await expect(phone).toHaveAttribute('aria-invalid', 'true');
     await expect(phone).toHaveValue('04484620944'); // never truncated or reformatted
 
@@ -277,8 +310,11 @@ test.describe('form: validation', () => {
 
     await submit(page).click();
     await expect(control(page, 'Voornaam')).toBeFocused();
-    await expect(page.getByText(requiredByType.day_slot)).toBeVisible();
-    await expect(page.getByText(requiredByType.consent)).toBeVisible();
+    await expect(errorText(page, requiredByType.day_slot)).toBeVisible();
+    await expect(page.getByRole('radio', { name: 'Maandag' })).toHaveAccessibleDescription(
+      requiredByType.day_slot,
+    );
+    await expect(errorText(page, requiredByType.consent)).toBeVisible();
     expect(page.url()).toContain('/vergelijken/energie');
   });
 });
@@ -337,6 +373,10 @@ test.describe('form: submit', () => {
   test('"Verstuur" goes to the thank-you page and sends nothing', async ({ page, baseURL }) => {
     await toContact(page);
     await fillContact(page);
+    // Contact details typed on another form page in this tab must not outlive the lead.
+    await page.evaluate(() =>
+      sessionStorage.setItem('voordeelvinder:form:vergelijken', '{"first_name":"Jan"}'),
+    );
     const origin = new URL(baseURL!).origin;
     const unexpected: string[] = [];
     page.on('request', (request) => {
@@ -349,8 +389,10 @@ test.describe('form: submit', () => {
     await page.waitForURL('**/bedankt/energie');
     expect(unexpected).toEqual([]);
     expect(
-      await page.evaluate(() => sessionStorage.getItem('voordeelvinder:form:energie')),
-    ).toBeNull();
+      await page.evaluate(() =>
+        Object.keys(sessionStorage).filter((key) => key.startsWith('voordeelvinder:form:')),
+      ),
+    ).toEqual([]);
   });
 
   test('a double click submits once', async ({ page }) => {
@@ -366,6 +408,136 @@ test.describe('form: submit', () => {
     await page.waitForURL('**/bedankt/energie');
     await page.waitForLoadState('networkidle');
     expect(thankYou).toHaveLength(1);
+  });
+});
+
+test.describe('form: double clicks', () => {
+  test('a double click on "Volgende" moves one step, without errors', async ({ page }) => {
+    await open(page, '/vergelijken/energie?energie=both');
+    await control(page, 'Wat is je postcode?').fill('9000');
+    await next(page).dblclick();
+    await expect(heading(page)).toHaveText('Wie is je huidige energieleverancier?');
+    await page.waitForTimeout(STEP_GUARD_MS);
+    await expect(heading(page)).toHaveText('Wie is je huidige energieleverancier?');
+    await expect(errorText(page, requiredByType.select)).toHaveCount(0);
+  });
+
+  test('after "Terug", a double click never submits the contact step unseen', async ({ page }) => {
+    await toContact(page);
+    await fillContact(page);
+    await back(page).click();
+    await expect(heading(page)).toHaveText('Heb je een warmtepomp?');
+    await next(page).dblclick();
+    await expect(heading(page)).toHaveText('Jouw gegevens');
+    await page.waitForTimeout(STEP_GUARD_MS + 250);
+    expect(new URL(page.url()).pathname).toBe('/vergelijken/energie');
+    await expect(submit(page)).toBeVisible();
+  });
+});
+
+test.describe('form: server render and before hydration', () => {
+  test('/vergelijken/energie renders the ?energie= start on the server', async ({ request }) => {
+    const both = await (
+      await request.get('/vergelijken/energie?energie=both&utm_source=meta')
+    ).text();
+    expect(both).toContain('>Wat is je postcode?</h2>');
+    expect(both).toContain(progress(1, 9));
+    expect(both).not.toContain('>Wat wil je vergelijken?</h2>');
+    expect(both).not.toContain('utm_source'); // only the validated preselect reaches the props
+    expect(both).toContain('<link rel="canonical" href="');
+    expect(both).toMatch(/<link rel="canonical" href="[^"]*\/vergelijken\/energie\/">/);
+
+    const plain = await (await request.get('/vergelijken/energie')).text();
+    expect(plain).toContain('>Wat wil je vergelijken?</h2>');
+    expect(plain).toContain(progress(1, 10));
+    // An unknown value is dropped, like in the island.
+    const unknown = await (await request.get('/vergelijken/energie?energie=water')).text();
+    expect(unknown).toContain('>Wat wil je vergelijken?</h2>');
+
+    expect((await request.get('/vergelijken/water')).status()).toBe(404);
+    const sitemap = await (await request.get('/sitemap-0.xml')).text();
+    for (const product of ['energie', 'zonnepanelen', 'thuisbatterij']) {
+      expect(sitemap).toContain(`/vergelijken/${product}/</loc>`);
+    }
+  });
+
+  test('nothing submits natively before hydration, and nothing swaps after', async ({ page }) => {
+    // Hold every script until the test lets go: the page stays server-rendered HTML.
+    const held: Route[] = [];
+    let release = false;
+    await page.route('**/_astro/**/*.js', (route) => {
+      if (release) return route.continue();
+      held.push(route);
+    });
+    const path = '/vergelijken/energie?energie=both&utm_source=meta&test=1';
+    await page.goto(path, { waitUntil: 'commit' });
+    await expect(heading(page)).toHaveText('Wat is je postcode?');
+    await expect(progressLine(page)).toHaveText(progress(1, 9));
+    await expect(page.locator('astro-island[ssr]')).toHaveCount(1);
+    await expect(formSubmit(page)).toBeDisabled();
+
+    const navigations: string[] = [];
+    page.on('framenavigated', (frame) => {
+      if (frame === page.mainFrame()) navigations.push(frame.url());
+    });
+    const postcode = control(page, 'Wat is je postcode?');
+    await postcode.fill('9000');
+    await postcode.press('Enter');
+    await page.evaluate(() =>
+      document.querySelector<HTMLFormElement>('main form')!.requestSubmit(),
+    );
+    await page.waitForTimeout(500);
+    expect(navigations).toEqual([]);
+    expect(page.url()).toBe(new URL(path, page.url()).href);
+
+    release = true;
+    await Promise.all(held.map((route) => route.continue()));
+    await hydrated(page);
+    // The same step as the server rendered: no swap after hydration.
+    await expect(heading(page)).toHaveText('Wat is je postcode?');
+    await expect(progressLine(page)).toHaveText(progress(1, 9));
+    await postcode.fill('9000');
+    await goNext(page, 'Wie is je huidige energieleverancier?');
+    expect(page.url()).toBe(new URL(path, page.url()).href);
+  });
+
+  test('every image on an on-demand form page loads', async ({ page }) => {
+    const failed: string[] = [];
+    page.on('response', (response) => {
+      if (response.request().resourceType() === 'image' && response.status() >= 400) {
+        failed.push(`${response.status()} ${response.url()}`);
+      }
+    });
+    await open(page, '/vergelijken/energie?energie=both');
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForLoadState('networkidle');
+    const broken = await page.evaluate(() =>
+      [...document.images]
+        .filter((image) => image.complete && image.naturalWidth === 0)
+        .map((image) => image.currentSrc || image.src),
+    );
+    expect(broken).toEqual([]);
+    expect(failed).toEqual([]);
+  });
+});
+
+test.describe('form: lead ids', () => {
+  test('a card of another product on step 1 starts a new lead', async ({ page }) => {
+    await open(page, '/vergelijken');
+    const stored = () =>
+      page.evaluate(() => {
+        const raw = sessionStorage.getItem('voordeelvinder:form:vergelijken');
+        return raw ? (JSON.parse(raw) as { leadId: string; eventId: string }) : null;
+      });
+    await choose(page, 'Elektriciteit');
+    await expect.poll(stored).not.toBeNull();
+    const energy = (await stored())!;
+    await choose(page, 'Gas');
+    await expect.poll(async () => (await stored())?.leadId).toBe(energy.leadId);
+    await choose(page, 'Zonnepanelen');
+    await expect.poll(async () => (await stored())?.leadId).not.toBe(energy.leadId);
+    const solar = (await stored())!;
+    expect(solar.eventId).not.toBe(energy.eventId);
   });
 });
 
@@ -405,13 +577,16 @@ test.describe('form: accessibility and layout', () => {
     await goNext(page, 'Ken je je jaarlijks energieverbruik?');
     await choose(page, 'Ja');
     await goNext(page, 'Je jaarverbruik');
+    await settle(page);
     await next(page).click();
     await axe(page, 'number fields with errors');
     await control(page, 'Elektriciteit (kWh per jaar)').fill('3500');
     await control(page, 'Gas (kWh per jaar)').fill('12.000');
     await goNext(page, 'Jouw gegevens');
     await axe(page, 'contact, call moment and consent');
+    await settle(page);
     await submit(page).click();
+    await expect(errorText(page, requiredByType.consent)).toBeVisible();
     await axe(page, 'contact with errors');
   });
 
@@ -427,7 +602,9 @@ test.describe('form: accessibility and layout', () => {
     await noScroll('step 1');
     await toContact(page);
     await noScroll('contact');
+    await settle(page);
     await submit(page).click();
+    await expect(errorText(page, requiredByType.consent)).toBeVisible();
     await noScroll('contact with errors');
     // Start over: the same page would otherwise resume at the contact step (brief §7.6).
     await page.evaluate(() => sessionStorage.clear());

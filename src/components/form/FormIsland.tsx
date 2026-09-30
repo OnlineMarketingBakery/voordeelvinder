@@ -3,8 +3,10 @@
 // component renders it and handles focus, scrolling, persistence and navigation.
 //
 // Rendered on the server with the page's first step (client:load, brief §6.1), so there is
-// something to see and to morph into before hydration. Right after mounting it restores the
-// session once (URL preselect, sessionStorage; src/lib/form/initial.ts).
+// something to see and to morph into before hydration; the URL preselect (?energie=) is already
+// applied there. Right after mounting it restores the stored session once
+// (src/lib/form/initial.ts). Until then the form is inert: "Volgende" is disabled, and Form.astro
+// cancels any native submit, so nothing typed before hydration ends up in the URL.
 //
 // No animations yet (PR 17 brings the form motion): only CSS state transitions.
 import { useEffect, useRef, useState, type SubmitEvent } from 'react';
@@ -18,23 +20,38 @@ import {
   validateStep,
   visibleFields,
   type ErrorCode,
+  type StepValidation,
+  type Submission,
   type WarningCode,
 } from '../../lib/flow/engine';
 import type { Field } from '../../lib/flow/schema';
 import type { AnswerValue, Answers, DaySlotAnswer, Product } from '../../lib/flow/types';
-import { engineDerived, productOf, storableAnswers, withAnswer } from '../../lib/form/answers';
-import { restoreStart, serverStart, type FormStart } from '../../lib/form/initial';
-import { choiceOptions, domId, UI_ICONS } from '../../lib/form/labels';
-import { errorMessage, progressLabel, warningMessage } from '../../lib/form/messages';
+import { engineDerived, flowAfter, storableAnswers, withAnswer } from '../../lib/form/answers';
 import {
-  clearSession,
+  firstInvalidStep,
+  restoreStart,
+  serverStart,
+  type FormStart,
+} from '../../lib/form/initial';
+import { choiceOptions, domId, UI_ICONS } from '../../lib/form/labels';
+import { errorMessage, liveText, progressLabel, warningMessage } from '../../lib/form/messages';
+import {
+  clearAllSessions,
+  flowFingerprint,
+  flowFingerprints,
   newId,
   readSession,
   sessionStore,
   STORAGE_VERSION,
   writeSession,
 } from '../../lib/form/storage';
-import { firstStepBack, sendLead, submissionContext, thanksPath } from '../../lib/form/submit';
+import {
+  firstStepBack,
+  isRepeatSubmit,
+  sendLead,
+  submissionContext,
+  thanksPath,
+} from '../../lib/form/submit';
 import type {
   FormCopy,
   FormEntry,
@@ -53,6 +70,8 @@ export type FormIslandProps = {
   /** The page's product; on /vergelijken the energy flow, whose step 1 can switch flows. */
   product: Product;
   preselected: boolean;
+  /** The URL's preselected answers (urlPreselects of ?energie=), worked out on the server. */
+  preselect: Answers;
   copy: FormCopy;
   /** Icon key → URL (resolved in Form.astro). */
   icons: Record<string, string>;
@@ -68,7 +87,7 @@ type State = FormStart & {
   errors: Record<string, ErrorCode>;
   warnings: Record<string, WarningCode>;
   suggestions: Record<string, string>;
-  /** The aria-live announcement of the last step change. */
+  /** The aria-live announcement of the last step change or failed validation. */
   announcement: string;
   ids: Ids | null;
   restored: boolean;
@@ -119,6 +138,7 @@ export default function FormIsland({
   flows,
   product: pageProduct,
   preselected,
+  preselect,
   copy,
   icons,
   panels,
@@ -126,7 +146,7 @@ export default function FormIsland({
   backHref,
 }: FormIslandProps) {
   const [state, setState] = useState<State>(() => ({
-    ...serverStart(flows, pageProduct, preselected),
+    ...serverStart(flows, pageProduct, preselected, preselect),
     errors: {},
     warnings: {},
     suggestions: {},
@@ -140,6 +160,8 @@ export default function FormIsland({
   const pendingFocus = useRef<PendingFocus>(null);
   const submitting = useRef(false);
   const submitted = useRef(false);
+  /** When "Volgende" last moved forward (event.timeStamp), until the next answer or "Terug". */
+  const advancedAt = useRef<number | null>(null);
 
   const flow = flowOf(flows, state.product);
   const derived = engineDerived(state.flags, state.answers);
@@ -149,26 +171,17 @@ export default function FormIsland({
   const isLast = nextStep(flow, state.step, state.answers, derived) === null;
   const panel = panels[state.product] ?? panels[pageProduct];
 
-  // Restore once after mounting: the URL and storage only exist in the browser, and reading them
-  // during the first render would not match the server-rendered HTML.
+  // Restore once after mounting: storage only exists in the browser, and reading it during the
+  // first render would not match the server-rendered HTML.
   useEffect(() => {
-    const versions = Object.fromEntries(
-      Object.entries(flows).map(([key, value]) => [key, value.version]),
-    );
-    const stored = readSession(sessionStore(), entry, versions);
-    const start = restoreStart({
-      flows,
-      product: pageProduct,
-      preselected,
-      search: window.location.search,
-      stored,
-    });
+    const stored = readSession(sessionStore(), entry, flowFingerprints(flows));
+    const start = restoreStart({ flows, product: pageProduct, preselected, preselect, stored });
     const ids = stored
       ? { leadId: stored.leadId, eventId: stored.eventId }
       : { leadId: newId(), eventId: newId() };
     // eslint-disable-next-line react-hooks/set-state-in-effect -- a one-time sync with browser-only state (URL, sessionStorage) after hydration
     setState((current) => ({ ...current, ...start, ids, restored: true }));
-  }, [flows, entry, pageProduct, preselected]);
+  }, [flows, entry, pageProduct, preselected, preselect]);
 
   // Persist after every change (brief §7.6): only the visitor's own answers, abandoned
   // branches cleared first.
@@ -178,7 +191,7 @@ export default function FormIsland({
     writeSession(sessionStore(), entry, {
       version: STORAGE_VERSION,
       product: state.product,
-      flowVersion: active.version,
+      flow: flowFingerprint(active),
       step: state.step,
       answers: storableAnswers(active, state.answers, engineDerived(state.flags, state.answers)),
       leadId: state.ids.leadId,
@@ -243,17 +256,38 @@ export default function FormIsland({
     }));
   };
 
+  /** Shows a step with the errors of its validation, focuses and announces the first one. */
+  const showErrors = (stepId: string, answers: Answers, result: StepValidation) => {
+    const shown = visibleFields(flow, stepId, answers, engineDerived(state.flags, answers));
+    const first = shown.find((field) => result.errors[field.id] !== undefined);
+    const code = first ? result.errors[first.id] : undefined;
+    if (first && code) pendingFocus.current = { kind: 'error', field: first, code };
+    // Focus alone doesn't make every screen reader read the error: announce it as well.
+    const text = first && code ? errorMessage(copy, first, code) : undefined;
+    setState((current) => ({
+      ...current,
+      step: stepId,
+      answers,
+      errors: result.errors,
+      warnings: result.warnings,
+      suggestions: result.suggestions,
+      announcement: text ? liveText(current.announcement, text) : current.announcement,
+    }));
+  };
+
   const onChange = (field: Field, value: AnswerValue | undefined) => {
+    advancedAt.current = null;
     setState((current) => {
       const answers = withAnswer(current.answers, field.id, value);
       const { [field.id]: _error, ...errors } = current.errors;
       const { [field.id]: _suggestion, ...suggestions } = current.suggestions;
       const { [field.id]: _warning, ...warnings } = current.warnings;
       // A card of another product on step 1 continues in that product's flow (docs/FLOWS.md).
-      const switchTo = typeof value === 'string' ? productOf(field, value) : undefined;
-      const product =
-        !current.flags.preselected && switchTo && flows[switchTo] ? switchTo : current.product;
-      return { ...current, answers, product, errors, suggestions, warnings };
+      const product = flowAfter(flows, current.product, current.flags.preselected, field, value);
+      // A new flow is a new lead: a duplicated tab (sessionStorage is copied) that switches
+      // product then no longer shares lead_id and event_id with the original (docs/FLOWS.md).
+      const ids = product === current.product ? current.ids : { leadId: newId(), eventId: newId() };
+      return { ...current, answers, product, ids, errors, suggestions, warnings };
     });
   };
 
@@ -286,13 +320,19 @@ export default function FormIsland({
     document.getElementById(domId.field(field.id))?.focus();
   };
 
+  const unlock = () => {
+    submitting.current = false;
+    setState((current) => ({ ...current, submitting: false }));
+  };
+
   const submit = async () => {
     if (submitting.current) return;
     submitting.current = true;
     setState((current) => ({ ...current, submitting: true }));
     const ids = state.ids ?? { leadId: newId(), eventId: newId() };
+    let submission: Submission;
     try {
-      const submission = buildSubmission(
+      submission = buildSubmission(
         flow,
         state.answers,
         submissionContext({
@@ -304,16 +344,28 @@ export default function FormIsland({
           now: new Date(),
         }),
       );
+    } catch {
+      // An answer on the path no longer validates (a restored session): show that step and its
+      // errors. Logged without the (personal) answers.
+      console.error('form: the submission could not be built');
+      unlock();
+      const invalid = firstInvalidStep(flow, state.answers, derived);
+      if (invalid !== null) {
+        showErrors(invalid, state.answers, validateStep(flow, invalid, state.answers, derived));
+      }
+      return;
+    }
+    try {
       await sendLead(submission);
     } catch {
-      // A state validate:flows rules out; say so without the (personal) answers.
-      console.error('form: the submission could not be built');
-      submitting.current = false;
-      setState((current) => ({ ...current, submitting: false }));
+      // TODO(Phase 5): show a form-level error from _copy.json in the aria-live region.
+      console.error('form: the lead could not be sent');
+      unlock();
       return;
     }
     submitted.current = true;
-    clearSession(sessionStore(), entry);
+    // Every form page's session, not only this one: no contact details outlive the lead.
+    clearAllSessions(sessionStore());
     // The thank-you page arrives in PR 18; until then this URL is a 404.
     window.location.assign(thanksPath(state.product));
   };
@@ -321,17 +373,11 @@ export default function FormIsland({
   const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submitting.current) return;
+    // The second click of a double click on "Volgende" lands on the new step: ignore it.
+    if (isRepeatSubmit(advancedAt.current, event.timeStamp)) return;
     const result = validateStep(flow, state.step, state.answers, derived);
     if (!result.valid) {
-      const first = fields.find((field) => result.errors[field.id] !== undefined);
-      if (first)
-        pendingFocus.current = { kind: 'error', field: first, code: result.errors[first.id]! };
-      setState((current) => ({
-        ...current,
-        errors: result.errors,
-        warnings: result.warnings,
-        suggestions: result.suggestions,
-      }));
+      showErrors(state.step, state.answers, result);
       return;
     }
     const next = nextStep(flow, state.step, state.answers, derived);
@@ -339,11 +385,13 @@ export default function FormIsland({
       void submit();
       return;
     }
+    advancedAt.current = event.timeStamp;
     goTo(next, state.answers);
   };
 
   const onBack = () => {
     if (submitting.current) return;
+    advancedAt.current = null;
     const previous = previousStep(flow, state.step, state.answers, derived);
     if (previous !== null) {
       goTo(previous, state.answers);
@@ -424,6 +472,7 @@ export default function FormIsland({
                   icon={icons[UI_ICONS.next]}
                   iconPosition="end"
                   busy={state.submitting}
+                  disabled={!state.restored}
                 >
                   {isLast ? copy.buttons.submit : copy.buttons.next}
                 </FormButton>

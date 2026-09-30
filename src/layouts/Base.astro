@@ -17,6 +17,11 @@ interface Props {
    * unknown URL: its own path (/404) is not a page to point search engines at.
    */
   canonical?: boolean;
+  /**
+   * The canonical path when it isn't the request's own: on-demand pages answer with and without
+   * the trailing slash, and point both at the one the sitemap lists.
+   */
+  canonicalPath?: string | undefined;
   /** schema.org objects for this page (JSON-LD). */
   structuredData?: object[];
   /** The share image; default the site's (src/assets/og/default.png). */
@@ -29,6 +34,7 @@ const {
   description,
   noindex = false,
   canonical: hasCanonical = true,
+  canonicalPath,
   structuredData = [],
   ogImage: pageOgImage,
   ogType = 'website',
@@ -37,7 +43,9 @@ const site = await getSite();
 
 const fullTitle = pageTitle(title, site.name, site.seo.titleTemplate);
 const metaDescription = description ?? site.seo.defaultDescription;
-const canonical = hasCanonical ? new URL(Astro.url.pathname, Astro.site) : undefined;
+const canonical = hasCanonical
+  ? new URL(canonicalPath ?? Astro.url.pathname, Astro.site)
+  : undefined;
 const og = pageOgImage ?? {
   src: defaultOgImage.src,
   width: defaultOgImage.width,

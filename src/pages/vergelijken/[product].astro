@@ -1,21 +1,27 @@
 ---
 // The form with the product preselected (brief §5, §7.6): step 1 is skipped. For ads and the
 // product pages' CTAs; /vergelijken/energie also takes ?energie=electricity|gas|both.
-import type { GetStaticPaths } from 'astro';
-
+//
+// Rendered on demand, not prerendered: the server reads ?energie= and renders the step the
+// visitor really starts on (the postcode, "Stap 1 van 8"), instead of the energy question that
+// the island would swap out right after hydration (brief §6.1: nothing flashes before
+// hydration). Listed in the sitemap through astro.config.ts (FORM_PAGES).
 import Form from '../../components/form/Form.astro';
 import Page from '../../layouts/Page.astro';
 import { PRODUCTS, type Product } from '../../lib/flow/types';
 import { loadFormContent } from '../../lib/form-content';
 
-export const getStaticPaths = (() =>
-  PRODUCTS.map((product) => ({ params: { product } }))) satisfies GetStaticPaths;
+export const prerender = false;
 
-const product = Astro.params.product as Product;
+const product = Astro.params.product;
+if (!(PRODUCTS as readonly (string | undefined)[]).includes(product)) {
+  // An empty 404 makes Astro render the site's 404 page (src/pages/404.astro).
+  return new Response(null, { status: 404 });
+}
 const { copy } = await loadFormContent();
-const seo = copy.pages[product];
+const seo = copy.pages[product as Product];
 ---
 
-<Page title={seo.title} description={seo.description}>
-  <Form entry={product} />
+<Page title={seo.title} description={seo.description} canonicalPath={`/vergelijken/${product}/`}>
+  <Form entry={product as Product} search={Astro.url.search} />
 </Page>

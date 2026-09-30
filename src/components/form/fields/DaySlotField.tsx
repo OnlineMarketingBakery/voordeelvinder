@@ -64,6 +64,8 @@ function Chips({
               value={option.code}
               checked={selected === option.code}
               onChange={() => onPick(option.code)}
+              // On each chip too: focus lands on a radio (see ChoiceField).
+              aria-describedby={described}
             />
             {option.label}
           </label>

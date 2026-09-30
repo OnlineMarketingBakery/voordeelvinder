@@ -5,10 +5,11 @@ import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import type { AstroIntegration } from 'astro';
-import { defineConfig, fontProviders } from 'astro/config';
+import { defineConfig, fontProviders, memoryCache } from 'astro/config';
 import { loadEnv } from 'vite';
 
 import { pruneUnusedImagesIntegration } from './src/integrations/prune-unused-images';
+import { PRODUCTS } from './src/lib/flow/types';
 import { sitemapNoindexIntegration } from './src/integrations/sitemap-noindex';
 import { inSitemap } from './src/lib/seo/indexing';
 import { parseServerEnv, type SiteEnv } from './src/server/env';
@@ -44,9 +45,17 @@ function buildCommit(): string {
   }
 }
 
+// The preselected form pages render on demand (src/pages/vergelijken/[product].astro, to read
+// ?energie=), so the sitemap integration doesn't find them: list them here. Indexable, like
+// every form page (brief §11).
+const onDemandPages = PRODUCTS.map(
+  (product) => new URL(`/vergelijken/${product}/`, env.PUBLIC_SITE_URL).href,
+);
+
 export default defineConfig({
   site: env.PUBLIC_SITE_URL,
-  // Pages are prerendered at build time; API routes opt out with `export const prerender = false`.
+  // Pages are prerendered at build time; API routes and /vergelijken/<product> opt out with
+  // `export const prerender = false`.
   output: 'static',
   adapter: node({
     mode: 'standalone',
@@ -55,9 +64,17 @@ export default defineConfig({
   }),
   // No server-side sessions: the adapter would otherwise enable filesystem sessions.
   session: false,
+  // The on-demand form pages (/vergelijken/<product>) get their images from the image endpoint,
+  // which resizes at request time. Keep each result in memory for the life of the process, so
+  // only the first visitor after a deploy waits for a resize. Bounded: at most `max` entries.
+  cache: { provider: memoryCache({ max: 200 }) },
+  routeRules: { '/_image': { maxAge: 31_536_000 } },
   integrations: [
     react(),
-    sitemap({ filter: (page) => inSitemap(new URL(page).pathname) }),
+    sitemap({
+      customPages: onDemandPages,
+      filter: (page) => inSitemap(new URL(page).pathname),
+    }),
     // After the sitemap is written (hooks run in this order): drop pages that opted out.
     sitemapNoindexIntegration(env.SITE_ENV),
     styleguide(env.SITE_ENV),

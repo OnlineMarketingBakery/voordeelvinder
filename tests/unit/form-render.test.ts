@@ -45,6 +45,7 @@ function island(overrides: Partial<FormIslandProps>): string {
     flows,
     product: 'energie',
     preselected: false,
+    preselect: {},
     copy,
     icons,
     panels,
@@ -87,6 +88,24 @@ describe('form island: server render', () => {
     expect(text(html)).toContain('Stap 1 van 10');
     expect(html.match(/type="radio"/g)).toHaveLength(3);
     expect(text(html)).not.toContain('Zonnepanelen');
+  });
+
+  it('/vergelijken/energie?energie=both renders the postcode step on the server', () => {
+    const html = island({
+      entry: 'energie',
+      flows: { energie: flows.energie },
+      preselected: true,
+      preselect: { energy_type: 'both' },
+    });
+    expect(text(html)).toContain('Wat is je postcode?');
+    expect(text(html)).toContain('Stap 1 van 9');
+    expect(text(html)).not.toContain('Wat wil je vergelijken?');
+  });
+
+  it('is inert until the island restored: "Volgende" is really disabled', () => {
+    const html = island({});
+    expect(html).toMatch(/<button type="submit" disabled=""/);
+    expect(html).not.toMatch(/<form[^>]*\s(action|method)=/i);
   });
 
   it('/vergelijken/zonnepanelen starts at the postcode, with its own panel', () => {
@@ -143,10 +162,19 @@ describe('form island: every step of every flow renders', () => {
           switch (field.type) {
             case 'single_choice':
             case 'yes_no':
-            case 'day_slot':
+            case 'day_slot': {
               expect(html).toContain('role="radiogroup"');
               expect(html).toContain('type="radio"');
+              // Each radio carries the error too: focus lands on a radio, not on the group.
+              const radios = (html.match(/<input type="radio"[^>]*>/g) ?? []).filter((radio) =>
+                radio.includes(`id="veld-${field.id}-`),
+              );
+              expect(radios.length).toBeGreaterThan(0);
+              for (const radio of radios) {
+                expect(radio).toMatch(new RegExp(`aria-describedby="[^"]*veld-${field.id}-fout`));
+              }
               break;
+            }
             case 'select':
               expect(html).toContain(`<select id="veld-${field.id}"`);
               break;

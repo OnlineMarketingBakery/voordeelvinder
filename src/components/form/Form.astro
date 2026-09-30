@@ -1,13 +1,16 @@
 ---
 // The form on /vergelijken and /vergelijken/<product> (brief §5, §7): loads the flows and copy,
 // resolves the icons and images the island needs (it can't use astro:assets), and renders the
-// island with its first step on the server (client:load, never client:only: brief §6.1).
+// island with its first step on the server (client:load, never client:only: brief §6.1). The
+// preselected pages render on demand and pass their query, so ?energie= is applied in that
+// first step already (nothing flashes before hydration).
 import { getImage } from 'astro:assets';
 
 import flagBe from '../../assets/images/flags/be.png';
 import { iconUrl, image } from '../../lib/assets';
 import { PRODUCTS, type Product } from '../../lib/flow/types';
 import { loadFormContent } from '../../lib/form-content';
+import { urlPreselects } from '../../lib/form/initial';
 import { formIconKeys } from '../../lib/form/labels';
 import { productPagePath } from '../../lib/form/submit';
 import type { FormEntry, FormFlows, FormPanel, ResolvedImage } from '../../lib/form/types';
@@ -15,15 +18,19 @@ import FormIsland from './FormIsland';
 
 interface Props {
   entry: FormEntry;
+  /** The request's query (on-demand pages only): ?energie= preselects the energy type. */
+  search?: string;
 }
 
-const { entry } = Astro.props;
+const { entry, search = '' } = Astro.props;
 const { flows: allFlows, copy } = await loadFormContent();
 const products: readonly Product[] = entry === 'vergelijken' ? PRODUCTS : [entry];
 const product: Product = entry === 'vergelijken' ? 'energie' : entry;
 const preselected = entry !== 'vergelijken';
 
 const flows: FormFlows = Object.fromEntries(products.map((key) => [key, allFlows[key]]));
+// Only the validated preselect reaches the island's props, never the rest of the query.
+const preselect = urlPreselects(allFlows[product], search, preselected);
 const icons = Object.fromEntries(formIconKeys(flows).map((key) => [key, iconUrl(key)]));
 
 // The panel mascot: 80 px in the mobile header, 323 px in the desktop panel (Figma 89:7439).
@@ -65,10 +72,26 @@ const backHref = preselected ? productPagePath(product) : '/';
     flows={flows}
     product={product}
     preselected={preselected}
+    preselect={preselect}
     copy={formCopy}
     icons={icons}
     panels={panels}
     flag={flag}
     backHref={backHref}
   />
+  {/*
+    Before hydration the server-rendered <form> would submit natively (a GET that puts the
+    answers in the URL and drops the landing query). "Volgende" is disabled until then; this
+    also cancels any other native submit. The island always handles the submit itself, so it
+    stays on: preventDefault doesn't stop React's own handler.
+  */}
+  <script is:inline>
+    document.currentScript.parentElement.addEventListener(
+      'submit',
+      function (event) {
+        event.preventDefault();
+      },
+      true,
+    );
+  </script>
 </div>

@@ -47,8 +47,25 @@ export function submissionContext({
     tracking: {},
     cookies: { analytics: false, marketing: false },
     page,
+    // TODO(Phase 5): keep ?test=1 for the session, show the TESTMODUS badge (brief §9.4).
     test: isTestVisit(search),
   };
+}
+
+/**
+ * How long after "Volgende" moved to a new step another "Volgende" is ignored when nothing was
+ * answered in between: a double click or double tap would otherwise also validate (or submit)
+ * the new step before the visitor saw it.
+ */
+export const STEP_GUARD_MS = 350;
+
+/**
+ * Whether a "Volgende" is the second half of a double click/tap: `advancedAt` is the time
+ * (the submit event's timeStamp) the previous one moved forward, or null when the visitor has answered or
+ * gone back since.
+ */
+export function isRepeatSubmit(advancedAt: number | null, now: number): boolean {
+  return advancedAt !== null && now - advancedAt >= 0 && now - advancedAt < STEP_GUARD_MS;
 }
 
 /**

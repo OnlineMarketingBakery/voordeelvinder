@@ -68,6 +68,10 @@ export function ChoiceField({
               value={option.code}
               checked={value === option.code}
               onChange={() => onChange(option.code)}
+              // On each radio too: focus lands on a radio, and most screen readers don't read
+              // the group's description then. (aria-invalid stays on the group: ARIA doesn't
+              // support it on a radio.)
+              aria-describedby={described}
             />
             {option.icon && (
               <span

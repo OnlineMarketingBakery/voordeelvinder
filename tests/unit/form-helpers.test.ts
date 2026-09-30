@@ -18,6 +18,7 @@ import {
 import type { Product } from '../../src/lib/flow/types';
 import {
   engineDerived,
+  flowAfter,
   impliedKeys,
   productOf,
   settersOf,
@@ -25,7 +26,15 @@ import {
   withAnswer,
   withoutImplied,
 } from '../../src/lib/form/answers';
-import { isTestVisit, restoreStart, serverStart, urlPreselects } from '../../src/lib/form/initial';
+import {
+  firstInvalidStep,
+  isTestVisit,
+  restoreStart,
+  serverStart,
+  startFlags,
+  urlPreselects,
+  type RestoreInput,
+} from '../../src/lib/form/initial';
 import {
   choiceOptions,
   consentSegments,
@@ -38,12 +47,16 @@ import {
 } from '../../src/lib/form/labels';
 import {
   errorMessage,
+  liveText,
   progressLabel,
   suggestionLabel,
   warningMessage,
 } from '../../src/lib/form/messages';
 import {
+  clearAllSessions,
   clearSession,
+  flowFingerprint,
+  flowFingerprints,
   newId,
   parseSession,
   readSession,
@@ -56,8 +69,10 @@ import {
 } from '../../src/lib/form/storage';
 import {
   firstStepBack,
+  isRepeatSubmit,
   productPagePath,
   sendLead,
+  STEP_GUARD_MS,
   submissionContext,
   thanksPath,
 } from '../../src/lib/form/submit';
@@ -87,7 +102,7 @@ function session(overrides: Partial<StoredSession> = {}): StoredSession {
   return {
     version: STORAGE_VERSION,
     product: 'energie',
-    flowVersion: energie.version,
+    flow: flowFingerprint(energie),
     step: null,
     answers: {},
     leadId: LEAD,
@@ -103,7 +118,17 @@ function memoryStore() {
     getItem: (key: string) => data.get(key) ?? null,
     setItem: (key: string, value: string) => void data.set(key, value),
     removeItem: (key: string) => void data.delete(key),
+    key: (index: number) => [...data.keys()][index] ?? null,
+    get length() {
+      return data.size;
+    },
   };
+}
+
+/** restoreStart with the page's query, as Form.astro passes it (urlPreselects). */
+function restore({ search, ...input }: Omit<RestoreInput, 'preselect'> & { search: string }) {
+  const flow = input.flows[input.product]!;
+  return restoreStart({ ...input, preselect: urlPreselects(flow, search, input.preselected) });
 }
 
 afterEach(() => {
@@ -112,7 +137,7 @@ afterEach(() => {
 });
 
 describe('form session storage', () => {
-  const versions = { energie: energie.version };
+  const versions = { energie: flowFingerprint(energie) };
 
   it('keys the session per form page', () => {
     expect(storageKey('vergelijken')).toBe('voordeelvinder:form:vergelijken');
@@ -134,8 +159,16 @@ describe('form session storage', () => {
   });
 
   it('ignores another storage version, an older flow version and unknown flows', () => {
-    expect(parseSession(JSON.stringify({ ...session(), version: 2 }), versions)).toBeNull();
-    expect(parseSession(JSON.stringify(session({ flowVersion: 0 })), versions)).toBeNull();
+    expect(
+      parseSession(JSON.stringify({ ...session(), version: STORAGE_VERSION + 1 }), versions),
+    ).toBeNull();
+    // The version 1 record (flowVersion, no fingerprint).
+    const { flow: _flow, ...v1 } = session();
+    expect(
+      parseSession(JSON.stringify({ ...v1, version: 1, flowVersion: energie.version }), versions),
+    ).toBeNull();
+    expect(parseSession(JSON.stringify(session({ flow: 'v0+gas' })), versions)).toBeNull();
+    expect(parseSession(JSON.stringify({ ...session(), flow: 1 }), versions)).toBeNull();
     expect(parseSession(JSON.stringify(session({ product: 'zonnepanelen' })), versions)).toBeNull();
     expect(parseSession(JSON.stringify({ ...session(), product: 'water' }), versions)).toBeNull();
   });
@@ -186,12 +219,62 @@ describe('form session storage', () => {
       removeItem: () => {
         throw new Error('blocked');
       },
+      key: () => {
+        throw new Error('blocked');
+      },
+      length: 1,
     };
     expect(readSession(broken, 'energie', versions)).toBeNull();
     expect(writeSession(broken, 'energie', session())).toBe(false);
     expect(() => clearSession(broken, 'energie')).not.toThrow();
+    expect(() => clearAllSessions(broken)).not.toThrow();
     expect(readSession(null, 'energie', versions)).toBeNull();
     expect(writeSession(null, 'energie', session())).toBe(false);
+  });
+
+  it('clears the session of every form page after a submit, and nothing else', () => {
+    const store = memoryStore();
+    writeSession(store, 'vergelijken', session({ answers: { first_name: 'Jan' } }));
+    writeSession(store, 'energie', session());
+    store.setItem('voordeelvinder:formulier', 'keep');
+    store.setItem('voordeelvinder:thanks', 'keep');
+    store.setItem('other', 'keep');
+    clearAllSessions(store);
+    expect([...store.data.keys()].sort()).toEqual([
+      'other',
+      'voordeelvinder:formulier',
+      'voordeelvinder:thanks',
+    ]);
+    const broken = {
+      ...memoryStore(),
+      key: () => {
+        throw new Error('blocked');
+      },
+      length: 1,
+    };
+    expect(() => clearAllSessions(broken)).not.toThrow();
+    expect(() => clearAllSessions(null)).not.toThrow();
+  });
+
+  it('fingerprints the flow by version and the switches that are on', () => {
+    const noGas = real('energie', { ...sharedData, switches: { gas: false } });
+    expect(flowFingerprint(energie)).toBe(`v${energie.version}+gas`);
+    expect(flowFingerprint(noGas)).toBe(`v${energie.version}`);
+    expect(flowFingerprint({ ...energie, version: energie.version + 1 })).not.toBe(
+      flowFingerprint(energie),
+    );
+    expect(flowFingerprints({ energie, zonnepanelen })).toEqual({
+      energie: flowFingerprint(energie),
+      zonnepanelen: flowFingerprint(zonnepanelen),
+    });
+  });
+
+  it('ignores a session stored with gas on once the gas switch is off', () => {
+    const store = memoryStore();
+    writeSession(store, 'vergelijken', session({ answers: { product_choice: 'gas' } }));
+    const noGas = real('energie', { ...sharedData, switches: { gas: false } });
+    expect(readSession(store, 'vergelijken', flowFingerprints({ energie }))).not.toBeNull();
+    expect(readSession(store, 'vergelijken', flowFingerprints({ energie: noGas }))).toBeNull();
   });
 
   it('finds sessionStorage only when it works', () => {
@@ -233,7 +316,7 @@ describe('form start state', () => {
   });
 
   it('?energie=both skips the energy question and sets energy_preselected', () => {
-    const start = restoreStart({
+    const start = restore({
       flows: { energie },
       product: 'energie',
       preselected: true,
@@ -246,7 +329,7 @@ describe('form start state', () => {
   });
 
   it('?energie=gas hides the electricity questions', () => {
-    const start = restoreStart({
+    const start = restore({
       flows: { energie },
       product: 'energie',
       preselected: true,
@@ -265,7 +348,7 @@ describe('form start state', () => {
   it('drops an unknown ?energie= value, and gas while the gas switch is off', () => {
     const unknown = urlPreselects(energie, '?energie=solar', true);
     expect(unknown).toEqual({});
-    const start = restoreStart({
+    const start = restore({
       flows: { energie },
       product: 'energie',
       preselected: true,
@@ -285,7 +368,7 @@ describe('form start state', () => {
   it('ignores ?energie= on /vergelijken (no preselect) and normalises its case', () => {
     expect(urlPreselects(energie, '?energie=both', false)).toEqual({});
     expect(urlPreselects(energie, '?energie=BOTH', true)).toEqual({ energy_type: 'both' });
-    const start = restoreStart({
+    const start = restore({
       flows: all,
       product: 'energie',
       preselected: false,
@@ -301,7 +384,7 @@ describe('form start state', () => {
       step: 'supplier',
       answers: { energy_choice: 'gas', postcode: '9000', is_business: false },
     });
-    const withUrl = restoreStart({
+    const withUrl = restore({
       flows: { energie },
       product: 'energie',
       preselected: true,
@@ -315,7 +398,7 @@ describe('form start state', () => {
     });
     expect(withUrl.step).toBe('supplier');
 
-    const invalid = restoreStart({
+    const invalid = restore({
       flows: { energie },
       product: 'energie',
       preselected: true,
@@ -328,7 +411,7 @@ describe('form start state', () => {
 
   it('restores the stored step when it is on the path, else the first open step', () => {
     const answers = { product_choice: 'electricity', postcode: '9000', supplier: 'engie' };
-    const onPath = restoreStart({
+    const onPath = restore({
       flows: all,
       product: 'energie',
       preselected: false,
@@ -337,7 +420,7 @@ describe('form start state', () => {
     });
     expect(onPath.step).toBe('postcode');
     // Hand-edited or stale: a step the answers don't reach yet.
-    const offPath = restoreStart({
+    const offPath = restore({
       flows: all,
       product: 'energie',
       preselected: false,
@@ -349,14 +432,14 @@ describe('form start state', () => {
   });
 
   it('/vergelijken continues in the product the visitor chose on step 1', () => {
-    const start = restoreStart({
+    const start = restore({
       flows: all,
       product: 'energie',
       preselected: false,
       search: '',
       stored: session({
         product: 'zonnepanelen',
-        flowVersion: zonnepanelen.version,
+        flow: flowFingerprint(zonnepanelen),
         step: 'ownership',
         answers: { product_choice: 'zonnepanelen', postcode: '3000', is_business: false },
       }),
@@ -366,7 +449,7 @@ describe('form start state', () => {
   });
 
   it('never restores implied answers from storage', () => {
-    const start = restoreStart({
+    const start = restore({
       flows: all,
       product: 'energie',
       preselected: false,
@@ -374,6 +457,91 @@ describe('form start state', () => {
       stored: session({ answers: { product_choice: 'gas', energy_type: 'both' } }),
     });
     expect(start.answers).toEqual({ product_choice: 'gas' });
+  });
+
+  it('server-renders the URL preselect, with the same flags as the restore', () => {
+    const both = urlPreselects(energie, '?energie=both', true);
+    const server = serverStart({ energie }, 'energie', true, both);
+    expect(server).toEqual({
+      product: 'energie',
+      answers: { energy_type: 'both' },
+      step: 'postcode',
+      flags: { preselected: true, energy_preselected: true },
+    });
+    const client = restoreStart({
+      flows: { energie },
+      product: 'energie',
+      preselected: true,
+      preselect: both,
+      stored: null,
+    });
+    expect(client).toEqual(server);
+    // No (valid) preselect: the energy question, and no energy_preselected.
+    expect(serverStart({ energie }, 'energie', true, {}).step).toBe('energy_choice');
+    const noGas = real('energie', { ...sharedData, switches: { gas: false } });
+    const dropped = serverStart(
+      { energie: noGas },
+      'energie',
+      true,
+      urlPreselects(noGas, '?energie=gas', true),
+    );
+    expect(dropped.step).toBe('energy_choice');
+    expect(dropped.flags.energy_preselected).toBe(false);
+    // /vergelijken never takes a preselect.
+    expect(serverStart(all, 'energie', false, { energy_type: 'both' })).toEqual(
+      serverStart(all, 'energie', false),
+    );
+    expect(startFlags(true, { energy_type: 'gas' })).toEqual({
+      preselected: true,
+      energy_preselected: true,
+    });
+    expect(startFlags(false, { energy_type: 'gas' }).energy_preselected).toBe(false);
+  });
+
+  it('resumes at the first step whose stored answers no longer validate', () => {
+    const answers = {
+      postcode: '12',
+      is_business: false,
+      supplier: 'engie',
+      meter_type: 'single',
+    };
+    const start = restore({
+      flows: { energie },
+      product: 'energie',
+      preselected: true,
+      search: '?energie=both',
+      stored: session({ step: 'meters_solar', answers }),
+    });
+    expect(start.step).toBe('postcode');
+    expect(start.answers.postcode).toBe('12');
+    const derived = engineDerived(start.flags, start.answers);
+    expect(firstInvalidStep(energie, start.answers, derived)).toBe('postcode');
+    expect(firstInvalidStep(energie, start.answers, derived, 'postcode')).toBeNull();
+    const fixed = { ...start.answers, postcode: '9000' };
+    expect(firstInvalidStep(energie, fixed, engineDerived(start.flags, fixed))).toBe(
+      'meters_solar', // the open step: nothing answered yet
+    );
+  });
+
+  it('restores a gas-on session into a gas-off flow at step 1, not at the contact step', () => {
+    const answers = {
+      product_choice: 'gas',
+      postcode: '9000',
+      is_business: false,
+      supplier: 'engie',
+      digital_meter: 'yes',
+      social_tariff: 'no',
+      budget_meter: 'no',
+      knows_consumption: 'yes',
+      gas_kwh: 12000,
+      first_name: 'Jan',
+    };
+    const stored = session({ step: 'contact', answers });
+    const input = { product: 'energie', preselected: false, search: '', stored } as const;
+    expect(restore({ ...input, flows: all }).step).toBe('contact');
+    const noGas = real('energie', { ...sharedData, switches: { gas: false } });
+    const start = restore({ ...input, flows: { ...all, energie: noGas } });
+    expect(start.step).toBe('product');
   });
 
   it('reads ?test=1', () => {
@@ -613,6 +781,23 @@ describe('form labels and icons', () => {
   });
 });
 
+describe('form flow switch', () => {
+  const productField = field(energie, 'product', 'product_choice');
+
+  it('switches flow on /vergelijken when a card of another product is chosen', () => {
+    expect(flowAfter(all, 'energie', false, productField, 'zonnepanelen')).toBe('zonnepanelen');
+    expect(flowAfter(all, 'zonnepanelen', false, productField, 'gas')).toBe('energie');
+    expect(flowAfter(all, 'energie', false, productField, 'both')).toBe('energie');
+    expect(flowAfter(all, 'energie', false, productField, undefined)).toBe('energie');
+    // Preselected, or the product's flow is not on this page: stay.
+    expect(flowAfter(all, 'energie', true, productField, 'zonnepanelen')).toBe('energie');
+    expect(flowAfter({ energie }, 'energie', false, productField, 'zonnepanelen')).toBe('energie');
+    expect(flowAfter(all, 'energie', false, field(energie, 'supplier', 'supplier'), 'engie')).toBe(
+      'energie',
+    );
+  });
+});
+
 describe('form submit', () => {
   it('knows the thank-you page and the product pages', () => {
     expect(thanksPath('energie')).toBe('/bedankt/energie');
@@ -639,6 +824,22 @@ describe('form submit', () => {
       page: '/vergelijken/energie',
       test: false,
     });
+  });
+
+  it('ignores the second "Volgende" of a double click', () => {
+    expect(isRepeatSubmit(null, 1000)).toBe(false);
+    expect(isRepeatSubmit(1000, 1000)).toBe(true);
+    expect(isRepeatSubmit(1000, 1000 + STEP_GUARD_MS - 1)).toBe(true);
+    expect(isRepeatSubmit(1000, 1000 + STEP_GUARD_MS)).toBe(false);
+    expect(isRepeatSubmit(1000, 900)).toBe(false);
+    expect(STEP_GUARD_MS).toBeGreaterThanOrEqual(300);
+    expect(STEP_GUARD_MS).toBeLessThanOrEqual(400);
+  });
+
+  it('re-announces the same live message', () => {
+    expect(liveText('', 'Kies een antwoord.')).toBe('Kies een antwoord.');
+    expect(liveText('Kies een antwoord.', 'Kies een antwoord.')).toBe('Kies een antwoord.\u00a0');
+    expect(liveText('Kies een antwoord.\u00a0', 'Kies een antwoord.')).toBe('Kies een antwoord.');
   });
 
   it('sends nothing in Phase 4', async () => {
