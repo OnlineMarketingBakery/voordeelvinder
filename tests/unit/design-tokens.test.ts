@@ -63,6 +63,23 @@ describe('design tokens', () => {
     expect(contrastRatio(color(fg), color(bg))).toBeGreaterThanOrEqual(3);
   });
 
+  // Focus rings (WCAG 1.4.11): purple on light surfaces, white on purple (`surface-dark`).
+  it.each([
+    ['purple-500', 'white'],
+    ['purple-500', 'lavender-50'],
+    ['purple-500', 'lime-300'],
+    ['white', 'purple-600'],
+    ['white', 'purple-500'],
+  ])('focus ring %s is visible on %s (3:1)', (ring, surface) => {
+    expect(contrastRatio(color(ring), color(surface))).toBeGreaterThanOrEqual(3);
+  });
+
+  it('removes Tailwind defaults so only tokens can be used', () => {
+    for (const reset of ['--color-*', '--text-*', '--radius-*', '--shadow-*', '--drop-shadow-*']) {
+      expect(css).toContain(`${reset}: initial;`);
+    }
+  });
+
   // The PromoCheckers lesson: lime is a background behind dark ink, never text on white.
   it.each(['lime-300', 'lime-400'])('%s is not usable as text on white', (lime) => {
     expect(contrastRatio(color(lime), color('white'))).toBeLessThan(3);

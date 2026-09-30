@@ -4,26 +4,29 @@
  * Design tokens (brief §6). Figma has no variables or styles, so every value was sampled
  * from the frames; near-duplicate values are merged (docs/design/figma-notes/tokens.md §11).
  * Tokens marked "NEW" are not in the design and are TO CONFIRM with the designer
- * (docs/CONTENT-TODO.md §5). Tailwind's default palette, radii and shadows are removed so
- * nothing off-palette can be used.
+ * (docs/CONTENT-TODO.md §5). Tailwind's default palette, type scale, radii and shadows are
+ * removed so nothing off-token can be used.
  */
 @theme {
   --color-*: initial;
   --radius-*: initial;
   --shadow-*: initial;
   --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+  --text-*: initial;
 
   /* Brand */
   --color-purple-500: #6c5ce7; /* accents: icon tiles, secondary CTA, links, "Stap X van Y" */
-  --color-purple-600: #7051ed; /* surfaces: hero, footer, form panel, CTA band, table header */
+  --color-purple-600: #7051ed; /* surfaces: hero, footer, form panel, CTA band, table header. Figma adds a grain (renders ≈#6247cf) — open question, CONTENT-TODO 5.3 */
   --color-purple-700: #674bd9; /* progress fill; small purple text on lavender */
   --color-lavender-50: #f6f4ff; /* answer cards, inputs, light cards */
   --color-lavender-100: #f2f0ff; /* battery block, icon circles, image placeholders */
   --color-lavender-300: #ded9f4; /* decorative hairline borders only (1.4:1, not for controls) */
   --color-lavender-400: #cfcae4; /* dividers */
   --color-lime-50: #f8fceb; /* solar block */
-  --color-lime-300: #c9e260; /* primary CTAs, top strip, highlight chip */
-  --color-lime-400: #b7e137; /* accents: strips, table column, bars */
+  --color-lime-300: #c9e260; /* pill CTAs (header, hero, product blocks, CTA band, FAQ), top strip, highlight chip */
+  --color-lime-400: #b7e137; /* form Volgende/Indienen, Abonneren, table column, accent bars (one button lime TO CONFIRM, CONTENT-TODO 5.3) */
 
   /* Ink */
   --color-ink-900: #03080f; /* headings, labels, button text */
@@ -46,7 +49,7 @@
   --text-h1--line-height: 1.1667;
   --text-h1--letter-spacing: -0.03em;
   --text-h1--font-weight: 600;
-  --text-h2: 3rem; /* 48 */
+  --text-h2: 3rem; /* 48 (Figma lh 54–76, mostly 65; tightened so wrapped lines stay close) */
   --text-h2--line-height: 1.2;
   --text-h2--letter-spacing: -0.03em;
   --text-h2--font-weight: 600;
@@ -70,7 +73,7 @@
   --text-title-sm--line-height: 1.35;
   --text-title-sm--letter-spacing: -0.03em;
   --text-title-sm--font-weight: 600;
-  --text-lead: 1.5rem; /* 24/30: eyebrow, badges */
+  --text-lead: 1.5rem; /* 24/30–32: eyebrow, badges, final-CTA sub */
   --text-lead--line-height: 1.3;
   --text-lead--letter-spacing: -0.02em;
   --text-body-xl: 1.25rem; /* 20/30 */
@@ -85,7 +88,7 @@
   --text-sm: 0.875rem; /* 14/20 */
   --text-sm--line-height: 1.4286;
   --text-sm--letter-spacing: -0.02em;
-  --text-label: 1.125rem; /* 18, form field labels */
+  --text-label: 1.125rem; /* 18, form field labels (Figma lh 36; tightened) */
   --text-label--line-height: 1.5;
   --text-label--letter-spacing: -0.03em;
   --text-label--font-weight: 600;
@@ -115,16 +118,24 @@
   --shadow-card: 12px 12px 48px rgb(40 34 88 / 0.07);
   --shadow-card-lg: 0 15px 50px rgb(40 34 88 / 0.15);
   --shadow-row: 0 4px 22px rgb(108 92 231 / 0.14);
-  --shadow-soft: 0 18px 27px rgb(0 0 0 / 0.05);
+  --shadow-soft: 0 18px 27px rgb(0 0 0 / 0.05); /* also product feature cards (Figma 0 13 24 rgb(68 85 15 / .06)) */
   --shadow-on-purple: 0 11px 29px rgb(0 0 0 / 0.53); /* step cards on purple: very heavy, to confirm */
-  --shadow-glow-lime: 0 2px 8px rgb(165 202 53 / 0.53);
-  --shadow-glow-purple: 0 7px 19px rgb(108 92 231 / 0.56);
-  --inset-shadow-gloss: inset 0 0 17.4px rgb(255 255 255 / 0.7);
+  /* CTA glows: always paired with an inset-shadow-gloss* class, as in Figma */
+  --shadow-glow-lime: 0 2px 8px rgb(165 202 53 / 0.53); /* CTA band button 60:81 */
+  --shadow-glow-purple: 0 7px 19px rgb(108 92 231 / 0.56); /* hero CTA 60:324 */
+  --shadow-glow-purple-sm: 0 2px 8px rgb(108 92 231 / 0.36); /* final CTA 60:503 */
+  --inset-shadow-gloss: inset 0 0 17.4px rgb(255 255 255 / 0.7); /* hero + product-block CTAs */
+  --inset-shadow-gloss-strong: inset 0 0 17.4px #fff; /* header CTA, CTA band, final CTA */
 
   /* Layout (desktop design is 1440 wide) */
   --container-content: 73.125rem; /* 1170 */
   --container-wide: 86.125rem; /* 1378 */
   --container-form: 72.75rem; /* 1164 = panel 372 + gap 24 + card 767 */
+}
+
+/* Put on purple surfaces (hero, footer, CTA band, form panel) so focus rings stay visible. */
+@utility surface-dark {
+  --focus-ring: var(--color-white);
 }
 
 /* The font's CSS variable comes from Astro's Fonts API (astro.config.ts). */
@@ -140,8 +151,9 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Purple ring by default; `surface-dark` (purple backgrounds) switches it to white. */
   :focus-visible {
-    outline: 2px solid var(--color-purple-500);
+    outline: 2px solid var(--focus-ring, var(--color-purple-500));
     outline-offset: 2px;
   }
 
