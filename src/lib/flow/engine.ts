@@ -110,7 +110,11 @@ function newScope(flow: Flow, answers: Answers, derived: Derived): Scope {
   const implied = impliedKeys(flow);
   // The island knows at mount whether the product came from the URL: missing means false.
   const data: Record<string, unknown> = {
-    derived: { ...derived, preselected: derived.preselected === true },
+    derived: {
+      ...derived,
+      preselected: derived.preselected === true,
+      energy_preselected: derived.energy_preselected === true,
+    },
   };
   // Implied answers start as given (a preselect) when this flow allows them; a visible field
   // that sets them takes over (admit).

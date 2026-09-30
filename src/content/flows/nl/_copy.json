@@ -1,0 +1,32 @@
+{
+  "buttons": { "back": "Terug", "next": "Volgende", "submit": "Verstuur" },
+  "progress": "Stap {step} van {total}",
+  "yesNo": { "yes": "Ja", "no": "Nee" },
+  "errors": {
+    "required": "Vul dit veld in.",
+    "invalid_type": "Er ging iets mis met dit antwoord. Probeer het opnieuw.",
+    "postcode_invalid": "Geef een geldige postcode van 4 cijfers in, bijvoorbeeld 9000.",
+    "phone_invalid": "Geef een geldig Belgisch gsm-nummer in, bijvoorbeeld 0475 12 34 56.",
+    "phone_landline": "Geef een geldig Belgisch gsm-nummer in, bijvoorbeeld 0475 12 34 56.",
+    "email_invalid": "Geef een geldig e-mailadres in.",
+    "number_invalid": "Geef alleen cijfers in, bijvoorbeeld 3500.",
+    "number_not_integer": "Geef een geheel getal in, zonder komma.",
+    "number_too_low": "Geef minstens {min} {unit} in.",
+    "number_too_high": "Geef hoogstens {max} {unit} in.",
+    "text_too_long": "Gebruik hoogstens {maxLength} tekens.",
+    "text_invalid": "Dit veld bevat tekens die niet zijn toegestaan.",
+    "option_unknown": "Kies een van de mogelijkheden.",
+    "day_required": "Kies een dag.",
+    "slot_required": "Kies een tijdstip.",
+    "day_unknown": "Kies een van de dagen.",
+    "slot_unknown": "Kies een van de tijdstippen."
+  },
+  "requiredByType": {
+    "single_choice": "Kies een antwoord.",
+    "yes_no": "Kies een antwoord.",
+    "select": "Kies een antwoord uit de lijst.",
+    "consent": "Vink dit vakje aan om verder te gaan.",
+    "day_slot": "Kies een dag en een tijdstip."
+  },
+  "emailSuggestion": "Bedoel je {suggestion}?"
+}

@@ -1,11 +1,12 @@
 // Reads the flow files for validate:flows: one folder per locale (nl/, later fr/), each with
-// an optional _shared.json and one <flow>.json per product.
+// an optional _shared.json and _copy.json and one <flow>.json per product.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import type { FlowIssue, LocaleSources } from '../../src/lib/flow/validate';
 
 export const SHARED_FILE = '_shared.json';
+export const COPY_FILE = '_copy.json';
 
 function readJson(root: string, path: string, issues: FlowIssue[]): unknown {
   try {
@@ -47,6 +48,7 @@ export function loadFlowSources(root: string): { locales: LocaleSources[]; issue
       const data = readJson(root, path, issues);
       if (data === undefined) continue;
       if (name === SHARED_FILE) sources.shared = { path, data };
+      else if (name === COPY_FILE) sources.copy = { path, data };
       else sources.flows.push({ path, data });
     }
     locales.push(sources);

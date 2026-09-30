@@ -260,9 +260,11 @@ describe('flow engine: paths (brief §7.3 energy flow)', () => {
     const flow = smallFlow([question('a', [])]);
     expect(conditionData(flow, { a: 'yes', stray: 'x' }, { region: 'flanders' })).toEqual({
       a: 'yes',
-      derived: { region: 'flanders', preselected: false },
+      derived: { region: 'flanders', preselected: false, energy_preselected: false },
     });
-    expect(conditionData(flow, {})).toEqual({ derived: { preselected: false } });
+    expect(conditionData(flow, {})).toEqual({
+      derived: { preselected: false, energy_preselected: false },
+    });
   });
 });
 

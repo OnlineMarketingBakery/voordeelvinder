@@ -3,7 +3,9 @@
 // express (graph, vars, locales: src/lib/flow/validate.ts).
 //
 // Files (per locale folder, e.g. src/content/flows/nl/):
-//   _shared.json      { "steps": [Step, …] }: steps defined once for every flow (brief §7.1)
+//   _shared.json      { "switches"?, "steps": [Step, …] }: steps defined once for every flow
+//                     (brief §7.1), and the config switches options can depend on (`requires`)
+//   _copy.json        the form's interface copy: buttons, progress, error messages (flowCopyFile)
 //   <product>.json    a flow; its `steps` mix own steps and references { "use": "<shared id>" }
 //
 // A reference takes the shared step as is and sets its own `next` (where the flow goes on
@@ -15,6 +17,8 @@ import { z } from 'zod';
 import { iconKeys } from '../asset-keys';
 import { inspectLogic, isOperator, type JsonValue } from './logic';
 import { PRODUCTS } from './types';
+import { ERROR_CODES, WARNING_CODES } from './validators/errors';
+import { FIELD_TYPES } from './validators/types';
 
 /** The id of the shared contact step every flow ends with (brief §7.1). */
 export const CONTACT_STEP_ID = 'contact';
@@ -92,6 +96,11 @@ export const option = z.strictObject({
   product: z.enum(PRODUCTS).optional(),
   /** Answers implied by choosing it, e.g. { "energy_type": "both" }; conditions can read them. */
   sets: z.record(flowId, optionCode).optional(),
+  /**
+   * Offered only while this switch in _shared.json `switches` is on (brief §7.3: gas is a config
+   * switch). resolveFlow leaves the option out otherwise; an unknown switch fails validate:flows.
+   */
+  requires: flowId.optional(),
 });
 
 /** Plain options (select, day_slot): no icon, no implied answers. */
@@ -174,7 +183,36 @@ export const field = z.discriminatedUnion('type', [
     dayLabel: text.optional(),
     slotLabel: text.optional(),
   }),
-  z.strictObject({ ...fieldBase, type: z.literal('consent') }),
+  z
+    .strictObject({
+      ...fieldBase,
+      type: z.literal('consent'),
+      /**
+       * Words of the label rendered as links, e.g. { "text": "privacybeleid", "href":
+       * "/privacybeleid" }: the first occurrence of `text` in the label becomes the link.
+       */
+      links: z
+        .array(
+          z.strictObject({
+            text,
+            href: z
+              .string()
+              .regex(/^\/[a-z0-9-]+(?:\/[a-z0-9-]+)*$/, 'a site path such as /privacybeleid'),
+          }),
+        )
+        .optional(),
+    })
+    .superRefine((f, ctx) => {
+      for (const [index, link] of (f.links ?? []).entries()) {
+        if (!f.label?.includes(link.text)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['links', index, 'text'],
+            message: `"${link.text}" does not occur in the label`,
+          });
+        }
+      }
+    }),
 ]);
 
 export const nextEntry = z.strictObject({ if: condition.optional(), goto: flowId });
@@ -227,7 +265,41 @@ export const flowFile = z.strictObject({
   steps: z.array(flowStep).min(1),
 });
 
-export const sharedStepsFile = z.strictObject({ steps: z.array(step).min(1) });
+export const sharedStepsFile = z.strictObject({
+  /**
+   * Config switches for this locale, e.g. { "gas": true }: an option with `"requires": "gas"` is
+   * only offered while the switch is on (resolve.ts).
+   */
+  switches: z.record(flowId, z.boolean()).optional(),
+  steps: z.array(step).min(1),
+});
+
+/** Copy with placeholders: every `{token}` listed must occur in it. */
+const template = (...tokens: string[]) =>
+  text.refine((value) => tokens.every((token) => value.includes(`{${token}}`)), {
+    message: `must contain ${tokens.map((token) => `{${token}}`).join(' and ')}`,
+  });
+
+/**
+ * The form's interface copy per locale (<locale>/_copy.json): what the island shows around the
+ * questions. Error messages are keyed by the validators' error codes (validators/errors.ts);
+ * they may use the placeholders {min}, {max} and {unit} (number fields) and {maxLength} (text).
+ */
+export const flowCopyFile = z.strictObject({
+  buttons: z.strictObject({ back: text, next: text, submit: text }),
+  /** "Stap {step} van {total}" (brief §7.6; engine progress()). */
+  progress: template('step', 'total'),
+  /** Card labels of yes_no fields without their own `labels`. */
+  yesNo: z.strictObject({ yes: text, no: text }),
+  /** One message per error code. */
+  errors: z.record(z.enum(ERROR_CODES), text),
+  /** A more specific "required" message per field type, e.g. "Kies een antwoord." for cards. */
+  requiredByType: z.partialRecord(z.enum(FIELD_TYPES), text).optional(),
+  /** Per warning code; needed once a number field has softMin/softMax (validate:flows). */
+  warnings: z.partialRecord(z.enum(WARNING_CODES), text).optional(),
+  /** The e-mail typo suggestion, e.g. "Bedoel je {suggestion}?". */
+  emailSuggestion: template('suggestion'),
+});
 
 export type Option = z.infer<typeof option>;
 export type Field = z.infer<typeof field>;
@@ -237,6 +309,7 @@ export type Step = z.infer<typeof step>;
 export type StepRef = z.infer<typeof stepRef>;
 export type FlowFile = z.infer<typeof flowFile>;
 export type SharedStepsFile = z.infer<typeof sharedStepsFile>;
+export type FlowCopy = z.infer<typeof flowCopyFile>;
 
 /** A flow with its shared steps filled in (src/lib/flow/resolve.ts): what the engine runs. */
 export type Flow = Omit<FlowFile, 'steps'> & { steps: Step[] };
