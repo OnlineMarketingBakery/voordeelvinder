@@ -15,6 +15,7 @@
   --drop-shadow-*: initial;
   --text-shadow-*: initial;
   --text-*: initial;
+  --ease-*: initial; /* only the brief's two easings (motion tokens below) */
 
   /* Brand */
   --color-purple-500: #6c5ce7; /* accents: icon tiles, secondary CTA, links, "Stap X van Y" */
@@ -138,6 +139,23 @@
   --focus-ring: var(--color-white);
 }
 
+/*
+ * Motion tokens (brief §6.1). Figma has no animation, so these are the brief's starting values.
+ * src/lib/motion.ts exports the same values for GSAP and Motion; a unit test keeps them in sync.
+ * `static` so the variables always exist, also for scripts that read them.
+ */
+@theme static {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --motion-duration-fast: 150ms;
+  --motion-duration-base: 250ms;
+  --motion-duration-slow: 400ms;
+  --motion-duration-page: 200ms; /* page crossfade ("about 200 ms") */
+  --motion-distance-1: 8px;
+  --motion-distance-2: 16px;
+  --motion-distance-3: 24px;
+}
+
 /* The font's CSS variable comes from Astro's Fonts API (astro.config.ts). */
 @theme inline {
   --font-sans: var(--font-bricolage);
@@ -160,5 +178,52 @@
   ::selection {
     background-color: var(--color-lime-300);
     color: var(--color-ink-900);
+  }
+}
+
+/*
+ * Page transitions (brief §6.1): browser-native cross-document view transitions, so every
+ * navigation stays a real page load (no client router). Browsers without support navigate
+ * normally. Elements that should morph get a view-transition-name on the clicked element only.
+ */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--motion-duration-page);
+  animation-timing-function: var(--ease-out);
+}
+
+/*
+ * The header (view-transition-name: site-header) stays still while the content changes: no
+ * group animation, the new snapshot shown as is, the old one hidden. (Keeping both visible
+ * without a fade would blend them with plus-lighter and wash the header out.)
+ */
+::view-transition-group(site-header),
+::view-transition-new(site-header) {
+  animation: none;
+}
+
+::view-transition-old(site-header) {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Reduced motion: only short fades remain. No morphs, slides or loops. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*) {
+    animation: none;
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: var(--motion-duration-fast);
   }
 }

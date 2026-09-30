@@ -31,3 +31,27 @@ test('the styleguide renders every token group and stays out of search', async (
   );
   expect(serious, JSON.stringify(serious, null, 2)).toEqual([]);
 });
+
+test('pages opt in to native view transitions and navigate normally', async ({
+  page,
+  browserName,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+
+  await page.goto('/');
+  if (browserName === 'chromium') {
+    const hasRule = await page.evaluate(() =>
+      [...document.styleSheets].some((sheet) =>
+        [...sheet.cssRules].some((rule) => rule.constructor.name === 'CSSViewTransitionRule'),
+      ),
+    );
+    expect(hasRule).toBe(true);
+  }
+
+  await page.goto('/styleguide');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Styleguide');
+  await page.goBack();
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  expect(errors).toEqual([]);
+});
