@@ -12,7 +12,9 @@
 // - Landlines are rejected unless the field sets `allowLandlines`. A landline's national number
 //   is 8 digits starting with 1–9 (single-digit zones 2 Brussels, 3 Antwerp, 4 Liège, 9 Ghent;
 //   two-digit zones otherwise), per the BIPT numbering plan. Non-geographic numbers (070, 077,
-//   078, 0800, 090x) are never accepted. This is a shape check, not an allocation check.
+//   078, 0800, 090x) are never accepted, and neither is 045x–049x with 8 digits: that range is
+//   mobile, so it is a mobile a digit short, not a Liège landline. This is a shape check, not
+//   an allocation check.
 //
 // Output: E.164 ("+32475123456") and a display format ("+32 475 12 34 56").
 import { empty, fail, isEmpty, ok } from './shared';
@@ -40,7 +42,8 @@ const SEPARATORS = /[\s.,\-/()]/g;
 const BRACKETED_TRUNK = /^(\+|00)\s*32\s*\(\s*0\s*\)/;
 const MOBILE = /^4\d{8}$/;
 const LANDLINE = /^[1-9]\d{7}$/;
-const NON_GEOGRAPHIC = /^(70|77|78|800|90)/;
+/** Never a landline: non-geographic ranges, and 045x–049x, which is mobile (a digit short). */
+const NEVER_LANDLINE = /^(4[5-9]|70|77|78|800|90)/;
 const SINGLE_DIGIT_ZONES = '2349';
 
 /** The national numbers the input can be read as, most likely first. */
@@ -55,7 +58,7 @@ function nationalReadings(compact: string): string[] {
 
 function kindOf(national: string): PhoneKind | null {
   if (MOBILE.test(national)) return 'mobile';
-  if (LANDLINE.test(national) && !NON_GEOGRAPHIC.test(national)) return 'landline';
+  if (LANDLINE.test(national) && !NEVER_LANDLINE.test(national)) return 'landline';
   return null;
 }
 

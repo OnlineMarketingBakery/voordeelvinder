@@ -41,6 +41,11 @@ const REAL_LOOKALIKES = new Set([
   'hotmail.de',
   'outlook.de',
   'live.de',
+  // Microsoft country domains one letter from the .be ones.
+  'hotmail.se',
+  'outlook.ie',
+  'live.se',
+  'live.ie',
 ]);
 /** Their names ("mail", "email"…), which the single-domain provider rule leaves alone too. */
 const REAL_LOOKALIKE_NAMES = new Set([...REAL_LOOKALIKES].map((domain) => domain.split('.')[0]));
@@ -59,6 +64,26 @@ const SINGLE_DOMAIN_PROVIDERS: Readonly<Record<string, string>> = {
   scarlet: 'scarlet.be',
   pandora: 'pandora.be',
 };
+
+/**
+ * Single-domain providers that also have a real domain under another TLD (proximus.com,
+ * scarlet.nl): only a missing TLD is completed ("scarlet" → scarlet.be).
+ */
+const MISSING_TLD_ONLY = new Set(['proximus', 'scarlet']);
+
+/**
+ * Common names shorter than this (me, msn) are one edit from many real domains (ge, mi, msc):
+ * for them only a TLD typo is corrected.
+ */
+const SHORT_NAME = 4;
+
+/** The name before the TLD and the TLD ("" when there is none). */
+function splitDomain(domain: string): { name: string; tld: string } {
+  const dot = domain.lastIndexOf('.');
+  return dot === -1
+    ? { name: domain, tld: '' }
+    : { name: domain.slice(0, dot), tld: domain.slice(dot + 1) };
+}
 
 const LOCAL = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*$/;
 const LABEL = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
@@ -97,15 +122,24 @@ export function suggestDomain(domain: string): string | undefined {
   if ((COMMON_DOMAINS as readonly string[]).includes(domain) || REAL_LOOKALIKES.has(domain)) {
     return undefined;
   }
+  const { name, tld } = splitDomain(domain);
   // One edit away from a common domain: gmial.com, hotmial.com, outlok.com, yaho.com, telnet.be.
-  const close = COMMON_DOMAINS.find((known) => editDistance(domain, known) === 1);
+  // A short common name (me.com, msn.com) only matches with the name as typed: me.co, msn.cm.
+  const close = COMMON_DOMAINS.find((known) => {
+    const knownName = splitDomain(known).name;
+    return (
+      editDistance(domain, known) === 1 && (knownName.length >= SHORT_NAME || knownName === name)
+    );
+  });
   if (close) return close;
   // A single-domain provider (within one edit) under another TLD, or none: gmail.be, gmial.be,
-  // skynet.com, "gmail" without a TLD.
-  const dot = domain.lastIndexOf('.');
-  const name = dot === -1 ? domain : domain.slice(0, dot);
+  // skynet.com, "gmail" without a TLD. A name missing the provider's first letter is another
+  // word (cloud.be), not a typo.
   if (REAL_LOOKALIKE_NAMES.has(name)) return undefined;
-  const provider = Object.keys(SINGLE_DOMAIN_PROVIDERS).find((p) => editDistance(name, p) <= 1);
+  const provider = Object.keys(SINGLE_DOMAIN_PROVIDERS).find(
+    (p) =>
+      editDistance(name, p) <= 1 && name[0] === p[0] && (tld === '' || !MISSING_TLD_ONLY.has(p)),
+  );
   return provider ? SINGLE_DOMAIN_PROVIDERS[provider] : undefined;
 }
 

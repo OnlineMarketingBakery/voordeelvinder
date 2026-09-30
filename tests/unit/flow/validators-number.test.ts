@@ -44,6 +44,11 @@ describe('parseInteger', () => {
     '3.5000',
     '-2,5',
     '3.5.0',
+    // A leading zero group is a decimal, not thousands: 0.500 is 0,5 and never 500.
+    '0.500',
+    '00.500',
+    '-0.500',
+    '0.000',
     3.5,
   ])('rejects the decimal %j', (input) => {
     expect(parseInteger(input)).toEqual({ ok: false, code: 'number_not_integer' });
@@ -56,6 +61,7 @@ describe('parseInteger', () => {
     '3500.',
     '.500',
     '35 00',
+    '0 500',
     '1e5',
     '0x10',
     '+3500',
