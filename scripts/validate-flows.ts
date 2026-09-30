@@ -1,7 +1,9 @@
 // Validates every form flow in src/content/flows (brief §7.1): schema, goto targets, dead ends,
 // loops, unreachable steps, known vars read after they're asked, option codes (unique, and
-// identical across locales), and that every flow ends with the shared contact step. The checks
-// live in src/lib/flow/validate.ts. Runs before every build (prebuild) and in CI.
+// identical across locales together with payload targets, required flags and branching), a flow
+// for every product an option continues in, and that every flow ends with the shared contact
+// step, which can't be skipped. The checks live in src/lib/flow/validate.ts. Runs before every
+// build (prebuild) and in CI.
 //
 //   npm run validate:flows              the site's flows
 //   tsx scripts/validate-flows.ts DIR   another flows folder (the tests' fixtures)

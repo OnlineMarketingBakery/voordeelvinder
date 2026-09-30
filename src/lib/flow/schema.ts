@@ -32,11 +32,20 @@ export type PayloadTarget = (typeof PAYLOAD_TARGETS)[number];
 
 const text = z.string().min(1);
 
+/**
+ * Names every plain object has (constructor, toString, __proto__, …): as a field id, reading
+ * `answers[id]` would find the built-in instead of "no answer yet".
+ */
+const OBJECT_BUILT_INS: ReadonlySet<string> = new Set(Object.getOwnPropertyNames(Object.prototype));
+
 /** Step and field ids: snake_case, stable (they're answer keys in the payload). */
 export const flowId = z
   .string()
   .regex(/^[a-z][a-z0-9_]*$/, 'a snake_case id such as meter_type')
-  .refine((id) => id !== 'derived', '"derived" is reserved for derived values');
+  .refine((id) => id !== 'derived', '"derived" is reserved for derived values')
+  .refine((id) => !OBJECT_BUILT_INS.has(id), {
+    error: (issue) => `"${String(issue.input)}" is reserved (a built-in property of every object)`,
+  });
 
 /** Option codes: the data contract with n8n and the lead sheet (AGENTS.md rule 4). */
 export const optionCode = z
@@ -54,8 +63,20 @@ const jsonValue: z.ZodType<JsonValue> = z.lazy(() =>
   ]),
 );
 
-/** A JSONLogic condition (src/lib/flow/logic.ts): only known operators, well-formed. */
+/**
+ * A JSONLogic condition (src/lib/flow/logic.ts): one operation, only known operators,
+ * well-formed. A list or a literal at the top is rejected: a list is truthy whatever it holds
+ * ([false] too) and a literal never changes, so either would make a branch dead or always taken.
+ */
 export const condition = jsonValue.superRefine((rule, ctx) => {
+  if (typeof rule !== 'object' || rule === null || Array.isArray(rule)) {
+    ctx.addIssue({
+      code: 'custom',
+      message:
+        'a condition is one JSONLogic operation, such as { "var": "has_solar" } (not a list or a literal)',
+    });
+    return;
+  }
   const info = inspectLogic(rule);
   for (const issue of info.issues) ctx.addIssue({ code: 'custom', message: issue });
   for (const op of info.operators.filter((name) => !isOperator(name))) {
@@ -176,6 +197,21 @@ export const stepRef = z.strictObject({
   next: z.array(nextEntry).optional(),
 });
 
+/**
+ * An entry of a flow's `steps`: a reference when it has `use`, an own step otherwise. The branch
+ * is picked before parsing so an error names the key (steps.2.title), where a union of the two
+ * would only say "Invalid input".
+ */
+const flowStep = z.unknown().transform((entry, ctx): StepRef | Step => {
+  const isRef = typeof entry === 'object' && entry !== null && 'use' in entry;
+  const parsed = isRef ? stepRef.safeParse(entry) : step.safeParse(entry);
+  if (parsed.success) return parsed.data;
+  for (const issue of parsed.error.issues) {
+    ctx.addIssue({ code: 'custom', message: issue.message, path: issue.path });
+  }
+  return z.NEVER;
+});
+
 export const flowFile = z.strictObject({
   /** Equals the file name (energie.json → "energie"). */
   id: flowId,
@@ -188,7 +224,7 @@ export const flowFile = z.strictObject({
     .regex(/^[a-z]{2}$/)
     .optional(),
   firstStep: flowId,
-  steps: z.array(z.union([stepRef, step])).min(1),
+  steps: z.array(flowStep).min(1),
 });
 
 export const sharedStepsFile = z.strictObject({ steps: z.array(step).min(1) });

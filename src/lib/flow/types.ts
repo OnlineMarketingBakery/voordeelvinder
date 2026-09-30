@@ -27,9 +27,13 @@ export type Answers = Readonly<Record<string, AnswerValue | undefined>>;
  */
 export const DERIVED_KEYS = ['postcode', 'region', 'province', 'preselected'] as const;
 export type DerivedKey = (typeof DERIVED_KEYS)[number];
+
+/** The values of `derived.region` (brief §7.5, §8); validate:flows checks literals against them. */
+export const REGIONS = ['flanders', 'wallonia', 'brussels'] as const;
+
 export type Derived = Readonly<{
   postcode?: string;
-  /** "flanders" | "wallonia" | "brussels" (brief §7.5, §8). */
+  /** One of REGIONS. */
   region?: string;
   /** A slug such as "oost-vlaanderen". */
   province?: string;
