@@ -80,7 +80,8 @@ jobs:
           name: dist
           path: dist/
       # Playwright advises against caching browsers; OS dependencies can't be cached anyway.
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      # Retry once: the runner's apt mirrors fail now and then (exit code 100).
+      - run: npx playwright install --with-deps ${{ matrix.browser }} || (sleep 20 && npx playwright install --with-deps ${{ matrix.browser }})
       - run: npx playwright test --project=${{ matrix.project }}
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}

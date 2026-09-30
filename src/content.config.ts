@@ -25,6 +25,13 @@ const site = defineCollection({
     name: text,
     locale: z.literal('nl-BE'),
     skipLink: text,
+    seo: z.strictObject({
+      /** `{title}` is replaced with the page title; the homepage uses the site name alone. */
+      titleTemplate: text.includes('{title}'),
+      /** Fallback meta description for pages without their own. */
+      defaultDescription: text,
+      ogImageAlt: text,
+    }),
     header: z.strictObject({
       logoLabel: text,
       navLabel: text,
