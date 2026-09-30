@@ -22,6 +22,7 @@ import {
   type TrackingKey,
 } from '../../lib/flow/engine';
 import type { Field, Flow } from '../../lib/flow/schema';
+import { cleanTrackingValue } from '../../lib/flow/tracking';
 import { PRODUCTS, type AnswerValue, type Derived, type Product } from '../../lib/flow/types';
 import { derive } from '../../lib/flow/validators/postcode';
 
@@ -39,9 +40,11 @@ const MAX_TOKEN = 2048;
 const MAX_ISSUE = 200;
 
 const key = z.string().max(MAX_KEY);
+/** Tracking values are cleaned, not refused (src/lib/flow/tracking.ts): at most 512 characters. */
+const trackingValue = z.string().max(MAX_TRACKING).default('').transform(cleanTrackingValue);
 const trackingShape = Object.fromEntries(
-  TRACKING_KEYS.map((name) => [name, z.string().max(MAX_TRACKING).default('')]),
-) as Record<TrackingKey, z.ZodDefault<z.ZodString>>;
+  TRACKING_KEYS.map((name) => [name, trackingValue]),
+) as Record<TrackingKey, typeof trackingValue>;
 
 /** The body: the form's Submission (engine.ts) plus the honeypot and the Turnstile token. */
 export const leadRequestBody = z.strictObject({

@@ -16,6 +16,24 @@ Every valid lead, as the payload in [PAYLOAD.md](PAYLOAD.md) (`schema_version: 1
 - `derived.region`: `flanders`, `wallonia` or `brussels` (from the postcode, recomputed by the
   server)
 - `is_test`: `true` for every lead that isn't from production, or that came with `?test=1`
+- `consent.cookies.marketing`: whether the visitor accepted marketing cookies (Meta, below)
+
+## Required in every workflow (not a draft)
+
+- **Deduplicate on `lead_id`** (newsletter sign-ups: `signup_id`) as the first step. The site
+  delivers at least once: it can send the same payload again after a crash, a status it
+  couldn't write, or a slow answer (PAYLOAD.md, "Delivery: at least once"). A duplicate must
+  never reach the partner, the lead sheet, Mailchimp or Meta a second time.
+- **Treat every string as untrusted.** Names, e-mail, every `tracking.*` value, `meta.page`
+  and `meta.user_agent` come from the visitor (PAYLOAD.md, "Untrusted fields"). The Google
+  Sheets node must write **RAW** ("Let n8n format", not "Let Google Sheets format" /
+  USER_ENTERED), or prefix an apostrophe to values starting with `=`, `+`, `-`, `@`, a tab or
+  a carriage return; otherwise a name such as `=HYPERLINK(…)` becomes a live formula. The same
+  goes for every CSV or spreadsheet export of the sheet or of n8n data.
+- **Meta Conversions API only with marketing consent** (brief §9.3): send `Lead` (every lead)
+  and `QualifiedLead` (promo) only when `consent.cookies.marketing` is `true` and `is_test` is
+  `false`, both with the payload's `event_id` (the browser's `Lead` event uses it too, so Meta
+  counts each lead once).
 
 ## Outcomes
 
@@ -50,9 +68,10 @@ still a draft (brief §7.4, §15 item 5).
 
 - Only `promo` leads go to the telesales partner; `no_promo` leads are stored, not delivered;
   `pending` leads wait.
-- The Meta `QualifiedLead` event is sent for `promo` only.
+- The Meta `QualifiedLead` event is sent for `promo` only, and only with marketing consent
+  (`consent.cookies.marketing: true`, see "Required in every workflow").
 - **Test leads** (`is_test: true`) never reach the partner or Meta, whatever their outcome.
-- Store the outcome and reasons in the lead sheet next to the lead.
+- Store the outcome and reasons in the lead sheet next to the lead (written RAW, see above).
 
 ## Open questions for the client
 

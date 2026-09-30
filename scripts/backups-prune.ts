@@ -8,7 +8,11 @@ import { loadScriptEnv } from './lib/env';
 const env = loadScriptEnv();
 const result = await pruneBackups(env.LEAD_BACKUP_DIR, { maxAgeDays: 30 });
 
-consoleLogger(result.removedPending > 0 ? 'warn' : 'info', 'backups_prune', {
-  site_env: env.SITE_ENV,
-  ...result,
-});
+consoleLogger(
+  result.removedPending + result.tempFilesDeleted > 0 ? 'warn' : 'info',
+  'backups_prune',
+  {
+    site_env: env.SITE_ENV,
+    ...result,
+  },
+);

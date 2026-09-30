@@ -35,7 +35,8 @@ const schema = z
     RATE_LIMIT_PER_HOUR: z.coerce.number().int().positive().default(10),
     // n8n (brief §4.5, §9.1). Optional on local, CI and staging: without a lead webhook, leads
     // are only backed up. Required on production. A non-production environment never points at
-    // the production webhook (AGENTS.md): staging uses a test webhook, local and CI a mock.
+    // the production workflow (AGENTS.md): staging uses a separate test workflow's /webhook/…
+    // URL (not n8n's /webhook-test/ editor URL), local and CI a mock.
     N8N_LEAD_WEBHOOK_URL: optional(z.url()),
     // Newsletter sign-ups (brief §5); without it they go to the lead webhook, where the
     // payload's `type: "newsletter"` tells them apart (docs/PAYLOAD.md).

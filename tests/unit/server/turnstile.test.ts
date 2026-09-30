@@ -82,6 +82,29 @@ describe('verifyTurnstile', () => {
     ).toBe('unavailable');
   });
 
+  it('never follows a redirect: the secret stays with siteverify', async () => {
+    const elsewhere = await startMockN8n();
+    try {
+      for (const status of [302, 307, 308]) {
+        mock.respond({ status, location: `${elsewhere.url}/webhook/stolen` });
+        expect(await verifyTurnstile('t', { secret, url: `${mock.url}/webhook/verify` })).toBe(
+          'unavailable',
+        );
+      }
+      expect(elsewhere.received).toEqual([]);
+      // An opaque redirect (what a browser-style fetch returns for redirect: "manual").
+      const opaque = new Response(null, { status: 200 });
+      Object.defineProperty(opaque, 'type', { value: 'opaqueredirect' });
+      expect(await verifyTurnstile('t', { secret, fetch: fakeFetch(opaque) })).toBe('unavailable');
+      const send = fakeFetch(Response.json({ success: true }));
+      await verifyTurnstile('t', { secret, fetch: send });
+      expect(send.mock.calls[0]![1]?.redirect).toBe('manual');
+    } finally {
+      mock.received.length = 0;
+      await elsewhere.close();
+    }
+  });
+
   it('works against a real HTTP endpoint (the e2e stand-in)', async () => {
     const url = `${mock.url}/turnstile/siteverify`;
     expect(await verifyTurnstile('XXXX.DUMMY.TOKEN.XXXX', { secret, url })).toBe('pass');

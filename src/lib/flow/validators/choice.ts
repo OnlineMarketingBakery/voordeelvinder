@@ -11,6 +11,9 @@ export const TEXT_MAX_LENGTH = 100;
 // C0 and C1 control characters, which whitespace normalisation doesn't already turn into spaces.
 // eslint-disable-next-line no-control-regex
 const CONTROL = /[\u0000-\u001f\u007f-\u009f]/;
+// A spreadsheet reads a cell starting with these as a formula (the names go into the lead
+// sheet). Tab and CR are trimmed off anyway; `+` and `-` stay allowed.
+const FORMULA_START = /^[=@\t\r]/;
 
 function validateCode(
   value: unknown,
@@ -43,11 +46,14 @@ export function validateBoolean(value: unknown, field: FieldConfig): ValidationR
   return field.required && !value ? fail('required') : ok(value);
 }
 
-/** text: trimmed, runs of whitespace collapsed to one space, no control characters. */
+/**
+ * text: trimmed, runs of whitespace collapsed to one space, no control characters, and not
+ * starting with `=` or `@` (a formula in the lead sheet).
+ */
 export function validateText(value: unknown, field: FieldConfig): ValidationResult<unknown> {
   if (isEmpty(value)) return empty(field);
   if (typeof value !== 'string') return fail('invalid_type');
   const text = value.trim().replace(/\s+/g, ' ');
-  if (CONTROL.test(text)) return fail('text_invalid');
+  if (CONTROL.test(text) || FORMULA_START.test(text)) return fail('text_invalid');
   return text.length > (field.maxLength ?? TEXT_MAX_LENGTH) ? fail('text_too_long') : ok(text);
 }

@@ -1,13 +1,26 @@
-import { appendFile, mkdir, readdir, readFile, stat, utimes, writeFile } from 'node:fs/promises';
+import {
+  appendFile,
+  chmod,
+  mkdir,
+  open,
+  readdir,
+  readFile,
+  stat,
+  utimes,
+  writeFile,
+} from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  acquireBackupLock,
   BackupLockError,
   type BackupStatus,
+  findBackup,
   foldLines,
   listPending,
+  markAttemptFailed,
   markForwarded,
   monthFile,
   parseLines,
@@ -19,6 +32,28 @@ import {
 import { tempDir } from './fixtures';
 
 const at = (iso: string) => () => new Date(iso);
+const hoursAgo = (hours: number) => new Date(Date.now() - hours * 60 * 60 * 1000);
+const NO_PRUNE = { removed: 0, removedPending: 0, malformed: 0, filesDeleted: 0 };
+
+/** A lock directory as another process leaves it: `.lock/owner` with its token. */
+async function lockDir(dir: string, token = 'other-process', mtime?: Date): Promise<string> {
+  const lock = join(dir, '.lock');
+  await mkdir(lock, { recursive: true });
+  await writeFile(join(lock, 'owner'), token);
+  if (mtime) await utimes(lock, mtime, mtime);
+  return lock;
+}
+
+/** FileHandle.prototype, to watch fsync calls. */
+async function fileHandlePrototype(dir: string): Promise<{ sync: () => Promise<void> }> {
+  await mkdir(dir, { recursive: true });
+  const handle = await open(join(dir, 'probe'), 'w');
+  const prototype = Object.getPrototypeOf(handle) as { sync: () => Promise<void> };
+  await handle.close();
+  const { unlink } = await import('node:fs/promises');
+  await unlink(join(dir, 'probe'));
+  return prototype;
+}
 const mode = async (path: string) => (await stat(path)).mode & 0o777;
 const lines = async (path: string) =>
   (await readFile(path, 'utf8'))
@@ -236,7 +271,13 @@ describe('lead backups', () => {
       const octBefore = await readFile(join(dir, '2026-10.jsonl'), 'utf8');
 
       const result = await pruneBackups(dir, { now: at('2026-10-05T00:00:00Z') });
-      expect(result).toEqual({ removed: 2, removedPending: 1, malformed: 1, filesDeleted: 1 });
+      expect(result).toEqual({
+        removed: 2,
+        removedPending: 1,
+        malformed: 1,
+        filesDeleted: 1,
+        tempFilesDeleted: 0,
+      });
       expect((await readdir(dir)).sort()).toEqual(['2026-09.jsonl', '2026-10.jsonl']);
       expect(await lines(join(dir, '2026-09.jsonl'))).toEqual([
         expect.objectContaining({
@@ -254,21 +295,75 @@ describe('lead backups', () => {
       // A second run changes nothing.
       const mtime = (await stat(join(dir, '2026-09.jsonl'))).mtimeMs;
       expect(await pruneBackups(dir, { now: at('2026-10-05T00:00:00Z') })).toEqual({
-        removed: 0,
-        removedPending: 0,
-        malformed: 0,
-        filesDeleted: 0,
+        ...NO_PRUNE,
+        tempFilesDeleted: 0,
       });
       expect((await stat(join(dir, '2026-09.jsonl'))).mtimeMs).toBe(mtime);
     });
 
     it('works on a directory that does not exist yet', async () => {
-      expect(await pruneBackups(dir)).toEqual({
-        removed: 0,
-        removedPending: 0,
-        malformed: 0,
-        filesDeleted: 0,
+      expect(await pruneBackups(dir)).toEqual({ ...NO_PRUNE, tempFilesDeleted: 0 });
+    });
+
+    it('keeps failed attempts in the compacted record', async () => {
+      const now = at('2026-10-05T10:00:00.000Z');
+      await storeBackup(
+        dir,
+        { id: 'a', kind: 'lead', status: 'pending_forward', payload: {} },
+        { now },
+      );
+      await markAttemptFailed(dir, [{ id: 'a', file: '2026-10.jsonl', reason: 'http_500' }], {
+        now: at('2026-10-05T10:05:00.000Z'),
       });
+      await markAttemptFailed(dir, [{ id: 'a', file: '2026-10.jsonl', reason: 'timeout' }], {
+        now: at('2026-10-05T10:15:00.000Z'),
+      });
+      await pruneBackups(dir, { now: at('2026-10-06T00:00:00Z') });
+      expect(await lines(join(dir, '2026-10.jsonl'))).toEqual([
+        expect.objectContaining({
+          id: 'a',
+          status: 'pending_forward',
+          attempts: 2,
+          last_attempt_at: '2026-10-05T10:15:00.000Z',
+        }),
+      ]);
+      // And counts on from there.
+      await markAttemptFailed(dir, [{ id: 'a', file: '2026-10.jsonl', reason: 'network' }], {
+        now: at('2026-10-06T01:00:00.000Z'),
+      });
+      expect(await listPending(dir)).toMatchObject([
+        { attempts: 3, lastAttemptAt: '2026-10-06T01:00:00.000Z' },
+      ]);
+    });
+
+    it('deletes temp files and lock leftovers older than an hour, and keeps young ones', async () => {
+      await mkdir(dir, { recursive: true });
+      const old = hoursAgo(2);
+      const orphan = join(dir, '2026-10.jsonl.123.0b6f6a1e-7f5a-4c1e-9a53-3f1f3c2d8e01.tmp');
+      await writeFile(orphan, '{"personal":"data"}\n');
+      await utimes(orphan, old, old);
+      const young = join(dir, '2026-10.jsonl.456.9d1c2b3a-4e5f-4a6b-8c7d-0e1f2a3b4c5d.tmp');
+      await writeFile(young, 'still being written');
+      const tombstone = join(dir, '.lock.12345.stale');
+      await mkdir(tombstone);
+      await writeFile(join(tombstone, 'owner'), 'crashed');
+      await utimes(tombstone, old, old);
+      const freshTombstone = join(dir, '.lock.67890.stale');
+      await mkdir(freshTombstone);
+      // A directory that only looks like a temp file, and an unrelated file: left alone.
+      await mkdir(join(dir, 'odd.tmp'));
+      await utimes(join(dir, 'odd.tmp'), old, old);
+      await writeFile(join(dir, 'notes.txt'), 'x');
+
+      expect(await pruneBackups(dir)).toEqual({ ...NO_PRUNE, tempFilesDeleted: 1 });
+      expect((await readdir(dir)).sort()).toEqual(
+        [
+          '.lock.67890.stale',
+          '2026-10.jsonl.456.9d1c2b3a-4e5f-4a6b-8c7d-0e1f2a3b4c5d.tmp',
+          'notes.txt',
+          'odd.tmp',
+        ].sort(),
+      );
     });
   });
 
@@ -288,6 +383,133 @@ describe('lead backups', () => {
       await writeFile(join(dir, 'target.jsonl', 'child'), 'x');
       await expect(rewriteFile(join(dir, 'target.jsonl'), 'new')).rejects.toThrow();
       expect(await readdir(dir)).toEqual(['target.jsonl']);
+    });
+
+    it('cleans up its temp file when writing it fails', async () => {
+      await mkdir(dir, { recursive: true });
+      const path = join(dir, '2026-10.jsonl');
+      await writeFile(path, 'old\n');
+      // Not a string: writeFile throws after the temp file was created.
+      await expect(rewriteFile(path, 42 as unknown as string)).rejects.toThrow();
+      expect(await readdir(dir)).toEqual(['2026-10.jsonl']);
+      expect(await readFile(path, 'utf8')).toBe('old\n');
+    });
+
+    it('fsyncs the temp file and then the directory', async () => {
+      const prototype = await fileHandlePrototype(dir);
+      const sync = vi.spyOn(prototype, 'sync');
+      try {
+        await rewriteFile(join(dir, '2026-10.jsonl'), 'new\n');
+        expect(sync).toHaveBeenCalledTimes(2);
+      } finally {
+        sync.mockRestore();
+      }
+    });
+  });
+
+  describe('durability', () => {
+    it('fsyncs an append before storeBackup returns', async () => {
+      const prototype = await fileHandlePrototype(dir);
+      const sync = vi.spyOn(prototype, 'sync');
+      try {
+        const now = at('2026-10-05T10:00:00Z');
+        await storeBackup(
+          dir,
+          { id: 'a', kind: 'lead', status: 'pending_forward', payload: {} },
+          { now },
+        );
+        // The file, and the directory for the new file.
+        expect(sync).toHaveBeenCalledTimes(2);
+        sync.mockClear();
+        await storeBackup(
+          dir,
+          { id: 'b', kind: 'lead', status: 'pending_forward', payload: {} },
+          { now },
+        );
+        await markForwarded(dir, [{ id: 'a', file: '2026-10.jsonl' }]);
+        expect(sync).toHaveBeenCalledTimes(2);
+      } finally {
+        sync.mockRestore();
+      }
+    });
+  });
+
+  describe('duplicate check (index)', () => {
+    const now = at('2026-10-05T10:00:00Z');
+    const store = (id: string) =>
+      storeBackup(dir, { id, kind: 'lead', status: 'pending_forward', payload: { id } }, { now });
+
+    it('finds a backed-up id and where it is, and nothing for an unknown one', async () => {
+      await store('a');
+      expect(await findBackup(dir, 'a', { now })).toEqual({
+        file: '2026-10.jsonl',
+        status: 'pending_forward',
+      });
+      expect(await findBackup(dir, 'b', { now })).toBeUndefined();
+      // Last month's file counts too.
+      expect(await findBackup(dir, 'a', { now: at('2026-11-02T00:00:00Z') })).toMatchObject({
+        file: '2026-10.jsonl',
+      });
+      expect(await findBackup(dir, 'a', { now: at('2026-12-02T00:00:00Z') })).toBeUndefined();
+    });
+
+    it('sees what other processes appended (records and status updates)', async () => {
+      await store('a');
+      const file = join(dir, '2026-10.jsonl');
+      await appendFile(
+        file,
+        [
+          '{"v":1,"id":"other","kind":"lead","status":"pending_forward","stored_at":"2026-10-05T10:00:00Z","payload":{}}',
+          '{"v":1,"id":"a","status":"forwarded","at":"2026-10-05T10:01:00Z"}',
+          '{"v":1,"id":"a","failed_at":"2026-10-05T10:01:00Z","reason":"http_500"}',
+          '',
+        ].join('\n'),
+      );
+      expect(await store('other')).toMatchObject({ result: 'duplicate' });
+      expect(await store('a')).toEqual({
+        result: 'duplicate',
+        file: '2026-10.jsonl',
+        status: 'forwarded',
+      });
+    });
+
+    it('indexes a file again after prune replaced it', async () => {
+      await store('a');
+      await store('b');
+      await rewriteFile(
+        join(dir, '2026-10.jsonl'),
+        '{"v":1,"id":"b","kind":"lead","status":"pending_forward","stored_at":"2026-10-05T10:00:00Z","payload":{}}\n',
+      );
+      expect(await store('a')).toMatchObject({ result: 'stored' });
+      expect(await store('b')).toMatchObject({ result: 'duplicate' });
+    });
+
+    it('indexes a file again after it shrank or was deleted', async () => {
+      await store('a');
+      await writeFile(join(dir, '2026-10.jsonl'), '');
+      expect(await store('a')).toMatchObject({ result: 'stored' });
+      const { unlink } = await import('node:fs/promises');
+      await unlink(join(dir, '2026-10.jsonl'));
+      expect(await store('a')).toMatchObject({ result: 'stored' });
+    });
+
+    it('does not read an unchanged file again', async () => {
+      await store('a');
+      const file = join(dir, '2026-10.jsonl');
+      // Same size, same inode, content no longer parseable: only a re-read would notice.
+      const { size } = await stat(file);
+      const handle = await open(file, 'r+');
+      await handle.write(' '.repeat(size - 1), 0);
+      await handle.close();
+      expect(await store('a')).toMatchObject({ result: 'duplicate' });
+    });
+
+    it('handles a torn last line written by a crashed process', async () => {
+      await store('a');
+      await appendFile(join(dir, '2026-10.jsonl'), '{"v":1,"id":"torn"');
+      expect(await store('b')).toMatchObject({ result: 'stored' });
+      expect(await store('b')).toMatchObject({ result: 'duplicate' });
+      expect(await store('torn')).toMatchObject({ result: 'stored' });
     });
   });
 
@@ -312,17 +534,38 @@ describe('lead backups', () => {
       expect(order).toEqual(['start a', 'end a', 'start b', 'end b']);
     });
 
+    it('holds the lock as a directory with its owner token, and leaves nothing behind', async () => {
+      const seen = await withBackupLock(dir, async () => ({
+        entries: await readdir(dir),
+        owner: await readFile(join(dir, '.lock', 'owner'), 'utf8'),
+      }));
+      expect(seen.entries).toEqual(['.lock']);
+      expect(seen.owner).toMatch(new RegExp(`^${process.pid}\\.[0-9a-f-]{36}$`));
+      expect(await readdir(dir)).toEqual([]);
+    });
+
     it('waits for a lock held by another process, then times out', async () => {
-      await mkdir(dir, { recursive: true });
-      await writeFile(join(dir, '.lock'), 'other process');
+      const lock = await lockDir(dir);
       await expect(
         withBackupLock(dir, async () => 'ran', { lockTimeoutMs: 50 }),
       ).rejects.toBeInstanceOf(BackupLockError);
-      // Still theirs.
-      expect(await readFile(join(dir, '.lock'), 'utf8')).toBe('other process');
+      // Still theirs, and no candidate left behind.
+      expect(await readFile(join(lock, 'owner'), 'utf8')).toBe('other-process');
+      expect(await readdir(dir)).toEqual(['.lock']);
     });
 
-    it('takes over a stale lock left by a crashed process', async () => {
+    it('takes over a stale lock left by a crashed process, through a tombstone', async () => {
+      const lock = await lockDir(dir, 'crashed', new Date(Date.now() - 120_000));
+      const { ino } = await stat(lock);
+      expect(await withBackupLock(dir, async () => 'ran')).toBe('ran');
+      expect(await readdir(dir)).toEqual([`.lock.${ino}.stale`]);
+      // The tombstone is dated now: it stays until prune finds it older than an hour.
+      expect(Date.now() - (await stat(join(dir, `.lock.${ino}.stale`))).mtimeMs).toBeLessThan(
+        60_000,
+      );
+    });
+
+    it('takes over a stale lock file left by the previous version', async () => {
       await mkdir(dir, { recursive: true });
       const lock = join(dir, '.lock');
       await writeFile(lock, 'crashed');
@@ -332,12 +575,82 @@ describe('lead backups', () => {
       expect(await readdir(dir)).toEqual([]);
     });
 
-    it('gets the lock once another process releases it', async () => {
+    it('waits for a fresh lock file of the previous version', async () => {
       await mkdir(dir, { recursive: true });
-      const lock = join(dir, '.lock');
-      await writeFile(lock, 'other process');
-      setTimeout(() => void import('node:fs/promises').then(({ unlink }) => unlink(lock)), 40);
+      await writeFile(join(dir, '.lock'), 'old version');
+      await expect(
+        withBackupLock(dir, async () => 'ran', { lockTimeoutMs: 50 }),
+      ).rejects.toBeInstanceOf(BackupLockError);
+    });
+
+    it('gets the lock once another process releases it', async () => {
+      const lock = await lockDir(dir);
+      setTimeout(
+        () => void import('node:fs/promises').then(({ rm }) => rm(lock, { recursive: true })),
+        40,
+      );
       expect(await withBackupLock(dir, async () => 'ran', { lockTimeoutMs: 2000 })).toBe('ran');
+    });
+
+    it('gives a stale lock to exactly one of many waiting processes', async () => {
+      // acquireBackupLock directly: no in-process queue, so these race like separate processes.
+      for (let trial = 0; trial < 5; trial++) {
+        await lockDir(dir, 'crashed', new Date(Date.now() - 120_000));
+        let inside = 0;
+        let most = 0;
+        await Promise.all(
+          Array.from({ length: 8 }, async () => {
+            const release = await acquireBackupLock(dir, { lockTimeoutMs: 5000 });
+            inside++;
+            most = Math.max(most, inside);
+            await new Promise((resolve) => setTimeout(resolve, 5));
+            inside--;
+            await release();
+          }),
+        );
+        expect(most).toBe(1);
+        expect((await readdir(dir)).filter((name) => !name.endsWith('.stale'))).toEqual([]);
+      }
+    });
+
+    it('never takes over the lock of a holder that is still working', async () => {
+      const options = { staleLockMs: 80, lockTimeoutMs: 5000 };
+      await mkdir(dir, { recursive: true });
+      const release = await acquireBackupLock(dir, options);
+      let second = false;
+      const waiting = acquireBackupLock(dir, options).then((next) => {
+        second = true;
+        return next;
+      });
+      // Four times the stale age: the holder's heartbeat keeps its lock fresh.
+      await new Promise((resolve) => setTimeout(resolve, 320));
+      expect(second).toBe(false);
+      await release();
+      await (
+        await waiting
+      )();
+      expect(second).toBe(true);
+    });
+
+    it("doesn't remove a lock that was taken over from it", async () => {
+      await mkdir(dir, { recursive: true });
+      const release = await acquireBackupLock(dir);
+      const { rm } = await import('node:fs/promises');
+      await rm(join(dir, '.lock'), { recursive: true });
+      const lock = await lockDir(dir, 'new-owner');
+      await release();
+      expect(await readFile(join(lock, 'owner'), 'utf8')).toBe('new-owner');
+    });
+
+    it('leaves nothing behind when it cannot create its candidate', async () => {
+      await mkdir(dir, { recursive: true });
+      await chmod(dir, 0o500);
+      try {
+        await expect(acquireBackupLock(dir)).rejects.toThrow(/EACCES/);
+      } finally {
+        await chmod(dir, 0o700);
+      }
+      expect(await readdir(dir)).toEqual([]);
     });
   });
 });

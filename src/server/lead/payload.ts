@@ -1,6 +1,7 @@
 // The lead payload sent to n8n (brief §9.2, docs/PAYLOAD.md, `schema_version: 1`): the
 // server-rebuilt submission (validate.ts) plus what only the server knows: brand, is_test, the
-// Dutch labels from its own copy of the flow, and the request's user agent, IP and SITE_ENV.
+// Dutch labels from its own copy of the flow, the time it received the lead (`submitted_at`),
+// and the request's user agent, IP and SITE_ENV.
 // The site never qualifies a lead: n8n does (promo / no_promo / pending, ADR 0009). The
 // contract with n8n, the lead sheet and Meta: change it only with explicit approval (AGENTS.md).
 import {
@@ -42,6 +43,8 @@ export type LeadPayload = {
 };
 
 export type PayloadMeta = {
+  /** When the server received the lead: the payload's `submitted_at` (never the browser's clock). */
+  receivedAt: Date;
   /** The visitor's IP as Astro resolved it (clientAddress). */
   ip: string;
   userAgent: string;
@@ -100,7 +103,8 @@ export function toPayload(submission: Submission, meta: PayloadMeta): LeadPayloa
     event_id: submission.event_id,
     // Never a real lead by accident (ADR 0004): any of the three makes it a test lead.
     is_test: meta.isTest || isTestEnvironment(meta.siteEnv) || submission.meta.test,
-    submitted_at: submission.submitted_at,
+    // The server's clock: a visitor's device clock can be days off (docs/PAYLOAD.md).
+    submitted_at: meta.receivedAt.toISOString(),
     product: submission.product,
     flow_version: submission.flow_version,
     answers: { ...submission.answers },

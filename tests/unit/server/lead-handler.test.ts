@@ -222,6 +222,49 @@ describe('POST /api/lead (handler)', () => {
     expect(log.entries.at(-1)).toMatchObject({ level: 'error', event: 'lead' });
   });
 
+  it('answers a resend of a stored lead with success, without a new Turnstile check', async () => {
+    const siteverify = vi.fn<typeof fetch>((target, init) => fetch(target, init));
+    const { post, log } = setup({ fetch: siteverify });
+    expect((await post(body())).status).toBe(200);
+    const verified = siteverify.mock.calls.filter(([target]) =>
+      String(target).includes('siteverify'),
+    ).length;
+    expect(verified).toBe(1);
+
+    // The same lead_id with the spent token (Cloudflare would now say "timeout-or-duplicate").
+    const resend = await post(body({ turnstile_token: 'fail' }));
+    expect(resend.status).toBe(200);
+    expect(await resend.json()).toEqual({ ok: true, redirect: '/bedankt/energie' });
+    expect(
+      siteverify.mock.calls.filter(([target]) => String(target).includes('siteverify')),
+    ).toHaveLength(1);
+    expect(mock.received).toHaveLength(1);
+    expect(log.entries.at(-1)).toEqual({
+      level: 'info',
+      event: 'lead_duplicate',
+      fields: { lead_id: sampleSubmission().lead_id },
+    });
+    // A new lead still needs a valid token.
+    const other = sampleSubmission({ lead_id: '1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f' });
+    expect((await post(body({ submission: other, turnstile_token: 'fail' }))).status).toBe(403);
+  });
+
+  it('checks Turnstile as usual when the backup lookup fails', async () => {
+    const { post, log } = setup({}, { LEAD_BACKUP_DIR: '/dev/null/cannot-exist' });
+    expect((await post(body({ turnstile_token: 'fail' }))).status).toBe(403);
+    expect(log.entries.map((entry) => entry.event)).toEqual([
+      'lead_lookup_failed',
+      'lead_verification_failed',
+    ]);
+  });
+
+  it('dates the lead with the server clock, not the browser’s', async () => {
+    const { post } = setup({ now: () => new Date('2026-10-02T08:00:00.000Z') });
+    const submission = sampleSubmission({ submitted_at: '2020-01-01T00:00:00.000Z' });
+    await post(body({ submission }));
+    expect(mock.received[0]!.body).toMatchObject({ submitted_at: '2026-10-02T08:00:00.000Z' });
+  });
+
   it('stores and forwards a double submit once', async () => {
     const { post } = setup();
     const [first, second] = await Promise.all([post(body()), post(body())]);

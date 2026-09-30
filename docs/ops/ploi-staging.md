@@ -52,8 +52,10 @@ PORT=3001
 PUBLIC_SITE_URL=https://voordeelvinder.onlinemarketingbakery.nl
 LEAD_BACKUP_DIR=/home/voordeelvinder-9eyyh/lead-backups
 RATE_LIMIT_PER_HOUR=10
-# n8n: staging only ever points at n8n's TEST webhook (never the production one).
-N8N_LEAD_WEBHOOK_URL=https://<n8n>/webhook-test/…
+# n8n: staging points at a separate, always-active TEST WORKFLOW (writes only to the test tab;
+# never the partner, Mailchimp journeys or Meta), through that workflow's production URL
+# /webhook/<path>. Never the /webhook-test/ URL, never the production workflow.
+N8N_LEAD_WEBHOOK_URL=https://<n8n>/webhook/<staging-test-workflow-path>
 N8N_NEWSLETTER_WEBHOOK_URL=            # optional; defaults to the lead webhook
 N8N_WEBHOOK_SECRET=<at least 16 characters, same value as in n8n>
 TURNSTILE_SECRET_KEY=                  # empty: Cloudflare's always-passing test secret
@@ -63,15 +65,25 @@ PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
 
 Lead pipeline settings (`src/server/env.ts`, brief §9.1):
 
-| Variable                     | Staging                                                                                  | Production                               |
-| ---------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `N8N_LEAD_WEBHOOK_URL`       | optional, https, **test webhook only**; empty = leads are only backed up (`backup_only`) | required, https                          |
-| `N8N_NEWSLETTER_WEBHOOK_URL` | optional (default: the lead webhook)                                                     | optional                                 |
-| `N8N_WEBHOOK_SECRET`         | required when a webhook is set; sent as `X-VV-Secret`                                    | required                                 |
-| `TURNSTILE_SECRET_KEY`       | optional; empty = test secret `1x0000000000000000000000000000000AA` (always passes)      | required; Cloudflare's test keys refused |
-| `TURNSTILE_VERIFY_URL`       | refused (local and CI only: the e2e siteverify stand-in)                                 | refused                                  |
-| `LEAD_BACKUP_DIR`            | absolute, outside the site directory; created with mode 700, files 600                   | same                                     |
-| `RATE_LIMIT_PER_HOUR`        | requests per visitor IP per hour on `/api/lead` and `/api/newsletter` (each its own)     | same                                     |
+| Variable                     | Staging                                                                                                                  | Production                               |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| `N8N_LEAD_WEBHOOK_URL`       | optional, https, **the test workflow's `/webhook/…` URL only** (below); empty = leads are only backed up (`backup_only`) | required, https                          |
+| `N8N_NEWSLETTER_WEBHOOK_URL` | optional (default: the lead webhook)                                                                                     | optional                                 |
+| `N8N_WEBHOOK_SECRET`         | required when a webhook is set; sent as `X-VV-Secret`                                                                    | required                                 |
+| `TURNSTILE_SECRET_KEY`       | optional; empty = test secret `1x0000000000000000000000000000000AA` (always passes)                                      | required; Cloudflare's test keys refused |
+| `TURNSTILE_VERIFY_URL`       | refused (local and CI only: the e2e siteverify stand-in)                                                                 | refused                                  |
+| `LEAD_BACKUP_DIR`            | absolute, outside the site directory; created with mode 700, files 600                                                   | same                                     |
+| `RATE_LIMIT_PER_HOUR`        | requests per visitor IP per hour on `/api/lead` and `/api/newsletter` (each its own)                                     | same                                     |
+
+**Why not n8n's `/webhook-test/…` URL:** n8n only registers it while someone has "Listen for
+test event" open in the workflow editor, for about two minutes and a single call; the rest of
+the time it answers 404. Every staging forward would then fail (a 404 is not retried),
+`leads:retry` would alert on every run, and the staging checklist ("the lead arrives in n8n")
+could never pass reliably. So staging uses a **separate test workflow that stays active**,
+through its production-style `/webhook/<path>` URL, with its own path and the staging secret.
+That workflow writes only to the test tab of the lead sheet and never reaches the telesales
+partner, Mailchimp journeys or Meta (brief §9.4). It is still a test workflow: never point
+staging at the production workflow's URL.
 
 Every lead from staging is a test lead (`is_test: true`) whatever the webhook. The secrets are
 read at runtime: after changing one, `pm2 reload voordeelvinder --update-env` is enough.
@@ -113,19 +125,29 @@ a web-directory change), re-apply the copy.
 Ploi writes these to `/etc/crontab`. Each job logs to
 `/home/voordeelvinder-9eyyh/.ploi/scheduled-<id>.log`.
 
-- **`leads:retry`** resends backup records still `pending_forward` (older than 2 minutes, one
-  attempt each, oldest first; it stops after 3 failures in a row). When a record has been
-  pending for more than 30 minutes it logs an `"event":"alert"` line and exits with code 1.
+- **`leads:retry`** resends backup records still `pending_forward` (older than 2 minutes, at
+  most one attempt each per run). Each record counts its own failed attempts and waits 5, 10,
+  20, 40, then 60 minutes before the next one; records with the fewest failures go first, so
+  one that keeps failing never holds back newer ones. A webhook that fails 3 times in a row
+  (network, timeout, 5xx, 408, 429) is left alone for the rest of that run; a refusal (other
+  4xx, a redirect) only concerns its own record. When a record has been pending for more than
+  30 minutes it logs an `"event":"alert"` line and exits with code 1.
   Check it with `grep '"alert"' ~/.ploi/scheduled-*.log`. The alert e-mail of brief §13 isn't
   wired yet (see ADR 0008).
 - **`backups:prune`** deletes records older than 30 days (a `"removedPending"` above 0 in its
-  log means a lead was never forwarded) and folds the status updates into the records.
+  log means a lead was never forwarded) and folds the status updates and failed attempts into
+  the records. It also deletes `*.tmp` files older than an hour (a rewrite that died halfway
+  leaves a full copy of a month's personal data; `"tempFilesDeleted"` in its log) and old lock
+  leftovers.
 
 ## Lead backups
 
 `$LEAD_BACKUP_DIR/YYYY-MM.jsonl` (UTC month), one JSON line per record (format in
-`src/server/lead/backup.ts`, ADR 0008). Every write takes the lock file `.lock` in that
-directory; a lock older than a minute is taken over. Look without printing personal data:
+`src/server/lead/backup.ts`, ADR 0008). Every write takes the lock in that directory: a
+directory `.lock` holding an `owner` token, refreshed while held. A lock older than a minute
+was left by a crashed process and is taken over (moved to a `.lock.<inode>.stale` tombstone
+that prune removes after an hour). Every append is fsynced before the visitor gets an answer.
+Look without printing personal data:
 
 ```bash
 cd /home/voordeelvinder-9eyyh/lead-backups

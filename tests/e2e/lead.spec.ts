@@ -140,6 +140,24 @@ test.describe('POST /api/lead', () => {
     expect(records).toHaveLength(1);
   });
 
+  test('a resend of a stored lead gets the same success without a new Turnstile token', async ({
+    request,
+  }) => {
+    const body = energyLeadBody();
+    const headers = fromIp(freshIp());
+    expect((await request.post('/api/lead', { data: body, headers })).status()).toBe(200);
+    await webhookFor(request, body.lead_id);
+    // The form resending after a lost response: the token is spent (the stand-in says "fail").
+    const resend = await request.post('/api/lead', {
+      data: { ...body, turnstile_token: 'fail' },
+      headers,
+    });
+    expect(resend.status()).toBe(200);
+    expect(await resend.json()).toEqual({ ok: true, redirect: '/bedankt/energie' });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await webhookFor(request, body.lead_id);
+  });
+
   test('a filled honeypot looks like success but stores and sends nothing', async ({ request }) => {
     const body = energyLeadBody({ website: 'https://spam.example' });
     const response = await request.post('/api/lead', { data: body, headers: fromIp(freshIp()) });

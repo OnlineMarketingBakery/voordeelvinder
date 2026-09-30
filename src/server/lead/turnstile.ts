@@ -6,6 +6,8 @@
 // - "unavailable": siteverify didn't answer usably (network error, timeout, 5xx). The endpoint
 //   lets the request through and logs it: a Cloudflare outage must not cost leads (brief §9.1:
 //   "never lose a lead"); the honeypot and the rate limit still apply.
+// Redirects are never followed, so the secret is never posted anywhere but siteverify; a
+// redirect counts as "unavailable".
 
 export const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
@@ -45,12 +47,18 @@ export async function verifyTurnstile(
     response = await send(url, {
       method: 'POST',
       body: form,
+      redirect: 'manual',
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch {
     return 'unavailable';
   }
-  if (response.status >= 500) return 'unavailable';
+  const redirected =
+    response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400);
+  if (redirected || response.status >= 500) {
+    await response.body?.cancel().catch(() => {});
+    return 'unavailable';
+  }
   try {
     const body = (await response.json()) as { success?: unknown };
     return body.success === true ? 'pass' : 'fail';

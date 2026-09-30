@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { forward } from '../../../src/server/lead/forward';
+import { forward, retriableReason } from '../../../src/server/lead/forward';
 import { startMockN8n, type MockN8n } from '../../support/mock-n8n';
 import { FAKE_SECRET } from './fixtures';
 
@@ -64,6 +64,47 @@ describe('forward', () => {
     });
     mock.respond({ status: 429 }, { status: 408 });
     expect(await forward(url, {}, { sleep })).toMatchObject({ status: 'forwarded', attempts: 3 });
+  });
+
+  it('never follows a redirect: a failed forward (http_3xx), not retried, nothing sent on', async () => {
+    const elsewhere = await startMockN8n();
+    try {
+      for (const status of [301, 302, 303, 307, 308]) {
+        mock.respond({ status, location: `${elsewhere.url}/webhook/elsewhere` });
+        expect(await forward(url, { lead_id: 'x' }, { secret: FAKE_SECRET, sleep })).toEqual({
+          status: 'failed',
+          attempts: 1,
+          reason: 'http_3xx',
+        });
+      }
+      // Neither the secret nor the lead went anywhere else, and nothing was retried.
+      expect(elsewhere.received).toEqual([]);
+      expect(mock.received).toHaveLength(5);
+      expect(sleep).not.toHaveBeenCalled();
+    } finally {
+      await elsewhere.close();
+    }
+  });
+
+  it('treats an opaque redirect as a redirect', async () => {
+    const opaque = new Response(null, { status: 200 });
+    Object.defineProperty(opaque, 'type', { value: 'opaqueredirect' });
+    const send = vi.fn<typeof fetch>(async () => opaque);
+    expect(await forward(url, {}, { fetch: send, sleep })).toEqual({
+      status: 'failed',
+      attempts: 1,
+      reason: 'http_3xx',
+    });
+    expect(send.mock.calls[0]![1]?.redirect).toBe('manual');
+  });
+
+  it('tells reasons worth retrying (n8n down) from refusals', () => {
+    for (const reason of ['network', 'timeout', 'http_500', 'http_503', 'http_408', 'http_429']) {
+      expect(retriableReason(reason), reason).toBe(true);
+    }
+    for (const reason of ['http_3xx', 'http_400', 'http_401', 'http_404', 'not_sent', 'http_5']) {
+      expect(retriableReason(reason), reason).toBe(false);
+    }
   });
 
   it('times out a slow webhook per attempt', async () => {

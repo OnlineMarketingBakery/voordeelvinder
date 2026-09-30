@@ -153,7 +153,9 @@ fields, next }`; `next` is an ordered list of `{ if?, goto }` whose last entry h
   Qualification lives in n8n, not in this repo (ADR 0009): never add promo / no_promo logic to
   the site.
 - Send a real lead from local, CI or staging, or point any non-production environment at a
-  real n8n webhook.
+  real n8n webhook. Staging's only webhook is a separate, always-active **test workflow**
+  (its `/webhook/<path>` URL, writing only to the test tab), never the production workflow and
+  never n8n's `/webhook-test/` editor URL (docs/ops/ploi-staging.md).
 - Push directly to `main` or `production` (the ruleset blocks it anyway), or merge anything into
   `production`. Promoting a release to production is Tanjil's call.
 - Add `<ClientRouter />` or Speculation Rules `prerender` (brief §6.1).

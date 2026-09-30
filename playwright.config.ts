@@ -42,18 +42,21 @@ export default defineConfig({
     { name: 'webkit-mobile', use: { ...devices['iPhone 13'], ...mobile } },
   ],
   // Tests run against the production build (`npm run build` first), started the same way as on Ploi.
+  // Never a reused server: the lead tests depend on the env below (mock webhook, siteverify
+  // stand-in, backup dir, rate limit), and a dev server or `npm start` already on the port has
+  // its own .env, so its leads could reach a configured webhook. A busy port fails the run.
   webServer: [
     {
       // The lead pipeline runs against a mock n8n, never a real webhook (brief §9.4).
       command: `npx tsx tests/support/mock-n8n.ts ${MOCK_N8N_PORT}`,
       url: `${MOCK_N8N_URL}/_health`,
-      reuseExistingServer: !CI,
+      reuseExistingServer: false,
       timeout: 30_000,
     },
     {
       command: 'node server.mjs',
       url: `${baseURL}/api/health`,
-      reuseExistingServer: !CI,
+      reuseExistingServer: false,
       timeout: 30_000,
       // SITE_ENV comes from the environment (CI) or .env, and must match the build's (never
       // production: every lead is a test lead). These win over .env (server.mjs).

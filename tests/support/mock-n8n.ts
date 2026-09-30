@@ -2,7 +2,7 @@
 // (`tsx tests/support/mock-n8n.ts`, started by playwright.config.ts). Never a real webhook.
 //
 // - POST /webhook/<name>: records the request and answers with the next queued status (200 when
-//   the queue is empty), after the queued delay.
+//   the queue is empty), after the queued delay, with its `location` header if it has one.
 // - POST /turnstile/siteverify: `{ success: true }` unless the token is "fail".
 // - GET /_received: the recorded webhook requests; DELETE /_received clears them.
 // - POST /_respond: queues responses, body `[{ "status": 500, "delayMs": 0 }, …]`.
@@ -17,7 +17,7 @@ export type ReceivedRequest = {
   body: unknown;
 };
 
-export type MockResponse = { status: number; delayMs?: number };
+export type MockResponse = { status: number; delayMs?: number; location?: string };
 
 export type MockN8n = {
   /** http://127.0.0.1:<port> */
@@ -52,8 +52,11 @@ export async function startMockN8n(port = 0, host = '127.0.0.1'): Promise<MockN8
   const server: Server = createServer(async (request, response) => {
     const path = new URL(request.url ?? '/', 'http://mock').pathname;
     const body = parse(await readBody(request), request.headers['content-type']);
-    const send = (status: number, value: unknown = { ok: status < 400 }) => {
-      response.writeHead(status, { 'content-type': 'application/json' });
+    const send = (status: number, value: unknown = { ok: status < 400 }, location?: string) => {
+      response.writeHead(status, {
+        'content-type': 'application/json',
+        ...(location ? { location } : {}),
+      });
       response.end(JSON.stringify(value));
     };
 
@@ -75,7 +78,7 @@ export async function startMockN8n(port = 0, host = '127.0.0.1'): Promise<MockN8
       const next = queue.shift() ?? { status: 200 };
       if (next.delayMs) await new Promise((resolve) => setTimeout(resolve, next.delayMs));
       if (response.destroyed) return;
-      return send(next.status);
+      return send(next.status, undefined, next.location);
     }
     send(404);
   });

@@ -95,7 +95,39 @@ the implementation.
   (§9.4, ADR 0004).
 - `event_id` is shared by the browser `Lead` event and the server-side Meta events, so each lead
   is counted once (§9.3, §10).
+- **Meta Conversions API events from n8n** (`Lead` for every lead, `QualifiedLead` for promo)
+  are sent **only when `consent.cookies.marketing` is `true`** and `is_test` is `false`
+  (brief §9.3), both with the lead's `event_id`.
 - Option codes never change once live (AGENTS.md rule 4); labels may.
+
+## Delivery: at least once
+
+The site forwards a lead **at least once**, not exactly once: a crash between n8n's answer and
+the site recording it, a status that can't be written, or a very slow n8n make `leads:retry`
+send the same payload again. **n8n must deduplicate on `lead_id`** (and newsletter sign-ups on
+`signup_id`) before the lead reaches the partner, the lead sheet, Mailchimp or Meta.
+
+A resend from the browser with the same `lead_id` (after a lost response or a 503) is never
+forwarded twice: when the lead is already backed up, the endpoint answers the same success
+without storing, forwarding or checking Turnstile again (the first token is spent).
+
+## Untrusted fields
+
+**Every string in the payload is visitor-controlled** except `schema_version`, `brand`,
+`lead_id`/`event_id` (UUIDs), `is_test`, `submitted_at`, `product`, `labels` (the site's own
+copy), the option codes in `answers`, `derived` and `meta.site_env`. That includes
+`contact.first_name`/`last_name`, `contact.email`, every `tracking.*` value, `meta.page` and
+`meta.user_agent`. A value starting with `=`, `+`, `-`, `@`, a tab or a carriage return can
+become a live formula in a spreadsheet.
+
+- **The n8n Google Sheets node must write values RAW** ("Let n8n format" / `valueInputOption:
+RAW`, not "Let Google Sheets format" / `USER_ENTERED`), or prefix an apostrophe to every
+  value that starts with one of those characters. RAW also keeps `+32…` phone numbers as text.
+- **The same applies to every CSV or spreadsheet export** of the lead sheet or of n8n data
+  (e.g. for the call centre): escape or quote such values before anyone opens the file.
+- The site adds defence in depth, but it is not a substitute: names are refused when they start
+  with `=` or `@` (`text_invalid`), and tracking values are cleaned (see below). Phone numbers
+  and e-mail addresses are validated by their own rules and not changed.
 
 ## Where each part comes from
 
@@ -104,20 +136,20 @@ already normalised by the field validators (`src/lib/flow/validators/`); the ser
 it against the flow with the same validators, adds what only it can know and forwards the
 payload.
 
-| Part                                    | Form submission                                                                                                                                   | Added or recomputed by the server (Phase 5)        |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| `schema_version`, `lead_id`, `event_id` | yes (`lead_id` is generated once per form session)                                                                                                |                                                    |
-| `submitted_at`                          | yes                                                                                                                                               | may replace it with its own clock                  |
-| `product`, `flow_version`               | yes (plus `flow_id`, to find the flow)                                                                                                            | checked against the flow                           |
-| `answers`                               | codes of shown fields with payload `answers`, plus implied answers such as `energy_type`; abandoned answers are cleared first                     | re-validated; unknown fields or codes are rejected |
-| `labels`                                | no                                                                                                                                                | from its own copy of the flow (`answerLabels`)     |
-| `derived`                               | `postcode` (the postcode field) and the region/province the form worked out                                                                       | recomputed from the postcode                       |
-| `contact`                               | `first_name`, `last_name` (trimmed), `phone_e164` and `phone_display` (the phone normalised by the field validator), `email` (trimmed, lowercase) | re-validated with the same field validators        |
-| `call_preference`                       | the `day_slot` field                                                                                                                              |                                                    |
-| `consent`                               | `terms`, `newsletter` and the cookie banner's `cookies` state                                                                                     |                                                    |
-| `tracking`                              | every key, `""` when unknown                                                                                                                      |                                                    |
-| `meta`                                  | `page`, and `test` (the visitor arrived with `?test=1`)                                                                                           | `user_agent`, `ip`, `site_env`                     |
-| `brand`, `is_test`                      | no                                                                                                                                                | yes                                                |
+| Part                                    | Form submission                                                                                                                                                                   | Added or recomputed by the server (Phase 5)                                                                                                                                                                          |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schema_version`, `lead_id`, `event_id` | yes (`lead_id` is generated once per form session)                                                                                                                                |                                                                                                                                                                                                                      |
+| `submitted_at`                          | yes (ignored)                                                                                                                                                                     | set by the server when the lead is received (its own clock, ISO 8601 UTC): a device clock can be days off                                                                                                            |
+| `product`, `flow_version`               | yes (plus `flow_id`, to find the flow)                                                                                                                                            | checked against the flow                                                                                                                                                                                             |
+| `answers`                               | codes of shown fields with payload `answers`, plus implied answers such as `energy_type`; abandoned answers are cleared first                                                     | re-validated; unknown fields or codes are rejected                                                                                                                                                                   |
+| `labels`                                | no                                                                                                                                                                                | from its own copy of the flow (`answerLabels`)                                                                                                                                                                       |
+| `derived`                               | `postcode` (the postcode field) and the region/province the form worked out                                                                                                       | recomputed from the postcode                                                                                                                                                                                         |
+| `contact`                               | `first_name`, `last_name` (trimmed; never starting with `=` or `@`), `phone_e164` and `phone_display` (the phone normalised by the field validator), `email` (trimmed, lowercase) | re-validated with the same field validators                                                                                                                                                                          |
+| `call_preference`                       | the `day_slot` field                                                                                                                                                              |                                                                                                                                                                                                                      |
+| `consent`                               | `terms`, `newsletter` and the cookie banner's `cookies` state                                                                                                                     |                                                                                                                                                                                                                      |
+| `tracking`                              | every key, `""` when unknown                                                                                                                                                      | cleaned: trimmed, cut to 512 characters, `""` when it starts with `=` or `@` or has a character outside letters, digits, dashes, the space and URL punctuation (no quotes, parentheses, angle brackets, backslashes) |
+| `meta`                                  | `page`, and `test` (the visitor arrived with `?test=1`)                                                                                                                           | `user_agent`, `ip`, `site_env`                                                                                                                                                                                       |
+| `brand`, `is_test`                      | no                                                                                                                                                                                | yes                                                                                                                                                                                                                  |
 
 # Newsletter sign-up (`type: "newsletter"`, `schema_version: 1`)
 
@@ -144,6 +176,8 @@ retry as a lead. Change it only with approval in the PR, like the lead contract.
 - The form posts `{ email, consent: true, website: "", turnstile_token, page, test }`; unknown
   keys are refused. `email` is trimmed and lowercased by the form's own e-mail validator.
 - `signup_id` and `submitted_at` come from the server. There is no client id, so a double
-  submit gives two sign-ups; Mailchimp keys on the e-mail address.
+  submit gives two sign-ups; Mailchimp keys on the e-mail address. Delivery is at least once
+  here too: deduplicate on `signup_id`. `email`, `meta.page` and `meta.user_agent` are
+  visitor-controlled (see "Untrusted fields").
 - `is_test` follows the lead rule: true unless `SITE_ENV=production`, or when the visitor
   arrived with `?test=1` (`test: true`).

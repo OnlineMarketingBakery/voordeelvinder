@@ -30,6 +30,7 @@ const doc = readFileSync(join(import.meta.dirname, '..', '..', 'docs', 'PAYLOAD.
 const example = JSON.parse(/```json\n([\s\S]*?)\n```/.exec(doc)![1]!) as Record<string, unknown>;
 
 const production: PayloadMeta = {
+  receivedAt: new Date(SUBMITTED_AT),
   ip: '203.0.113.7',
   userAgent: 'Mozilla/5.0 (test)',
   siteEnv: 'production',
@@ -94,6 +95,18 @@ describe('toPayload: the docs/PAYLOAD.md contract', () => {
     });
     expect(payload).toMatchObject({ brand: BRAND, lead_id: LEAD_ID, event_id: EVENT_ID });
     expect(payload.submitted_at).toBe(SUBMITTED_AT);
+  });
+
+  it('dates the payload with the server clock, never the browser’s', () => {
+    const received = new Date('2026-10-03T12:00:00.000Z');
+    const built = payloadFor(
+      body('energie', energyAnswers, { submitted_at: '2020-01-01T00:00:00.000Z' }),
+      {
+        ...production,
+        receivedAt: received,
+      },
+    );
+    expect(built.submitted_at).toBe('2026-10-03T12:00:00.000Z');
   });
 
   it('labels every coded answer in Dutch, in the order of the answers', () => {

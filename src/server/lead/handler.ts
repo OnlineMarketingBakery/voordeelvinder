@@ -1,6 +1,6 @@
 // POST /api/lead (brief §9.1), in this order: rate limit → parse and validate (the server
-// rebuilds the submission from the answers with its own flows) → honeypot → Turnstile →
-// payload → backup → forward → respond. Every valid lead goes to n8n: the site never
+// rebuilds the submission from the answers with its own flows) → honeypot → already backed
+// up? → Turnstile → payload → backup → forward → respond. Every valid lead goes to n8n: the site never
 // qualifies it (n8n does, ADR 0009). src/pages/api/lead.ts wires in the real
 // dependencies; tests pass their own.
 //
@@ -8,13 +8,18 @@
 // holds the lead) and for a filled honeypot (pretend success, store nothing). Errors are
 // `{ ok: false, error: <code> }` (src/server/http.ts) and never reveal why in more detail.
 // Logs carry the lead_id and delivery status only (brief §13), never personal data.
+//
+// A resend of a lead that is already backed up (same lead_id: the form retrying after a lost
+// response or a 503) gets the same success response without a new Turnstile check: its token
+// was spent on the first request, and Cloudflare would reject it. Nothing is stored or
+// forwarded again (the first record is, or will be). The rate limit and validation still apply.
 import type { Flow } from '../../lib/flow/schema';
 import type { Product } from '../../lib/flow/types';
 import { thanksPath } from '../../lib/form/submit';
 import { isTestEnvironment, turnstileSecret, type ServerEnv } from '../env';
 import { apiError, json, readJsonBody, userAgentOf } from '../http';
 import { consoleLogger, errorSummary, type Logger } from '../log';
-import type { BackupOptions } from './backup';
+import { findBackup, type BackupOptions } from './backup';
 import { deliver } from './deliver';
 import type { ForwardOptions } from './forward';
 import { toPayload as buildPayload } from './payload';
@@ -28,6 +33,8 @@ export type LeadHandlerDeps = {
   limiter: RateLimiter;
   log?: Logger;
   fetch?: typeof fetch;
+  /** The server clock: the payload's `submitted_at` (docs/PAYLOAD.md). */
+  now?: () => Date;
   parse?: typeof parseLeadRequest;
   toPayload?: typeof buildPayload;
   backup?: BackupOptions;
@@ -46,9 +53,20 @@ export function createLeadHandler(deps: LeadHandlerDeps) {
     env,
     limiter,
     log = consoleLogger,
+    now = () => new Date(),
     parse = parseLeadRequest,
     toPayload = buildPayload,
   } = deps;
+
+  /** Whether the lead is in the backup already; a lookup that fails counts as "no". */
+  async function alreadyStored(leadId: string): Promise<boolean> {
+    try {
+      return (await findBackup(env.LEAD_BACKUP_DIR, leadId, deps.backup)) !== undefined;
+    } catch (error) {
+      log('warn', 'lead_lookup_failed', { lead_id: leadId, error: errorSummary(error) });
+      return false;
+    }
+  }
 
   return async function handleLead({ request, clientAddress }: ApiRequest): Promise<Response> {
     try {
@@ -72,6 +90,10 @@ export function createLeadHandler(deps: LeadHandlerDeps) {
         log('warn', 'lead_honeypot');
         return success;
       }
+      if (await alreadyStored(submission.lead_id)) {
+        log('info', 'lead_duplicate', { lead_id: submission.lead_id });
+        return success;
+      }
 
       const verdict = await verifyTurnstile(parsed.turnstileToken, {
         ...deps.turnstile,
@@ -89,6 +111,7 @@ export function createLeadHandler(deps: LeadHandlerDeps) {
       }
 
       const payload = toPayload(submission, {
+        receivedAt: now(),
         ip: clientAddress,
         userAgent: userAgentOf(request),
         siteEnv: env.SITE_ENV,
