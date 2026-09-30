@@ -12,7 +12,7 @@
   available.
 - **Visibility:** the repo is **public**. That makes the qualification rules
   (`src/server/rules/`, Phase 5), `docs/RULES.md`, the brief and the payload contract readable
-  by anyone.
+  by anyone. (Since ADR 0009 the rules live in n8n, so there are no rules files in the repo.)
 - **Cost of going private on the Free plan:**
   - Branch protection and rulesets on private repos need GitHub Pro ($4/month) for a user
     account.
