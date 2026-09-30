@@ -14,6 +14,8 @@ deviate from it are recorded in `docs/decisions/`.
 | `src/content/flows/nl/*.json`          | Form flows: questions, options, conditions (Phase 4)                                           |
 | `src/content/legal`, `blog`, `landing` | Markdown: legal pages, blog posts, campaign landing variants (Phase 3)                         |
 | `src/components/sections/`             | One Astro component per section block type; `Sections.astro` maps type → component             |
+| `src/components/site/`, `ui/`          | Header/Footer (copy from `site.json`); Button, SectionPill, Logo, Container                    |
+| `src/layouts/Page.astro`               | Standard page: header, `<main id="main">`, footer                                              |
 | `src/layouts/`                         | Page layouts (`Base.astro`: `<head>`, robots, canonical)                                       |
 | `src/pages/`                           | Routes; `api/*` are on-demand (`export const prerender = false`)                               |
 | `src/server/env.ts`                    | Typed, validated server environment. The only reader of `process.env`                          |

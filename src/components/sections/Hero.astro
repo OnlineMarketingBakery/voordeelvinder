@@ -1,4 +1,6 @@
 ---
+import Container from '../ui/Container.astro';
+
 interface Props {
   title: string;
 }
@@ -6,6 +8,8 @@ interface Props {
 const { title } = Astro.props;
 ---
 
-<section class="px-4 py-16">
-  <h1 class="text-h3 text-ink-900 md:text-h1">{title}</h1>
+<section class="py-16">
+  <Container>
+    <h1 class="text-h3 text-ink-900 md:text-h1">{title}</h1>
+  </Container>
 </section>

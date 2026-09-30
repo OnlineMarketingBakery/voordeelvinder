@@ -1,0 +1,84 @@
+---
+// Buttons and pill CTAs from the design. Renders a link when `href` is set, else a <button>.
+// Labels always come from content files (slot).
+import ArrowUpRight from '../../assets/icons/arrow-up-right.svg';
+
+export type ButtonVariant = 'lime' | 'purple' | 'white' | 'form' | 'form-secondary' | 'newsletter';
+export type ButtonSize = 'sm' | 'md' | 'lg' | 'form' | 'newsletter';
+
+interface Props {
+  href?: string;
+  type?: 'button' | 'submit';
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  icon?: 'arrow-up-right';
+  fullWidth?: boolean;
+  disabled?: boolean;
+  class?: string;
+}
+
+const {
+  href,
+  type = 'button',
+  variant = 'lime',
+  size = 'md',
+  icon,
+  fullWidth = false,
+  disabled = false,
+  class: className,
+} = Astro.props;
+
+const variants: Record<ButtonVariant, string> = {
+  // Header, hero, product blocks, CTA band, FAQ (Figma #c9e260, 1px white, lime glow + gloss)
+  lime: 'rounded-full border border-white bg-lime-300 text-ink-800 shadow-glow-lime inset-shadow-gloss-strong',
+  // Final CTA and battery block (white label on purple)
+  purple:
+    'rounded-full border border-white bg-purple-600 text-white shadow-glow-purple-sm inset-shadow-gloss-strong',
+  // Button on the lime CTA band
+  white: 'rounded-full bg-white text-ink-900',
+  // Form "Volgende" / submit (Figma #b7e137, radius 12)
+  form: 'rounded-md bg-lime-400 font-normal text-ink-900',
+  // Form "Terug": the design's #ded9f4 border is 1.4:1, so the accessible control border is used
+  'form-secondary': 'rounded-md border border-control-border bg-white font-normal text-ink-900',
+  // Footer "Abonneren" inside the white newsletter pill
+  newsletter: 'rounded-full bg-lime-400 text-ink-900 inset-shadow-gloss-strong',
+};
+
+const sizes: Record<ButtonSize, string> = {
+  sm: 'h-[42px] px-3 text-button', // header CTA, 170x42
+  md: 'h-[54px] px-6 text-button', // hero CTA
+  lg: 'h-[62px] px-8 text-button-lg', // CTA band / final CTA
+  form: 'h-[52px] px-5 text-body-lg', // form buttons, 18px Regular
+  newsletter: 'h-12 px-[21px] text-button sm:h-[46px]', // Abonneren: stacked below sm, in the pill from sm
+};
+
+const classes = [
+  'inline-flex shrink-0 items-center justify-center gap-1 font-medium whitespace-nowrap select-none',
+  'transition-[translate,scale,background-color,box-shadow] duration-(--motion-duration-fast) ease-out',
+  'motion-safe:hover:-translate-y-px motion-safe:active:scale-[0.97]',
+  'aria-disabled:pointer-events-none aria-disabled:opacity-60 disabled:pointer-events-none disabled:opacity-60',
+  variants[variant],
+  sizes[size],
+  fullWidth && 'w-full',
+  className,
+];
+
+const iconSize = size === 'sm' ? 'size-[22px]' : 'size-6';
+---
+
+{href ? (
+  <a
+    href={disabled ? undefined : href}
+    role={disabled ? 'link' : undefined}
+    class:list={classes}
+    aria-disabled={disabled ? 'true' : undefined}
+  >
+    <slot />
+    {icon === 'arrow-up-right' && <ArrowUpRight class={iconSize} aria-hidden="true" />}
+  </a>
+) : (
+  <button type={type} class:list={classes} disabled={disabled}>
+    <slot />
+    {icon === 'arrow-up-right' && <ArrowUpRight class={iconSize} aria-hidden="true" />}
+  </button>
+)}

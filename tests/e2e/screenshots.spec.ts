@@ -13,6 +13,8 @@ for (const { name, path } of PAGES) {
     await page.screenshot({
       path: `test-results/screenshots/${testInfo.project.name}/${name}.png`,
       fullPage: true,
+      // CSS pixels, not device pixels: long pages at DPR 3 exceed WebKit's 32,767px limit.
+      scale: 'css',
     });
   });
 }

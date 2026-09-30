@@ -1,0 +1,12 @@
+---
+// The 1170px content column (desktop design is 1440 wide), with a 16/24px gutter below xl.
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<div class:list={['mx-auto w-full max-w-content px-4 md:px-6 xl:px-0', className]}>
+  <slot />
+</div>
