@@ -225,10 +225,17 @@
   }
 }
 
-/* Hero entrance (CSS only, from first paint). The h1 and the LCP image never animate opacity. */
+/* Hero entrance (CSS only, from first paint). LCP candidates (the h1, the hero body copy, the
+   mascot) never animate opacity: the body copy uses hero-rise. */
 @keyframes hero-in {
   from {
     opacity: 0;
+    translate: 0 var(--motion-distance-2);
+  }
+}
+
+@keyframes hero-rise {
+  from {
     translate: 0 var(--motion-distance-2);
   }
 }

@@ -16,12 +16,14 @@ export const page = z
     sections: z.array(section).min(1),
   })
   .superRefine((value, ctx) => {
+    // The hero holds the page's only h1, so it can't be hidden.
     const heroes = value.sections.filter((s) => s.type === 'hero');
-    if (heroes.length !== 1 || value.sections[0]?.type !== 'hero') {
+    const first = value.sections[0];
+    if (heroes.length !== 1 || first?.type !== 'hero' || first.hidden) {
       ctx.addIssue({
         code: 'custom',
         path: ['sections'],
-        message: 'exactly one hero, as the first block',
+        message: 'exactly one visible hero, as the first block',
       });
     }
     const ids = value.sections.map((s) => s.id).filter((id): id is string => id !== undefined);

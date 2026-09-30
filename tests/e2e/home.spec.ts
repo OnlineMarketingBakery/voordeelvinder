@@ -37,9 +37,15 @@ test.describe('home hero', () => {
     }
   });
 
-  test('never hides the h1 while waiting for motion', async ({ page }) => {
+  test('never hides an LCP candidate (h1, body copy) while waiting for motion', async ({
+    page,
+  }) => {
+    // A short phone viewport: the art is below the fold, so the body copy is the largest text.
+    await page.setViewportSize({ width: 360, height: 600 });
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveCSS('opacity', '1');
+    const section = page.getByRole('region', { name: hero.title });
+    await expect(section.getByRole('heading', { level: 1 })).toHaveCSS('opacity', '1');
+    await expect(section.locator('h1 + p')).toHaveCSS('opacity', '1');
   });
 });

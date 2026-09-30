@@ -1,7 +1,8 @@
 ---
 // Page hero (Figma 60:2 home, 69:931 solar, 80:2867 battery): purple band with the page's only
 // h1, body copy, CTA and the illustration; the home variant adds the eyebrow and the USP bar.
-// Entrance is CSS-only from first paint; the h1 and the mascot (LCP) never start hidden.
+// Entrance is CSS-only from first paint. The LCP candidates never start hidden: the h1, the body
+// copy (the largest text block on phones) and the mascot; the body only rises, without a fade.
 import type { Copy } from '../../lib/copy';
 import Button from '../ui/Button.astro';
 import Container from '../ui/Container.astro';
@@ -15,6 +16,7 @@ interface ImageRef {
 }
 
 interface Props {
+  id?: string | undefined;
   variant: 'home' | 'product';
   eyebrow?: { emoji?: string | undefined; text: string } | undefined;
   title: string;
@@ -34,7 +36,7 @@ interface Props {
     | undefined;
 }
 
-const { variant, eyebrow, title, body, cta, art, usps } = Astro.props;
+const { id, variant, eyebrow, title, body, cta, art, usps } = Astro.props;
 const isHome = variant === 'home';
 
 // Supporting elements rise in after first paint; delays in ms.
@@ -43,15 +45,17 @@ const enter = {
   80: 'motion-safe:animate-[hero-in_var(--motion-duration-slow)_var(--ease-out)_80ms_both]',
   160: 'motion-safe:animate-[hero-in_var(--motion-duration-slow)_var(--ease-out)_160ms_both]',
 };
+const rise =
+  'motion-safe:animate-[hero-rise_var(--motion-duration-slow)_var(--ease-out)_80ms_both]';
 ---
 
-<section aria-labelledby="hero-title" class="surface-dark relative overflow-x-clip">
+<section id={id} aria-labelledby="hero-title" class="surface-dark relative overflow-x-clip">
   <div class="bg-purple-600 text-white">
     <Container
       class:list={[
         'grid pt-10 md:pt-14 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:pt-24',
         isHome
-          ? 'pb-10 md:pb-12 xl:items-start xl:pt-[134px]'
+          ? 'pb-10 md:pb-12 lg:pb-10 xl:items-start xl:pt-[134px]'
           : 'pb-14 lg:pb-24 xl:pt-[140px] xl:pb-[121px]',
       ]}
     >
@@ -60,7 +64,7 @@ const enter = {
           <p class:list={['text-body-lg md:text-lead', enter[0]]}>
             {eyebrow.emoji && (
               <span
-                class="inline-block origin-[70%_70%] text-[1.1667em] motion-safe:animate-[wave_1s_ease-in-out_300ms_1]"
+                class="inline-block origin-[70%_70%] leading-none text-[1.1667em] motion-safe:animate-[wave_1s_ease-in-out_300ms_1]"
                 aria-hidden="true"
               >
                 {eyebrow.emoji}
@@ -81,7 +85,7 @@ const enter = {
         </h1>
         <CopyText
           copy={body}
-          class:list={['mt-4 text-body md:max-w-[36rem] lg:max-w-[32rem]', enter[80]]}
+          class:list={['mt-4 text-body md:max-w-[36rem] lg:max-w-[32rem] lg:leading-[1.625]', rise]}
         />
         <div class:list={['mt-6 lg:mt-7', enter[160]]}>
           <hr class="border-t border-white/40" />

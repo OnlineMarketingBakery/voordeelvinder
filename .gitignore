@@ -23,6 +23,10 @@ blob-report/
 lead-backups/
 *.jsonl
 
+# agent worktrees and local settings (Claude Code)
+.claude/worktrees/
+.claude/settings.local.json
+
 # OS / editor
 .DS_Store
 .idea/

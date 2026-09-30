@@ -1,7 +1,11 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import home from '../../src/content/pages/home.json' with { type: 'json' };
 import { iconKeys, imageKeys } from '../../src/lib/asset-keys';
+import { allIconKeys, allImageKeys } from '../../src/lib/assets';
 import { visibleCopy } from '../../src/lib/copy';
 import { pagePlaceholderProblems, type PageData } from '../../src/lib/pages';
 import { page } from '../../src/schemas/page';
@@ -30,6 +34,7 @@ describe('page schema', () => {
     const hero = home.sections[0]!;
     expect(page.safeParse({ ...home, sections: [] }).success).toBe(false);
     expect(page.safeParse({ ...home, sections: [hero, hero] }).success).toBe(false);
+    expect(page.safeParse({ ...home, sections: [{ ...hero, hidden: true }] }).success).toBe(false);
   });
 
   it('rejects unknown keys, unknown images and home-only fields on a product hero', () => {
@@ -49,6 +54,22 @@ describe('assets', () => {
     expect(iconKeys).toEqual(
       expect.arrayContaining(['no-call', 'eye-off', 'file-check', 'contract']),
     );
+  });
+
+  it('validates the same keys the components resolve', () => {
+    expect(imageKeys).toEqual(allImageKeys);
+    expect(iconKeys).toEqual(allIconKeys);
+  });
+
+  it('keeps a viewBox on every SVG, so it scales', () => {
+    const svgs = readdirSync('src/assets', { recursive: true, encoding: 'utf8' }).filter((file) =>
+      file.endsWith('.svg'),
+    );
+    expect(svgs.length).toBeGreaterThan(0);
+    for (const file of svgs) {
+      const root = readFileSync(join('src/assets', file), 'utf8').match(/<svg\b[^>]*>/)?.[0];
+      expect(root, file).toMatch(/\bviewBox=/);
+    }
   });
 });
 
