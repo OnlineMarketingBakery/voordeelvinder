@@ -13,6 +13,11 @@ const { default: ThankYou } = (await import(/* @vite-ignore */ thankYouComponent
   default: Parameters<AstroContainer['renderToString']>[0];
 };
 
+const arrivalComponent = '../../../src/components/sections/parts/FormArrival.astro';
+const { default: FormArrival } = (await import(/* @vite-ignore */ arrivalComponent)) as {
+  default: Parameters<AstroContainer['renderToString']>[0];
+};
+
 const block = thanksPage.sections[0]!;
 const parse = (value: unknown) => thankYouBlock.safeParse(value).success;
 const render = async (props: Record<string, unknown> = {}) => {
@@ -82,33 +87,27 @@ describe('thankYou block', () => {
     expect(html.match(/data-morph="form-card"/g)).toHaveLength(1);
     expect(html.match(/data-morph="form-mascot"/g)).toHaveLength(1);
     expect(html).toMatch(/data-morph="form-mascot"[^>]*data-celebration/);
-    // Nothing is named in the markup: the inline script names the card only when the visit
+    // Nothing is named in the markup: the <head> script names the card only when the visit
     // comes from a form page (below), so leaving never morphs it back into a form card.
     expect(html).not.toContain('[view-transition-name:form-card]');
-    expect(html).toMatch(/data-morph="form-card"[^>]*>[\s\S]*<\/div>\s*<script>[\s\S]*form-card/);
+    // The arrival check runs in <head> (parts/FormArrival.astro), not after the card.
+    expect(html).not.toContain('voordeelvinder:morph');
   });
 
   describe('names the card form-card only on arrival from a form page', () => {
     type Listener = (event: { viewTransition?: { finished: Promise<void> } }) => void;
 
-    /** Runs the card's inline script against a stub page, as if the visit came from `from`. */
+    /** Runs the <head> arrival script against a stub page, as if the visit came from `from`. */
     async function arrive(from: {
       activation?: string | null;
       referrer?: string;
       marker?: string;
     }) {
-      const html = await render();
-      const script = /<script>([\s\S]*?)<\/script>/.exec(
-        html.slice(html.indexOf('data-morph="form-card"')),
-      )?.[1];
-      if (!script) throw new Error('no inline script after the card');
-      const names = new Map<string, string>();
-      const card = {
-        style: {
-          setProperty: (key: string, value: string) => names.set(key, value),
-          removeProperty: (key: string) => names.delete(key),
-        },
-      };
+      const container = await AstroContainer.create();
+      const html = await container.renderToString(FormArrival);
+      const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1];
+      if (!script) throw new Error('no inline script in FormArrival');
+      const classes = new Set<string>();
       const listeners: Record<string, Listener[]> = {};
       const origin = 'https://voordeelvinder.test';
       const stored = new Map<string, string>(
@@ -116,6 +115,15 @@ describe('thankYou block', () => {
       );
       const window = {
         location: { origin },
+        document: {
+          referrer: from.referrer ?? '',
+          documentElement: {
+            classList: {
+              add: (name: string) => classes.add(name),
+              remove: (name: string) => classes.delete(name),
+            },
+          },
+        },
         sessionStorage: {
           getItem: (key: string) => stored.get(key) ?? null,
           removeItem: (key: string) => stored.delete(key),
@@ -128,12 +136,9 @@ describe('thankYou block', () => {
           (listeners[type] ??= []).push(listener);
         },
       };
-      const document = {
-        currentScript: { previousElementSibling: card },
-        referrer: from.referrer ?? '',
-      };
-      new Function('window', 'document', script)(window, document);
-      const name = () => names.get('view-transition-name') ?? 'none';
+      new Function('window', script)(window);
+      // global.css names the card while <html> has `from-form`.
+      const name = () => (classes.has('from-form') ? 'form-card' : 'none');
       const fire = (type: string, event: Parameters<Listener>[0] = {}) =>
         (listeners[type] ?? []).forEach((listener) => listener(event));
       return { name, fire, origin, stored };

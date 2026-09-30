@@ -14,9 +14,10 @@
 // loop, nothing with reduced motion. The card and the badge carry data-morph so the page
 // transition (Phase 7) can morph the form card and the panel mascot into them. The card gets
 // `view-transition-name: form-card`, the name of the form card, only when the page is reached
-// from a form page, so "Verstuur" morphs the form card into it; the inline script below clears
-// it once the page is shown and again when leaving, so the header CTA to /vergelijken (or any
-// later visit) never morphs the thank-you card back into a form card (docs/MOTION.md).
+// from a form page, so "Verstuur" morphs the form card into it. That is decided in <head>, before
+// the first render (parts/FormArrival.astro, added by ContentPage), and cleared once the page is
+// shown and again when leaving, so the header CTA to /vergelijken (or any later visit) never
+// morphs the thank-you card back into a form card (docs/MOTION.md).
 import CopyText from '../ui/CopyText.astro';
 import Button from '../ui/Button.astro';
 import Illustration from '../ui/Illustration.astro';
@@ -115,50 +116,6 @@ const confetti = [
       </Button>
     </div>
   </div>
-  {/*
-    Parsed right after the card, before the first render: the name has to be there when the
-    browser captures the new page for the view transition. The Navigation API tells where the
-    visit came from (the referrer where it is missing, e.g. Safari before 26).
-  */}
-  <script is:inline>
-    (function () {
-      const card = document.currentScript.previousElementSibling;
-      // The form's one-time marker (src/lib/form/submit.ts MORPH_MARKER), read and removed.
-      let marked = false;
-      try {
-        marked = window.sessionStorage.getItem('voordeelvinder:morph') === 'form-card';
-        window.sessionStorage.removeItem('voordeelvinder:morph');
-      } catch {
-        // No storage: only the referrer can tell.
-      }
-      const from = window.navigation?.activation?.from?.url || document.referrer;
-      let url;
-      try {
-        url = new URL(from);
-      } catch {
-        url = null;
-      }
-      const fromForm =
-        marked ||
-        (url !== null &&
-          url.origin === window.location.origin &&
-          /^\/vergelijken(\/[^/]+)?\/?$/.test(url.pathname));
-      if (!card || !fromForm) return;
-      card.style.setProperty('view-transition-name', 'form-card');
-      function clear() {
-        card.style.removeProperty('view-transition-name');
-      }
-      window.addEventListener(
-        'pagereveal',
-        function (event) {
-          if (event.viewTransition) event.viewTransition.finished.finally(clear);
-          else clear();
-        },
-        { once: true },
-      );
-      window.addEventListener('pageswap', clear);
-    })();
-  </script>
 </section>
 
 <script>

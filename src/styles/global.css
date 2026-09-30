@@ -327,3 +327,9 @@
     animation-duration: var(--motion-duration-fast);
   }
 }
+
+/* The thank-you card takes the form card's name only on arrival from the form (FormArrival.astro
+   sets `from-form` in <head>, before the first render, and clears it once the page is shown). */
+html.from-form [data-morph='form-card'] {
+  view-transition-name: form-card;
+}
