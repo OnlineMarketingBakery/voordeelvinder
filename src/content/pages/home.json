@@ -24,8 +24,7 @@
         },
         "mascot": {
           "src": "mascot/fox-thumbsup-with-price",
-          "alt": "",
-          "todo": true
+          "alt": ""
         }
       },
       "socialProof": {
@@ -156,6 +155,216 @@
         }
       ],
       "background": "clouds"
+    },
+    {
+      "type": "productSpotlight",
+      "id": "zonnepanelen",
+      "product": "zonnepanelen",
+      "tone": "lime",
+      "eyebrow": "Zonnepanelen",
+      "title": "Betaal minder. Produceer zelf.",
+      "body": "Zonnepanelen zijn een slimme investering — maar de prijzen en aanbieders variëren sterk. VoordeelVinder vergelijkt de beste installateurs en formules voor jouw dak, zonder verborgen kosten.",
+      "cta": {
+        "label": "Bereken je besparing",
+        "href": "/vergelijken/zonnepanelen"
+      },
+      "items": [
+        {
+          "title": "Onafhankelijk advies",
+          "body": "Wij werken niet voor één installateur. Je krijgt een eerlijk overzicht van wat op jouw situatie past."
+        },
+        {
+          "title": "Bereken je terugverdientijd",
+          "body": "Op basis van je verbruik en dak tonen we hoeveel je maandelijks bespaart — en wanneer de panelen zichzelf terugverdienen."
+        },
+        {
+          "title": "Van offerte tot installatie",
+          "body": "Wij begeleiden je van vergelijking tot plaatsing. Geen losse eindjes, geen onverwachte extra's."
+        }
+      ],
+      "image": {
+        "src": "illustrations/spotlight-solar-lightbulb",
+        "alt": ""
+      }
+    },
+    {
+      "type": "productSpotlight",
+      "id": "thuisbatterij",
+      "product": "thuisbatterij",
+      "tone": "lavender",
+      "eyebrow": "Thuisbatterij",
+      "title": "Sla je energie op. Gebruik het wanneer jij wil.",
+      "body": "Een thuisbatterij maakt je nog onafhankelijker van het net. Combineer je zonnepanelen met slimme opslag en haal het maximale uit je eigen energie — overdag én 's avonds.",
+      "cta": {
+        "label": "Ontdek jouw voordeel",
+        "href": "/vergelijken/thuisbatterij"
+      },
+      "items": [
+        {
+          "title": "Minder afhankelijk van het net",
+          "body": "Gebruik de energie die je zelf opwekt ook als de zon niet schijnt. Jij bepaalt wanneer en hoe je stroom verbruikt."
+        },
+        {
+          "title": "Vergelijk capaciteit en prijs",
+          "body": "Batterijen verschillen sterk in grootte, technologie en prijs. Wij helpen je de juiste keuze te maken voor jouw situatie."
+        },
+        {
+          "title": "Gecombineerd voordeel",
+          "body": "Zonnepanelen én thuisbatterij samen? We berekenen het gecombineerde voordeel in één overzicht — duidelijk en zonder jargon."
+        }
+      ],
+      "image": {
+        "src": "illustrations/spotlight-house-batteries",
+        "alt": ""
+      }
+    },
+    {
+      "type": "benefits",
+      "layout": "grid",
+      "eyebrow": "Waarom voor ons kiezen?",
+      "title": "Waarom kiezen voor VoordeelVinder?",
+      "intro": "Geen gedoe, geen verrassingen. Alleen een eerlijk resultaat dat jou verder helpt.",
+      "cta": {
+        "label": "Vergelijk nu gratis",
+        "href": "/vergelijken"
+      },
+      "image": {
+        "src": "mascot/fox-euro-documents",
+        "alt": ""
+      },
+      "items": [
+        {
+          "icon": "eye",
+          "title": "Duidelijk",
+          "body": "Geen jargon, geen verborgen voorwaarden. Je weet precies wat je invult en waarom."
+        },
+        {
+          "icon": "rocket",
+          "title": "Snel",
+          "body": "Van je eerste klik tot een helder resultaat in enkele minuten. Geen lange formulieren, geen wachttijd."
+        },
+        {
+          "icon": "charity",
+          "title": "Eerlijk",
+          "body": "We tonen de resultaten zoals ze zijn — ook als overstappen weinig oplevert."
+        },
+        {
+          "icon": "fist",
+          "title": "Zelfstandig",
+          "body": "Jij bepaalt wanneer en hoe je vergelijkt. Geen verkoopgesprekken, geen onverwachte telefoontjes."
+        }
+      ]
+    },
+    {
+      "type": "ctaBand",
+      "tone": "purple",
+      "title": "Klaar om te zien wat jij betaalt?",
+      "body": "In een paar minuten weet je of je te veel betaalt — en welk contract beter bij je past. Geen verplichtingen, geen verrassingen.",
+      "cta": {
+        "label": "Start je vergelijking",
+        "href": "/vergelijken"
+      }
+    },
+    {
+      "type": "faq",
+      "id": "veelgestelde-vragen",
+      "tone": "lavender",
+      "extendsBehindPrevious": true,
+      "eyebrow": "Veelgestelde vragen",
+      "title": "Veelgestelde vraag",
+      "items": [
+        {
+          "question": "Moet ik mijn factuur bij de hand hebben?",
+          "answer": null
+        },
+        {
+          "question": "Word ik daarna opgebeld door een verkoper?",
+          "answer": "Nee. Jij bepaalt zelf of en wanneer we contact opnemen. We bellen je alleen als jij daar bewust voor kiest.",
+          "open": true
+        },
+        {
+          "question": "Is VoordeelVinder gratis?",
+          "answer": null
+        },
+        {
+          "question": "Met welke leveranciers vergelijken jullie?",
+          "answer": null
+        },
+        {
+          "question": "Zit ik ergens aan vast na de vergelijking?",
+          "answer": null
+        }
+      ]
+    },
+    {
+      "type": "testimonials",
+      "hidden": true,
+      "id": "ervaringen",
+      "eyebrow": "Ervaringen",
+      "title": "Wat klanten zeggen",
+      "intro": "Geen gedoe, geen verrassingen. Alleen een eerlijk resultaat dat jou verder helpt.",
+      "labels": {
+        "track": "Ervaringen van klanten",
+        "rating": "{rating} van 5 sterren",
+        "previous": "Vorige ervaring",
+        "next": "Volgende ervaring"
+      },
+      "items": [
+        {
+          "quote": "Ik had dit al maanden uitgesteld. In tien minuten was het geregeld en ik bespaar nu €[X] per maand. Had het eerder moeten doen.",
+          "name": "Sofie V., Gent",
+          "location": "Antwerpen",
+          "rating": 5,
+          "avatar": null,
+          "placeholder": true
+        },
+        {
+          "quote": "Ik had dit al maanden uitgesteld. In tien minuten was het geregeld en ik bespaar nu €[X] per maand. Had het eerder moeten doen.",
+          "name": "Sofie V.",
+          "location": "Gent",
+          "rating": 5,
+          "avatar": null,
+          "placeholder": true
+        },
+        {
+          "quote": "Ik had dit al maanden uitgesteld. In tien minuten was het geregeld en ik bespaar nu €[X] per maand. Had het eerder moeten doen.",
+          "name": "Thomas D.",
+          "location": "Antwerpen",
+          "rating": 5,
+          "avatar": null,
+          "placeholder": true
+        },
+        {
+          "quote": "Ik had dit al maanden uitgesteld. In tien minuten was het geregeld en ik bespaar nu €[X] per maand. Had het eerder moeten doen.",
+          "name": "Sofie V., Gent",
+          "location": "Antwerpen",
+          "rating": 5,
+          "avatar": null,
+          "placeholder": true
+        },
+        {
+          "quote": "Ik had dit al maanden uitgesteld. In tien minuten was het geregeld en ik bespaar nu €[X] per maand. Had het eerder moeten doen.",
+          "name": "Thomas D.",
+          "location": "Antwerpen",
+          "rating": 5,
+          "avatar": null,
+          "placeholder": true
+        }
+      ]
+    },
+    {
+      "type": "ctaMascot",
+      "title": "Jij vult in.\nWij vergelijken.\nJij bespaart.",
+      "highlight": "Wij vergelijken.",
+      "body": "Doe het nu — het duurt een paar minuten en je weet meteen waar je staat.",
+      "cta": {
+        "label": "Start je vergelijking",
+        "href": "/vergelijken"
+      },
+      "image": {
+        "src": "mascot/fox-cheer-document",
+        "alt": ""
+      }
     }
   ]
 }

@@ -3,13 +3,24 @@ import { type CollectionEntry, getEntry } from 'astro:content';
 
 export type PageData = CollectionEntry<'pages'>['data'];
 
-/** Placeholder content that must never reach production (brief §2, CONTENT-TODO 1.9, 1.11). */
+/**
+ * Placeholder content that must never reach production (brief §2): a hero image marked
+ * `todo` and dummy testimonials (CONTENT-TODO 1.11). Hidden blocks are skipped.
+ */
 export function pagePlaceholderProblems(id: string, page: PageData): string[] {
   const problems: string[] = [];
   for (const block of page.sections) {
     if (block.hidden) continue;
     if (block.type === 'hero' && block.art.mascot.todo) {
       problems.push(`${id}: hero image "${block.art.mascot.src}" is a placeholder`);
+    }
+    if (block.type === 'testimonials') {
+      block.items.forEach((item, index) => {
+        // `placeholder: true`, or a fill-in such as "€[X]" left in the quote.
+        if (item.placeholder || /\[[^\]]*\]/.test(item.quote)) {
+          problems.push(`${id}: testimonial ${index + 1} ("${item.name}") is a placeholder`);
+        }
+      });
     }
   }
   return problems;

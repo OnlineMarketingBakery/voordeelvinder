@@ -72,8 +72,8 @@ change the live file. It contains these changes compared with Ploi's template:
 - `proxy_pass http://127.0.0.1:3001`;
 - the visitor IP is passed as `$remote_addr`, plus the forwarded protocol and
   `X-Forwarded-Host $host`. Astro only trusts the visitor IP with a valid forwarded host.
-  Added via the API on 2026-09-29; it takes effect at the next Nginx reload, which Ploi
-  does, for example, when a basic auth user is added;
+  Added via the API on 2026-09-29; it takes effect at the next Nginx reload. Without basic
+  auth nothing triggers one, so reload Nginx before Phase 5 (the rate limiter needs it);
 - `location = /api/health` is exempt from basic auth;
 - HSTS, `Referrer-Policy`, `Permissions-Policy`, and `X-Robots-Tag: noindex, nofollow`
   (staging only).
@@ -94,7 +94,9 @@ Ploi writes these to `/etc/crontab`. Each job logs to
 
 ## Basic auth
 
-Set it up in Ploi (site → basic auth users): one user for the whole site. `/api/health` and
+Not used for now (Tanjil, 2026-09-30): staging is open, and search engines are kept out by
+`noindex` (robots.txt, meta tag and `X-Robots-Tag`). If it is added later, set it up in Ploi
+(site → basic auth users): one user for the whole site. `/api/health` and
 `/.well-known/acme-challenge/` stay reachable without it. Share the password outside the repo.
 
 ## Logs and diagnostics (SSH as the site user)

@@ -1,0 +1,224 @@
+---
+// "Why us" cards next to a mascot. `grid` (home 60:13–60:116, "Waarom kiezen voor
+// VoordeelVinder?"): pill, h2 with the CTA beside it, intro, then the mascot on an energy-icon
+// pattern left of a 2×2 card grid. `list` (solar 69:1304–81:3856, battery 80:3175–81:3971):
+// heading and a cheering mascot on a floor shadow left, stacked cards with purple/lime tiles
+// right, optionally on the clouds background.
+import type { BenefitsBlock } from '../../schemas/blocks/benefits';
+import Button from '../ui/Button.astro';
+import Container from '../ui/Container.astro';
+import CopyText from '../ui/CopyText.astro';
+import Icon from '../ui/Icon.astro';
+import Illustration from '../ui/Illustration.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+import SectionPill from '../ui/SectionPill.astro';
+import CloudsBackground from './parts/CloudsBackground.astro';
+
+type Props = BenefitsBlock;
+
+const { id, layout, background, eyebrow, title, intro, cta, image, items } = Astro.props;
+
+const visible = items.filter((item) => !item.hidden);
+const isGrid = layout === 'grid';
+
+// The h2 id for aria-labelledby: from the anchor, else from the title (unique per page).
+const slug = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+const headingId = `${id ?? `benefits-${slug(title)}`}-title`;
+
+type IconName = BenefitsBlock['items'][number]['icon'];
+
+// Glyph sizes from Figma. Grid: native sizes in the 59 px tile. List: 46–48 in the 88 px tile
+// from lg, about 30 in the 56 px tile below.
+const gridGlyphs: Record<IconName, string> = {
+  eye: 'size-[30px]',
+  rocket: 'size-[30px]',
+  charity: 'size-7',
+  fist: 'size-8',
+  advice: 'size-[30px]',
+  label: 'size-[30px]',
+  book: 'size-[30px]',
+  check: 'size-[30px]',
+};
+const listGlyphs: Record<IconName, string> = {
+  eye: 'size-[30px] lg:size-[46px]',
+  rocket: 'size-[30px] lg:size-[46px]',
+  charity: 'size-7 lg:size-11',
+  fist: 'size-8 lg:size-12',
+  advice: 'size-[30px] lg:size-[46px]',
+  label: 'size-[31px] lg:size-[47px]',
+  book: 'size-[30px] lg:size-[46px]',
+  check: 'size-[31px] lg:size-12',
+};
+
+const listTiles = {
+  purple: 'bg-purple-600 text-white',
+  lime: 'bg-lime-400 text-ink-900',
+} as const;
+
+// Section padding: the list design leaves the white top of the clouds photo empty (165 px).
+const padding = isGrid
+  ? ['pt-16 md:pt-24 lg:pt-32', background === 'clouds' && 'pb-16 md:pb-20 lg:pb-[84px]']
+  : 'pt-16 pb-12 md:pt-24 md:pb-16 lg:pt-[165px] lg:pb-[84px]';
+---
+
+<section {id} aria-labelledby={headingId} class:list={['relative isolate', padding]}>
+  {background === 'clouds' && <CloudsBackground />}
+  {isGrid ? (
+    <Container>
+      {/* Header: pill across both columns, the h2 with the CTA centred beside it from lg, the
+            intro under the h2. The CTA comes last in the DOM, so it falls below the intro on
+            phones and tablets. */}
+      <div class="grid lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-x-8" data-reveal>
+        {eyebrow && (
+          <SectionPill
+            label={eyebrow}
+            class="mb-4 justify-self-start lg:col-span-2 lg:row-1 lg:mb-5"
+          />
+        )}
+        <h2 id={headingId} class="text-h3 text-ink-800 lg:col-1 lg:row-2 lg:text-h2">
+          {title}
+        </h2>
+        {intro && (
+          <CopyText
+            copy={intro}
+            class="mt-4 max-w-[641px] text-body text-ink-600 md:text-body-lg lg:col-1 lg:row-3"
+          />
+        )}
+        {cta && (
+          <Button
+            href={cta.href}
+            variant="purple"
+            glow="purple"
+            icon="arrow-up-right"
+            class="mt-6 justify-self-start lg:col-2 lg:row-2 lg:mt-0 lg:self-center"
+          >
+            {cta.label}
+          </Button>
+        )}
+      </div>
+
+      <div class="mt-8 grid gap-y-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,640px)] lg:gap-x-5">
+        {/* The mascot on the pattern (one box, so the pair scales together). From lg it
+              fills its column; from xl it overflows it like the design (−38 px left), 60 px below the
+              cards' top. */}
+        <div
+          class="benefits-art pointer-events-none relative mx-auto aspect-[584/581] w-full max-w-[300px] md:max-w-[420px] lg:mt-[60px] lg:mr-0 lg:ml-0 lg:w-full lg:max-w-[584px] xl:-ml-[7.5%] xl:w-[115%]"
+          data-reveal
+        >
+          <Illustration
+            src="backgrounds/energy-icon-pattern"
+            alt=""
+            widths={[280, 390, 543, 780, 1086]}
+            sizes="(min-width: 1280px) 543px, (min-width: 1170px) 430px, (min-width: 1024px) calc((100vw - 708px) * 0.93), (min-width: 768px) 390px, 280px"
+            class="absolute top-[-4.99%] left-[-4.28%] h-[94.8%] w-[92.98%]"
+          />
+          <Illustration
+            src={image.src}
+            alt={image.alt}
+            widths={[300, 420, 584, 840, 1168]}
+            sizes="(min-width: 1280px) 584px, (min-width: 1170px) 462px, (min-width: 1024px) calc(100vw - 708px), (min-width: 768px) 420px, 300px"
+            class="relative h-auto w-full"
+          />
+        </div>
+
+        <ul role="list" class="relative grid gap-4 md:grid-cols-2 md:gap-5" data-reveal-stagger>
+          {visible.map((item) => (
+            <li class="group flex">
+              <div class="lift flex w-full flex-col rounded-2xl bg-white p-6 shadow-card group-hover:shadow-card-lg lg:py-[30px] lg:ps-[30px] lg:pe-4 xl:min-h-[295px]">
+                <span class="grid size-[59px] shrink-0 place-items-center rounded-lg border-[3px] border-lavender-300 bg-purple-500/6 text-purple-500">
+                  <Icon name={item.icon} class={gridGlyphs[item.icon]} />
+                </span>
+                <div class="mt-6 lg:mt-16">
+                  <h3 class="text-title text-ink-900">{item.title}</h3>
+                  <p class="mt-2 text-body text-ink-600 lg:mt-[18px]">{item.body}</p>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Container>
+  ) : (
+    <Container class="grid gap-y-8 md:grid-cols-[minmax(0,1fr)_240px] md:gap-x-8 lg:grid-cols-[minmax(0,457px)_minmax(0,624px)] lg:grid-rows-[auto_1fr] lg:justify-between lg:gap-x-10 lg:gap-y-0">
+      <div class="md:col-1 md:row-1 md:self-center lg:self-start">
+        <SectionHeading
+          id={headingId}
+          {eyebrow}
+          {title}
+          {intro}
+          titleClass="text-h3 lg:text-h2"
+          introClass="max-md:text-body lg:mt-5"
+        />
+        {cta && (
+          <div class="mt-6 lg:mt-8" data-reveal>
+            <Button href={cta.href} variant="purple" glow="purple" icon="arrow-up-right">
+              {cta.label}
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <ul
+        role="list"
+        class="relative grid gap-4 md:col-span-2 md:row-2 lg:col-2 lg:row-[1/span_2] lg:gap-5 lg:self-start"
+        data-reveal-stagger
+      >
+        {visible.map((item) => (
+          <li class="group flex">
+            <div class="lift flex w-full items-start gap-4 rounded-2xl border border-purple-500/23 bg-white p-5 shadow-row md:gap-[21px] md:p-8 lg:min-h-[168px] lg:items-center lg:py-[30px] lg:ps-10 lg:pe-[26px]">
+              <span
+                class:list={[
+                  'grid size-14 shrink-0 place-items-center rounded-lg lg:size-[88px]',
+                  listTiles[item.tone ?? 'purple'],
+                ]}
+              >
+                <Icon name={item.icon} class={listGlyphs[item.icon]} />
+              </span>
+              <div>
+                <h3 class="text-title text-ink-900 md:text-title-lg">{item.title}</h3>
+                <p class="mt-2 max-w-[433px] text-body text-ink-600 lg:mt-4">{item.body}</p>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {/* The cheering mascot on a CSS floor shadow (Figma 78:2858: 206×34 under the feet). */}
+      <div
+        class="benefits-art pointer-events-none relative mx-auto w-[220px] md:col-2 md:row-1 md:w-[240px] md:self-center lg:col-1 lg:row-2 lg:mt-8 lg:mr-0 lg:ml-[25px] lg:w-[442px]"
+        data-reveal
+      >
+        <div class="absolute top-[94.2%] left-[23.76%] h-[7.05%] w-[46.6%] bg-[radial-gradient(closest-side,var(--color-ink-800),transparent)] opacity-43" />
+        <Illustration
+          src={image.src}
+          alt={image.alt}
+          widths={[220, 240, 442, 884]}
+          sizes="(min-width: 1024px) 442px, (min-width: 768px) 240px, 220px"
+          class="relative h-auto w-full"
+        />
+      </div>
+    </Container>
+  )}
+</section>
+
+<style>
+  /* The mascot's scroll reveal (src/scripts/reveal.ts) pops it once: a slight scale on top of
+     the rise and fade. Nothing happens with reduced motion (the script does not run). */
+  .benefits-art[data-reveal-ready] {
+    transform-origin: 50% 100%;
+    transition:
+      opacity var(--motion-duration-slow) var(--ease-out),
+      translate var(--motion-duration-slow) var(--ease-out),
+      scale var(--motion-duration-slow) var(--ease-out);
+  }
+
+  .benefits-art[data-reveal-ready]:not(.is-revealed) {
+    scale: 0.94;
+  }
+</style>

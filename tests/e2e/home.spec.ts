@@ -60,9 +60,7 @@ test.describe('home sections', () => {
       .locator('header a[href^="/#"], footer a[href^="/#"]')
       .evaluateAll((links) => links.map((a) => a.getAttribute('href')!));
     const ids = [...new Set(hrefs.map((href) => href.slice(2)))];
-    // FAQ (#veelgestelde-vragen) arrives with the next home PR.
-    const pending = new Set(['veelgestelde-vragen']);
-    for (const id of ids.filter((id) => !pending.has(id))) {
+    for (const id of ids) {
       await expect(page.locator(`[id="${id}"]`), `#${id}`).toHaveCount(1);
     }
   });

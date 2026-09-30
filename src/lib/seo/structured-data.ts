@@ -1,5 +1,5 @@
-// schema.org structured data (brief §11): Organization and WebSite on the homepage; FAQPage
-// comes with the FAQ block.
+// schema.org structured data (brief §11): Organization and WebSite on the homepage; FAQPage on
+// every page with a visible FAQ block.
 export interface OrganizationInput {
   name: string;
   url: URL;
@@ -23,6 +23,23 @@ export function website({ name, url, inLanguage }: { name: string; url: URL; inL
     name,
     url: url.href,
     inLanguage,
+  };
+}
+
+/**
+ * FAQPage from the questions the page shows (answered and visible only: structured data must
+ * match the visible content). Returns undefined when there are none.
+ */
+export function faqPage(items: Array<{ question: string; answer: string }>) {
+  if (items.length === 0) return undefined;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map(({ question, answer }) => ({
+      '@type': 'Question',
+      name: question,
+      acceptedAnswer: { '@type': 'Answer', text: answer },
+    })),
   };
 }
 

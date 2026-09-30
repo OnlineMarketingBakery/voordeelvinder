@@ -1,9 +1,15 @@
 ---
 import type { Section } from '../../schemas/page';
+import Benefits from './Benefits.astro';
 import ComparisonTable from './ComparisonTable.astro';
+import CtaBand from './CtaBand.astro';
+import CtaMascot from './CtaMascot.astro';
+import Faq from './Faq.astro';
 import Features from './Features.astro';
 import Hero from './Hero.astro';
+import ProductSpotlight from './ProductSpotlight.astro';
 import Steps from './Steps.astro';
+import Testimonials from './Testimonials.astro';
 
 interface Props {
   sections: Section[];
@@ -27,6 +33,18 @@ const sections = Astro.props.sections
       return <Steps {...section} />;
     case 'comparisonTable':
       return <ComparisonTable {...section} />;
+    case 'productSpotlight':
+      return <ProductSpotlight {...section} />;
+    case 'benefits':
+      return <Benefits {...section} />;
+    case 'ctaBand':
+      return <CtaBand {...section} />;
+    case 'faq':
+      return <Faq {...section} />;
+    case 'testimonials':
+      return <Testimonials {...section} />;
+    case 'ctaMascot':
+      return <CtaMascot {...section} />;
     default: {
       // A schema type without a component fails astro check here instead of rendering nothing.
       const unhandled: never = section;

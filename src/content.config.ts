@@ -48,6 +48,19 @@ const site = defineCollection({
         rights: text,
       }),
     }),
+    /** Shared FAQ copy; a page's faq block can override the contact card per field. */
+    faq: z.strictObject({
+      /** The label above every answer ("Antwoord"). */
+      answerLabel: text,
+      contact: z.strictObject({
+        title: text,
+        body: text,
+        /** Button label; the link is mailto:{contact.email.value}. */
+        cta: text,
+        /** Visually hidden, after the label: the button opens the mail app. */
+        ctaHint: text,
+      }),
+    }),
     contact: z.strictObject({
       email: z.strictObject({ value: z.email(), todo }),
       phone: z.strictObject({

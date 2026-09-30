@@ -88,6 +88,15 @@
       "rights": " — Alle rechten voorbehouden."
     }
   },
+  "faq": {
+    "answerLabel": "Antwoord",
+    "contact": {
+      "title": "Heb je nog een vraag?",
+      "body": "Wij helpen je graag verder. Neem gerust contact met ons op.",
+      "cta": "Stel een vraag",
+      "ctaHint": "(opent je e-mailprogramma)"
+    }
+  },
   "contact": {
     "email": {
       "value": "info@voordeelvinder.com",

@@ -1,0 +1,99 @@
+---
+// One FAQ question (Figma 60:57/60:107, 69:990/69:1040, 80:2908/80:2933): a native
+// <details>/<summary>, so it works without JS, with the keyboard and with find-in-page. Items
+// open independently. The question is not a heading (the summary's button role would flatten
+// it). Open: white card with a shadow, a hairline, the "Antwoord" label and the answer.
+import Icon from '../../ui/Icon.astro';
+
+interface Props {
+  question: string;
+  answer: string;
+  open?: boolean | undefined;
+  /** "Antwoord" (site.json faq.answerLabel). */
+  answerLabel: string;
+  /** lavender (home): white items, purple-600 circle; white (product pages): lavender-50 items. */
+  tone: 'lavender' | 'white';
+}
+
+const { question, answer, open = false, answerLabel, tone } = Astro.props;
+
+// Figma: the icon circle is #7051ED on home and #6C5CE7 on the product pages (designer to unify).
+const look = {
+  lavender: { item: 'bg-white', circle: 'bg-purple-600' },
+  white: { item: 'bg-lavender-50', circle: 'bg-purple-500' },
+}[tone];
+---
+
+<details
+  class:list={[
+    'faq-item rounded-xl open:bg-white open:shadow-card',
+    'transition-[background-color,box-shadow] duration-(--motion-duration-base) ease-out',
+    look.item,
+  ]}
+  {open}
+>
+  <summary class="flex min-h-16 cursor-pointer list-none items-center gap-3 rounded-xl px-4 py-3 md:min-h-[79px] md:gap-[15px] md:py-4 md:ps-[27px] md:pe-6 [&::-webkit-details-marker]:hidden">
+    <span
+      class:list={[
+        'grid size-9 shrink-0 place-items-center rounded-full text-white md:size-[41px]',
+        look.circle,
+      ]}
+      aria-hidden="true"
+    >
+      <Icon name="plus" class="faq-plus size-5 md:size-[23px]" />
+    </span>
+    <span class="text-body-lg font-medium text-ink-900 md:text-body-xl">{question}</span>
+  </summary>
+  <div class="mx-4 border-t border-lavender-300 pt-4 pb-5 md:mx-[29px] md:ps-2.5 md:pe-[30px] md:pt-[19px] md:pb-[26px]">
+    <p class="text-body text-purple-500">{answerLabel}</p>
+    <p class="mt-1.5 max-w-[475px] text-body text-ink-600">{answer}</p>
+  </div>
+</details>
+
+<style>
+  /*
+   * Open state: the plus's vertical bar collapses into a minus (not designed, CONTENT-TODO 5.1).
+   * The rects come from src/assets/icons/plus.svg (.plus-h / .plus-v).
+   */
+  .faq-item :global(.plus-v) {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .faq-item[open] :global(.plus-v) {
+    scale: 1 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .faq-item :global(.plus-v) {
+      transition-property: scale;
+      transition-duration: var(--motion-duration-fast);
+      transition-timing-function: var(--ease-out);
+    }
+  }
+
+  /*
+   * Smooth open and close where the browser can animate to `auto` (instant elsewhere, and with
+   * reduced motion). Longhands only, so the CSS minifier keeps allow-discrete.
+   */
+  @supports (interpolate-size: allow-keywords) {
+    @media (prefers-reduced-motion: no-preference) {
+      .faq-item {
+        interpolate-size: allow-keywords;
+      }
+
+      .faq-item::details-content {
+        block-size: 0;
+        overflow: clip;
+        transition-property: block-size, content-visibility;
+        transition-duration: var(--motion-duration-base);
+        transition-timing-function: var(--ease-out);
+        transition-behavior: allow-discrete;
+      }
+
+      .faq-item[open]::details-content {
+        block-size: auto;
+      }
+    }
+  }
+</style>

@@ -1,0 +1,236 @@
+---
+// "Wat klanten zeggen" (Figma 60:486–60:488, carousel 60:748): review cards in a full-bleed,
+// horizontally scrolling track under a centred header. Swipe or scroll on every screen; from md
+// two round buttons scroll by one card when the track overflows (not designed, proposed). No
+// autoplay. With three cards or fewer the row is static and centred from xl (1182 px row).
+// Hidden on home until real reviews exist (CONTENT-TODO 1.11); placeholders fail production.
+import type { TestimonialsBlock } from '../../schemas/blocks/testimonials';
+import Container from '../ui/Container.astro';
+import Icon from '../ui/Icon.astro';
+import Illustration from '../ui/Illustration.astro';
+import Rating from '../ui/Rating.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+
+type Props = TestimonialsBlock;
+
+const { id, eyebrow, title, intro, labels, items } = Astro.props;
+
+const base = id ?? 'testimonials';
+const headingId = `${base}-title`;
+const trackId = `${base}-track`;
+const few = items.length <= 3;
+
+const ratingLabel = (rating: number) => labels.rating.replaceAll('{rating}', String(rating));
+
+const button =
+  'grid size-11 place-items-center rounded-full bg-white text-purple-500 shadow-card transition-[scale,opacity] duration-(--motion-duration-fast) ease-out motion-safe:active:scale-[0.97] aria-disabled:cursor-default aria-disabled:opacity-40';
+---
+
+<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-32" data-carousel>
+  <Container>
+    <SectionHeading
+      id={headingId}
+      {eyebrow}
+      {title}
+      {intro}
+      align="center"
+      titleClass="text-h3 md:text-h2"
+      introClass="max-w-[641px] max-md:text-body lg:mt-2"
+    />
+  </Container>
+
+  <div class="track-frame mt-3.5 lg:mt-[22px]">
+    <div
+      id={trackId}
+      role="region"
+      aria-label={labels.track}
+      tabindex="0"
+      class:list={[
+        'track snap-x snap-mandatory overflow-x-auto overscroll-x-contain focus-visible:outline-none',
+        few && 'track-few',
+      ]}
+      data-carousel-track
+    >
+      <ul
+        role="list"
+        class="flex w-max gap-4 px-(--track-pad) pt-[18px] pb-16 md:gap-6 lg:gap-[30px]"
+        data-reveal
+      >
+        {items.map((item) => (
+          <li class="group flex w-[calc(100vw-48px)] max-w-[374px] shrink-0 snap-start md:w-[340px] lg:w-[374px]">
+            <figure class="lift relative flex w-full flex-col rounded-2xl bg-white px-6 pt-8 pb-8 shadow-card-lg lg:min-h-[337px] lg:px-[33px] lg:pt-[42px] lg:pb-[44px]">
+              <figcaption class="flex items-center gap-[9px] pe-10">
+                {item.avatar && (
+                  <span class="shrink-0 rounded-2xl border-[3px] border-lavender-300 bg-purple-500/6 p-[3px]">
+                    <Illustration
+                      src={item.avatar.src}
+                      alt={item.avatar.alt}
+                      widths={[52, 104, 156]}
+                      sizes="52px"
+                      class="size-[52px] rounded-xl object-cover"
+                    />
+                  </span>
+                )}
+                <span class="flex flex-col">
+                  <span class="text-title text-ink-900">{item.name}</span>
+                  {item.rating !== undefined && (
+                    <Rating value={item.rating} label={ratingLabel(item.rating)} class="mt-[3px]" />
+                  )}
+                </span>
+              </figcaption>
+              {/* After the figcaption: a figure allows its caption only first or last. */}
+              <Icon
+                name="quote-mark"
+                class="absolute top-6 right-6 h-[27px] w-8 text-purple-500 lg:top-[30px] lg:right-[33px]"
+              />
+              <div class="mt-[21px] h-px bg-ink-600/26" />
+              <blockquote class="mt-6 text-body text-ink-600">
+                <p>{item.quote}</p>
+              </blockquote>
+              {item.location && (
+                <p class="mt-auto flex items-center gap-0.5 pt-6 text-body text-ink-900">
+                  <Icon name="location-pin" class="size-[18px] shrink-0 text-purple-500" />
+                  <span>{item.location}</span>
+                </p>
+              )}
+            </figure>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+
+  <Container>
+    <div class="relative -mt-10 flex justify-end gap-3 max-md:hidden" hidden data-carousel-controls>
+      <button
+        type="button"
+        class={button}
+        aria-controls={trackId}
+        aria-label={labels.previous}
+        data-carousel-step="-1"
+      >
+        <Icon name="chevron-left" class="size-6" />
+      </button>
+      <button
+        type="button"
+        class={button}
+        aria-controls={trackId}
+        aria-label={labels.next}
+        data-carousel-step="1"
+      >
+        <Icon name="chevron-right" class="size-6" />
+      </button>
+    </div>
+  </Container>
+</section>
+
+<style>
+  /* Inline padding of the track: the 1182 px card row is centred from lg (Figma x129–1311). */
+  .track-frame {
+    --track-pad: 1rem;
+  }
+
+  .track {
+    scroll-padding-inline: var(--track-pad);
+  }
+
+  /* The scroller's own ring would be cut off by the edge fade, so the frame draws it. */
+  .track-frame:has(> .track:focus-visible) {
+    outline: 2px solid var(--focus-ring, var(--color-purple-500));
+    outline-offset: -2px;
+  }
+
+  @media (min-width: 48rem) {
+    .track-frame {
+      --track-pad: 1.5rem;
+    }
+
+    /* Edge fade on the padding only, so the whole cards keep full contrast (Figma fades the
+       outer cards too). */
+    .track {
+      mask-image: linear-gradient(
+        90deg,
+        transparent,
+        #000 var(--track-pad),
+        #000 calc(100% - var(--track-pad)),
+        transparent
+      );
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .track-frame {
+      --track-pad: max(1rem, calc((100vw - 1182px) / 2));
+    }
+  }
+
+  /* Nothing to scroll: a static, centred row. */
+  @media (min-width: 80rem) {
+    .track-few {
+      overflow: visible;
+      mask-image: none;
+    }
+
+    .track-few > ul {
+      width: auto;
+      justify-content: center;
+    }
+  }
+
+  /* Buttons scroll the track, so hide its scrollbar while they are shown. */
+  .track[data-controls] {
+    scrollbar-width: none;
+  }
+
+  .track[data-controls]::-webkit-scrollbar {
+    display: none;
+  }
+</style>
+
+<script>
+  // Shows the prev/next buttons only when the track overflows (they stay hidden without JS and
+  // below md) and scrolls by one card. Instant with reduced motion.
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  document.querySelectorAll<HTMLElement>('[data-carousel]').forEach((root) => {
+    const track = root.querySelector<HTMLElement>('[data-carousel-track]');
+    const controls = root.querySelector<HTMLElement>('[data-carousel-controls]');
+    const list = track?.querySelector('ul');
+    if (!track || !controls || !list) return;
+    const buttons = [...controls.querySelectorAll<HTMLButtonElement>('[data-carousel-step]')];
+
+    const update = () => {
+      const max = track.scrollWidth - track.clientWidth;
+      const overflows = max > 1;
+      controls.hidden = !overflows;
+      track.toggleAttribute('data-controls', overflows);
+      // A tab stop only while there is something to scroll (server-rendered as one, for no-JS).
+      if (overflows) track.setAttribute('tabindex', '0');
+      else track.removeAttribute('tabindex');
+      for (const button of buttons) {
+        const atEnd =
+          Number(button.dataset.carouselStep) < 0
+            ? track.scrollLeft <= 1
+            : track.scrollLeft >= max - 1;
+        button.setAttribute('aria-disabled', String(atEnd));
+      }
+    };
+
+    for (const button of buttons) {
+      button.addEventListener('click', () => {
+        if (button.getAttribute('aria-disabled') === 'true') return;
+        const card = list.firstElementChild;
+        const gap = parseFloat(getComputedStyle(list).columnGap) || 0;
+        const distance = (card instanceof HTMLElement ? card.offsetWidth : track.clientWidth) + gap;
+        track.scrollBy({
+          left: Number(button.dataset.carouselStep) * distance,
+          behavior: reduceMotion.matches ? 'auto' : 'smooth',
+        });
+      });
+    }
+
+    track.addEventListener('scroll', update, { passive: true });
+    new ResizeObserver(update).observe(track);
+    update();
+  });
+</script>

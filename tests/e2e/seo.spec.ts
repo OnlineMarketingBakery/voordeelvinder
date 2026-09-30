@@ -31,11 +31,21 @@ test('every page has a description, canonical and share tags', async ({ page, re
   }
 });
 
-test('the homepage publishes Organization and WebSite structured data', async ({ page }) => {
+test('the homepage publishes Organization, WebSite and FAQPage structured data', async ({
+  page,
+}) => {
   await page.goto('/');
-  const blocks = await page.locator('script[type="application/ld+json"]').allTextContents();
-  const types = blocks.map((text) => (JSON.parse(text) as { '@type': string })['@type']);
-  expect(types).toEqual(['Organization', 'WebSite']);
+  const blocks = (await page.locator('script[type="application/ld+json"]').allTextContents()).map(
+    (text) => JSON.parse(text) as { '@type': string; mainEntity?: Array<{ name: string }> },
+  );
+  expect(blocks.map((block) => block['@type'])).toEqual(['Organization', 'WebSite', 'FAQPage']);
+
+  // Only the questions the page shows (answered ones) go into FAQPage.
+  const shown = await page.locator('#veelgestelde-vragen summary').allTextContents();
+  const faq = blocks.find((block) => block['@type'] === 'FAQPage')!;
+  expect(faq.mainEntity!.map((question) => question.name)).toEqual(
+    shown.map((text) => text.trim()),
+  );
 });
 
 test('page titles use the template, the homepage uses the site name', async ({ page }) => {

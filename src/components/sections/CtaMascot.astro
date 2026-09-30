@@ -1,0 +1,145 @@
+---
+// Final call to action (home 60:500, the last block before the footer): the cheering mascot in
+// a white ring with a lime disc, next to a three-line statement with one line on the tilted
+// lime chip, a sub line and the purple button. Stacked and centred on phones, two columns
+// from md. The side glow is two CSS radial gradients (never filter: blur, too costly on phones).
+import type { CtaMascotBlock } from '../../schemas/blocks/ctaMascot';
+import Button from '../ui/Button.astro';
+import Container from '../ui/Container.astro';
+import CopyText from '../ui/CopyText.astro';
+import Highlight from '../ui/Highlight.astro';
+import Illustration from '../ui/Illustration.astro';
+
+type Props = CtaMascotBlock;
+
+const { id, title, highlight, body, cta, image } = Astro.props;
+const headingId = `${id ?? 'cta-mascot'}-title`;
+const lines = title.split('\n');
+---
+
+<section
+  {id}
+  aria-labelledby={headingId}
+  class="cta-mascot relative isolate overflow-x-clip pt-16 pb-16 md:pt-20 md:pb-24 lg:pt-28 lg:pb-32"
+>
+  <Container class="md:grid md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:items-center md:gap-8 lg:grid-cols-[420px_minmax(0,1fr)] lg:gap-x-10 xl:grid-cols-[529px_minmax(0,1fr)] xl:gap-x-[51px]">
+    <!-- Ring (81:3574 white disc, 81:3575 lime disc) with the mascot breaking out of it. -->
+    <div
+      class="relative mx-auto aspect-square w-[min(76vw,300px)] md:w-full md:max-w-[300px] lg:max-w-none"
+      data-reveal
+    >
+      <div class="absolute inset-0 rounded-full bg-white shadow-header" aria-hidden="true"></div>
+      <div class="absolute inset-[3.21%] rounded-full bg-lime-300" aria-hidden="true"></div>
+      <div class="cta-mascot-art absolute top-[0.19%] left-[-9.26%] w-[113.04%] max-w-none">
+        <Illustration
+          src={image.src}
+          alt={image.alt}
+          widths={[340, 475, 598, 680, 950, 974]}
+          sizes="(min-width: 1280px) 598px, (min-width: 1024px) 475px, (min-width: 768px) 340px, min(86vw, 340px)"
+          class="h-auto w-full"
+        />
+      </div>
+    </div>
+
+    <div class="mt-10 text-center md:mt-0 md:text-left" data-reveal-stagger>
+      <h2
+        id={headingId}
+        class="cta-mascot-title text-h3 text-ink-900 min-[380px]:text-h2 lg:text-h1 xl:text-display"
+      >
+        {lines.map((line, index) => (
+          <>
+            {index > 0 && ' '}
+            <span class="block">
+              {line === highlight ? (
+                <Highlight
+                  text={line}
+                  tilt
+                  sparkle
+                  class="leading-[1.1625] md:-ml-[0.1875em]"
+                  sparkleClass="cta-mascot-sparkle"
+                />
+              ) : (
+                line
+              )}
+            </span>
+          </>
+        ))}
+      </h2>
+      {body && (
+        <CopyText
+          copy={body}
+          class="mx-auto mt-4 max-w-[32ch] text-body-lg text-ink-600 md:mx-0 md:mt-5 md:max-w-[563px] md:text-body-xl xl:text-lead"
+        />
+      )}
+      <div class="mt-6 md:mt-8">
+        <Button
+          href={cta.href}
+          variant="purple"
+          size="lg"
+          icon="arrow-up-right"
+          class="w-full max-w-[343px] md:w-auto md:max-w-none"
+        >
+          {cta.label}
+        </Button>
+      </div>
+    </div>
+  </Container>
+</section>
+
+<style>
+  /* Side glow (60:497/60:498): purple-700 at ≈14% from both page edges, fading to white. */
+  .cta-mascot {
+    --cta-mascot-glow: color-mix(in oklab, var(--color-purple-700) 14%, transparent);
+
+    background:
+      radial-gradient(ellipse 80vw 40% at 0% 30%, var(--cta-mascot-glow), transparent),
+      radial-gradient(ellipse 80vw 40% at 100% 75%, var(--cta-mascot-glow), transparent);
+  }
+
+  @media (min-width: 48rem) {
+    .cta-mascot {
+      background:
+        radial-gradient(ellipse 700px 420px at 0% 50%, var(--cta-mascot-glow), transparent),
+        radial-gradient(ellipse 700px 420px at 100% 50%, var(--cta-mascot-glow), transparent);
+    }
+  }
+
+  /*
+   * One-shot motion after the scroll reveal (src/scripts/reveal.ts): the mascot hops once when
+   * the ring has risen in, and the sparkle pops after the heading. Only when the script revealed
+   * the element (data-reveal-ready), so content already on screen and reduced motion stay
+   * static. Longhands only: the CSS minifier would otherwise fold them into a shorthand.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    [data-reveal-ready].is-revealed .cta-mascot-art {
+      transform-origin: 50% 90%;
+      animation-name: cta-mascot-hop;
+      animation-duration: var(--motion-duration-slow);
+      animation-timing-function: var(--ease-out);
+      animation-delay: var(--motion-duration-slow);
+    }
+
+    .cta-mascot-title[data-reveal-ready].is-revealed :global(.cta-mascot-sparkle) {
+      transform-origin: 0% 100%;
+      animation-name: cta-mascot-sparkle-pop;
+      animation-duration: var(--motion-duration-fast);
+      animation-timing-function: var(--ease-out);
+      animation-delay: var(--motion-duration-slow);
+      animation-fill-mode: both;
+    }
+  }
+
+  @keyframes cta-mascot-hop {
+    50% {
+      translate: 0 calc(-1 * var(--motion-distance-1));
+      scale: 1.03;
+    }
+  }
+
+  @keyframes cta-mascot-sparkle-pop {
+    from {
+      opacity: 0;
+      scale: 0.6;
+    }
+  }
+</style>

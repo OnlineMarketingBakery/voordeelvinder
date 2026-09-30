@@ -1,0 +1,32 @@
+---
+// A star rating out of five (Figma 60:757, testimonial cards). One image for assistive
+// technology, named by `label` ("5 van 5 sterren"); the stars themselves are decorative.
+// The design's star colour #ffad15 is off-palette and 1.9:1 on white, so the filled stars use
+// purple-500 (4.6:1) until the designer confirms a star token (CONTENT-TODO 1.11). Empty stars
+// are outlines, so they differ from filled ones by shape too (forced colours, low vision).
+import Icon from './Icon.astro';
+
+interface Props {
+  /** Filled stars, 1–5. */
+  value: number;
+  /** Accessible name, e.g. "4 van 5 sterren". */
+  label: string;
+  class?: string;
+}
+
+const { value, label, class: className } = Astro.props;
+const max = 5;
+const filled = Math.max(0, Math.min(max, Math.round(value)));
+---
+
+<span role="img" aria-label={label} class:list={['inline-flex', className]}>
+  {Array.from({ length: max }, (_, index) => (
+    <Icon
+      name="star"
+      class:list={[
+        'h-[14px] w-[15px] overflow-visible text-purple-500',
+        index >= filled && 'fill-none stroke-current stroke-1',
+      ]}
+    />
+  ))}
+</span>
