@@ -52,6 +52,7 @@ import {
   pickVia,
   shouldAutoAdvance,
   TRAVEL,
+  withinAutoAdvanceGuard,
   type PointerPick,
   type Travel,
 } from '../../lib/form/motion';
@@ -201,6 +202,12 @@ export default function FormIsland({
    * performance.now(), the same clock), until the next answer or "Terug": the double-click guard.
    */
   const advancedAt = useRef<number | null>(null);
+  /**
+   * When an auto-advance last moved the form forward (performance.now()), until "Terug". Unlike
+   * advancedAt an answer doesn't clear it: the second half of a double click picks a card on
+   * the new step, and that pick must not schedule another auto-advance.
+   */
+  const autoAdvancedAt = useRef<number | null>(null);
   const lastPointer = useRef<PointerPick | null>(null);
   const autoTimer = useRef<number | undefined>(undefined);
   /** The latest "Volgende" handler, for the auto-advance timer (set after every render). */
@@ -472,6 +479,7 @@ export default function FormIsland({
       return;
     }
     advancedAt.current = now;
+    if (auto) autoAdvancedAt.current = now;
     goTo(next, state.answers, TRAVEL.forward);
   };
 
@@ -498,6 +506,9 @@ export default function FormIsland({
     cancelAutoAdvance();
     // Not before the stored session is restored: the form is inert until then.
     if (!state.restored) return;
+    // The second half of a double click or tap on the step an auto-advance just showed: the
+    // card is picked (onChange stores the answer, visibly), but the form doesn't move on again.
+    if (withinAutoAdvanceGuard(autoAdvancedAt.current, now)) return;
     const auto = shouldAutoAdvance({
       enabled: copy.settings.autoAdvance,
       via,
@@ -517,6 +528,7 @@ export default function FormIsland({
   const onBack = () => {
     if (submitting.current) return;
     advancedAt.current = null;
+    autoAdvancedAt.current = null;
     cancelAutoAdvance();
     const previous = previousStep(flow, state.step, state.answers, derived);
     if (previous !== null) {

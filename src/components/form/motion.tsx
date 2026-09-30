@@ -22,6 +22,7 @@ import {
   animateHeight,
   checkVariants,
   indicatorVariants,
+  isNewShake,
   messageTransition,
   revealVariants,
   rollVariants,
@@ -196,7 +197,8 @@ export function FieldList({ className, children }: { className: string; children
 
 /**
  * One field in the step's grid. `reveal` (fields with visibleIf) expands and collapses;
- * `shake` changes each time "Volgende" finds an error in this field, which shakes it once.
+ * `shake` changes each time "Volgende" finds an error in this field, which shakes it once;
+ * `shakesPlayed` (shared by the step's fields) remembers it across a collapse and a reveal.
  * The bottom padding replaces the grid's row gap, so a collapsing field takes its gap along.
  */
 export function FieldCell({
@@ -204,6 +206,7 @@ export function FieldCell({
   fieldId,
   reveal,
   shake,
+  shakesPlayed,
   className,
   children,
 }: {
@@ -211,6 +214,7 @@ export function FieldCell({
   fieldId: string;
   reveal: boolean;
   shake: number;
+  shakesPlayed: Map<string, number>;
   className: string;
   children: ReactNode;
 }) {
@@ -220,14 +224,15 @@ export function FieldCell({
   const shaker = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (shake === 0) return;
+    if (!isNewShake(shake, shakesPlayed.get(fieldId))) return;
+    shakesPlayed.set(fieldId, shake);
     const frames = shakeKeyframes(reduced);
     if (!frames) return;
     shaker.current?.animate?.(
       frames.map((transform) => ({ transform })),
       { duration: SHAKE_MS, easing: cubicBezier(ease.out) },
     );
-  }, [shake, reduced]);
+  }, [shake, shakesPlayed, fieldId, reduced]);
 
   const body = (
     <div ref={shaker} className="pb-6">

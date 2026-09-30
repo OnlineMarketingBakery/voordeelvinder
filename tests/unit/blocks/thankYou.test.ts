@@ -1,5 +1,5 @@
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import thanksPage from '../../../src/content/pages/bedankt.json' with { type: 'json' };
 import site from '../../../src/content/site.json' with { type: 'json' };
@@ -82,10 +82,100 @@ describe('thankYou block', () => {
     expect(html.match(/data-morph="form-card"/g)).toHaveLength(1);
     expect(html.match(/data-morph="form-mascot"/g)).toHaveLength(1);
     expect(html).toMatch(/data-morph="form-mascot"[^>]*data-celebration/);
-    // The card, and only the card, carries the form card's view-transition name, so the form
-    // card morphs into it on "Verstuur"; the badge isn't named (one name per page).
-    expect(html.match(/view-transition-name:form-card/g)).toHaveLength(1);
-    expect(html).toMatch(/data-morph="form-card"[^>]*\[view-transition-name:form-card\]/);
+    // Nothing is named in the markup: the inline script names the card only when the visit
+    // comes from a form page (below), so leaving never morphs it back into a form card.
+    expect(html).not.toContain('[view-transition-name:form-card]');
+    expect(html).toMatch(/data-morph="form-card"[^>]*>[\s\S]*<\/div>\s*<script>[\s\S]*form-card/);
+  });
+
+  describe('names the card form-card only on arrival from a form page', () => {
+    type Listener = (event: { viewTransition?: { finished: Promise<void> } }) => void;
+
+    /** Runs the card's inline script against a stub page, as if the visit came from `from`. */
+    async function arrive(from: { activation?: string | null; referrer?: string }) {
+      const html = await render();
+      const script = /<script>([\s\S]*?)<\/script>/.exec(
+        html.slice(html.indexOf('data-morph="form-card"')),
+      )?.[1];
+      if (!script) throw new Error('no inline script after the card');
+      const names = new Map<string, string>();
+      const card = {
+        style: {
+          setProperty: (key: string, value: string) => names.set(key, value),
+          removeProperty: (key: string) => names.delete(key),
+        },
+      };
+      const listeners: Record<string, Listener[]> = {};
+      const origin = 'https://voordeelvinder.test';
+      const window = {
+        location: { origin },
+        navigation:
+          from.activation === undefined
+            ? undefined
+            : { activation: { from: from.activation === null ? null : { url: from.activation } } },
+        addEventListener: (type: string, listener: Listener) => {
+          (listeners[type] ??= []).push(listener);
+        },
+      };
+      const document = {
+        currentScript: { previousElementSibling: card },
+        referrer: from.referrer ?? '',
+      };
+      new Function('window', 'document', script)(window, document);
+      const name = () => names.get('view-transition-name') ?? 'none';
+      const fire = (type: string, event: Parameters<Listener>[0] = {}) =>
+        (listeners[type] ?? []).forEach((listener) => listener(event));
+      return { name, fire, origin };
+    }
+
+    it('from /vergelijken/<product> or /vergelijken, until the page is shown', async () => {
+      for (const path of ['/vergelijken/energie', '/vergelijken', '/vergelijken/']) {
+        const page = await arrive({ activation: `https://voordeelvinder.test${path}?x=1` });
+        expect(page.name(), path).toBe('form-card');
+        let finish = () => {};
+        const finished = new Promise<void>((resolve) => (finish = resolve));
+        page.fire('pagereveal', { viewTransition: { finished } });
+        expect(page.name()).toBe('form-card');
+        finish();
+        await finished;
+        await Promise.resolve();
+        expect(page.name()).toBe('none');
+      }
+    });
+
+    it('cleared when leaving, also when the reveal was missed', async () => {
+      const page = await arrive({ activation: 'https://voordeelvinder.test/vergelijken/energie' });
+      page.fire('pageswap');
+      expect(page.name()).toBe('none');
+    });
+
+    it('cleared at once when the page is shown without a transition', async () => {
+      const page = await arrive({ activation: 'https://voordeelvinder.test/vergelijken' });
+      page.fire('pagereveal');
+      expect(page.name()).toBe('none');
+    });
+
+    it('falls back to the referrer without the Navigation API', async () => {
+      const page = await arrive({
+        referrer: 'https://voordeelvinder.test/vergelijken/zonnepanelen',
+      });
+      expect(page.name()).toBe('form-card');
+    });
+
+    it('never for a direct visit, another page or another site', async () => {
+      for (const from of [
+        { activation: null },
+        {},
+        { activation: 'https://voordeelvinder.test/' },
+        { activation: 'https://voordeelvinder.test/bedankt/energie' },
+        { activation: 'https://voordeelvinder.test/vergelijken/energie/extra' },
+        { activation: 'https://example.com/vergelijken/energie' },
+        { referrer: 'not a url' },
+      ]) {
+        const page = await arrive(from);
+        expect(page.name(), JSON.stringify(from)).toBe('none');
+      }
+    });
   });
 
   it('draws the decorative fox twice (circle and head), from one srcset', async () => {
@@ -100,8 +190,38 @@ describe('thankYou block', () => {
     expect(html).toContain('clip-path:inset(');
   });
 
-  it('shows nothing personal: no answers, no storage reads in the markup', async () => {
+  it('leaves no copy placeholder unfilled', async () => {
     const html = await render();
-    expect(html).not.toMatch(/sessionStorage|localStorage|\{[a-z_]+\}/);
+    expect(html).not.toMatch(/\{[a-z_]+\}/);
+  });
+
+  describe('the celebration script (src/scripts/celebrate.ts)', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      vi.resetModules();
+    });
+
+    it('never reads the stored form session and writes nothing personal', async () => {
+      const reads: string[] = [];
+      const storage = {
+        length: 0,
+        getItem: (key: string) => (reads.push(key), null),
+        key: (index: number) => (reads.push(`#${index}`), null),
+        setItem: () => {},
+        removeItem: () => {},
+        clear: () => {},
+      };
+      vi.stubGlobal('sessionStorage', storage);
+      vi.stubGlobal('localStorage', storage);
+      const writes: [string, string][] = [];
+      const badge = { setAttribute: (name: string, value: string) => writes.push([name, value]) };
+      vi.stubGlobal('document', { querySelectorAll: () => [badge] });
+      vi.resetModules();
+      await import('../../../src/scripts/celebrate');
+      // Phase 4 reads nothing; Phase 5 may read the lead-safe flag, never a form session.
+      expect(reads.filter((key) => !key.startsWith('voordeelvinder:lead-safe'))).toEqual([]);
+      // It only switches the celebration on.
+      expect(writes).toEqual([['data-celebrate', '']]);
+    });
   });
 });

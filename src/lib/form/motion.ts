@@ -95,6 +95,24 @@ export function springEasing(
 
 export const AUTO_ADVANCE_DELAY_MS = 300;
 
+/**
+ * How long after an auto-advance a pick on the new step doesn't schedule another one. The
+ * step changes 300 ms after the tap, inside a double click (up to 500 ms) or a double tap: the
+ * second half then lands on a card of the new step, which the visitor hasn't read yet. The
+ * pick still selects that card (visible, nothing silent); only "Volgende" moves on.
+ */
+export const AUTO_ADVANCE_GUARD_MS = 500;
+
+/**
+ * Whether a pick at `now` falls in the guard after the last auto-advance (`autoAdvancedAt`,
+ * performance.now(), or null when there was none or the visitor went back since).
+ */
+export function withinAutoAdvanceGuard(autoAdvancedAt: number | null, now: number): boolean {
+  if (autoAdvancedAt === null) return false;
+  const age = now - autoAdvancedAt;
+  return age >= 0 && age < AUTO_ADVANCE_GUARD_MS;
+}
+
 /** A pointerdown on a card counts for the change that follows it within this time. */
 export const POINTER_PICK_WINDOW_MS = 1000;
 
@@ -261,6 +279,15 @@ export function shakeKeyframes(reduced: boolean): string[] | null {
 }
 
 export const SHAKE_MS = duration.slow;
+
+/**
+ * Whether a field plays the shake for `pulse` ("Volgende" found an error in it), given the
+ * last pulse it played (`played`, kept across mounts of the field on the same step). A field
+ * that collapses and comes back mounts with the old pulse: that one already played.
+ */
+export function isNewShake(pulse: number, played: number | undefined): boolean {
+  return pulse !== 0 && pulse !== played;
+}
 
 export function messageTransition(reduced: boolean) {
   return fade(reduced);

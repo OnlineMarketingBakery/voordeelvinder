@@ -2,7 +2,7 @@
 // visible fields. A field's type picks its component; short inputs pair up from md (the contact
 // step's 2×2 grid). Fields with visibleIf expand and collapse, and a field shakes once when
 // "Volgende" finds an error in it (FieldCell, brief §6.1).
-import type { Ref } from 'react';
+import { useState, type Ref } from 'react';
 
 import type { Field, Step } from '../../lib/flow/schema';
 import type { AnswerValue, Answers } from '../../lib/flow/types';
@@ -61,6 +61,10 @@ export function StepView({
   onPointerPick,
   onPick,
 }: StepViewProps) {
+  // The last shake each field played on this step (the step view mounts again for every step),
+  // so a revealed field that collapses and comes back doesn't replay it. One mutable map for
+  // the life of the step, written only by the fields' effects.
+  const [shakesPlayed] = useState(() => new Map<string, number>());
   const render = (field: Field) => {
     const common: Omit<FieldProps, 'field'> = {
       step,
@@ -125,6 +129,7 @@ export function StepView({
             id={`${domId.field(field.id)}-vak`}
             reveal={field.visibleIf !== undefined}
             shake={shake?.fields.includes(field.id) ? shake.pulse : 0}
+            shakesPlayed={shakesPlayed}
             className={cx(
               'min-w-0',
               fieldSpan(field) === 'half' ? 'md:col-span-1' : 'md:col-span-2',

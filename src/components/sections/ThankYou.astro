@@ -12,9 +12,11 @@
 // Motion (docs/MOTION.md, brief §6.1 "celebrate once the lead is safe"): the badge hops once and
 // a little confetti bursts out, CSS only, when src/scripts/celebrate.ts sets data-celebrate. No
 // loop, nothing with reduced motion. The card and the badge carry data-morph so the page
-// transition (Phase 7) can morph the form card and the panel mascot into them. The card already
-// carries `view-transition-name: form-card`, the name of the form card (the only one on either
-// page), so "Verstuur" morphs the form card into it (docs/MOTION.md).
+// transition (Phase 7) can morph the form card and the panel mascot into them. The card gets
+// `view-transition-name: form-card`, the name of the form card, only when the page is reached
+// from a form page, so "Verstuur" morphs the form card into it; the inline script below clears
+// it once the page is shown and again when leaving, so the header CTA to /vergelijken (or any
+// later visit) never morphs the thank-you card back into a form card (docs/MOTION.md).
 import CopyText from '../ui/CopyText.astro';
 import Button from '../ui/Button.astro';
 import Illustration from '../ui/Illustration.astro';
@@ -57,7 +59,7 @@ const confetti = [
 <section id={id} aria-labelledby={titleId} class="px-4 py-10 md:px-6 md:py-20 lg:py-[149px]">
   <div
     data-morph="form-card"
-    class="mx-auto max-w-[767px] rounded-2xl bg-purple-600 pb-2 shadow-form [view-transition-name:form-card]"
+    class="mx-auto max-w-[767px] rounded-2xl bg-purple-600 pb-2 shadow-form"
   >
     <div class="flex flex-col items-center rounded-2xl border border-lavender-300 bg-white px-5 pt-16 pb-10 text-center md:px-12 md:pt-24 md:pb-[101px]">
       <div data-morph="form-mascot" data-celebration class="relative size-39 shrink-0">
@@ -113,6 +115,39 @@ const confetti = [
       </Button>
     </div>
   </div>
+  {/*
+    Parsed right after the card, before the first render: the name has to be there when the
+    browser captures the new page for the view transition. The Navigation API tells where the
+    visit came from (the referrer where it is missing, e.g. Safari before 26).
+  */}
+  <script is:inline>
+    (function () {
+      const card = document.currentScript.previousElementSibling;
+      const from = window.navigation?.activation?.from?.url || document.referrer;
+      let url;
+      try {
+        url = new URL(from);
+      } catch {
+        return;
+      }
+      const fromForm =
+        url.origin === window.location.origin && /^\/vergelijken(\/[^/]+)?\/?$/.test(url.pathname);
+      if (!card || !fromForm) return;
+      card.style.setProperty('view-transition-name', 'form-card');
+      function clear() {
+        card.style.removeProperty('view-transition-name');
+      }
+      window.addEventListener(
+        'pagereveal',
+        function (event) {
+          if (event.viewTransition) event.viewTransition.finished.finally(clear);
+          else clear();
+        },
+        { once: true },
+      );
+      window.addEventListener('pageswap', clear);
+    })();
+  </script>
 </section>
 
 <script>

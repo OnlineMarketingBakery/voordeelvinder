@@ -2,13 +2,56 @@
 // of the sitemap. They render for a direct visit too (tracking), with nothing personal on them.
 // Landing here from the form's "Verstuur" is covered in form.spec.ts.
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import thanks from '../../src/content/pages/bedankt.json' with { type: 'json' };
 import site from '../../src/content/site.json' with { type: 'json' };
 
 const block = thanks.sections[0]!;
 const PRODUCTS = ['energie', 'zonnepanelen', 'thuisbatterij'] as const;
+
+/** How many elements on the page carry the form card's view-transition name. */
+const namedFormCard = (page: Page) =>
+  page.evaluate(
+    () =>
+      [...document.querySelectorAll('*')].filter(
+        (element) => getComputedStyle(element).viewTransitionName === 'form-card',
+      ).length,
+  );
+
+/** Clicks the header CTA "Gratis beginnen" (in the menu on mobile). */
+async function clickHeaderCta(page: Page) {
+  const menu = page.getByRole('button', { name: site.header.menuLabel });
+  if (await menu.isVisible()) await menu.click();
+  await page
+    .locator('header')
+    .getByRole('link', { name: site.header.cta.label })
+    .filter({ visible: true })
+    .click();
+}
+
+/**
+ * Records the thank-you card's view-transition name at `pagereveal` (window.__revealName) and
+ * at `pageswap` (sessionStorage, it outlives the page). These listeners are added before the
+ * page's own scripts, so they see the name before the page clears it.
+ */
+async function recordCardNames(page: Page) {
+  await page.addInitScript(() => {
+    const name = () => {
+      const card = document.querySelector('[data-morph="form-card"]');
+      return card && location.pathname.startsWith('/bedankt/')
+        ? getComputedStyle(card).viewTransitionName
+        : undefined;
+    };
+    addEventListener('pagereveal', () => {
+      (window as unknown as { __revealName?: string }).__revealName = name();
+    });
+    addEventListener('pageswap', () => {
+      const value = name();
+      if (value !== undefined) sessionStorage.setItem('e2e:swapName', value);
+    });
+  });
+}
 
 for (const product of PRODUCTS) {
   test(`/bedankt/${product} renders the thank-you card, noindex, for a direct visit`, async ({
@@ -38,20 +81,13 @@ for (const product of PRODUCTS) {
     // The morph targets for the form card and the panel mascot (Phase 7).
     await expect(page.locator('[data-morph="form-card"]')).toHaveCount(1);
     await expect(page.locator('[data-morph="form-mascot"]')).toHaveCount(1);
-    // The card carries the form card's view-transition name, and nothing else on the page does,
-    // so "Verstuur" morphs the form card into it.
+    // A direct visit: the card isn't named form-card (only an arrival from the form is), and
+    // nothing else on the page is either.
     await expect(page.locator('[data-morph="form-card"]')).toHaveCSS(
       'view-transition-name',
-      'form-card',
+      'none',
     );
-    expect(
-      await page.evaluate(
-        () =>
-          [...document.querySelectorAll('*')].filter(
-            (element) => getComputedStyle(element).viewTransitionName === 'form-card',
-          ).length,
-      ),
-    ).toBe(1);
+    expect(await namedFormCard(page)).toBe(0);
     // Phase 4: every visit celebrates (src/scripts/celebrate.ts); Phase 5 gates it on the lead.
     await expect(page.locator('[data-celebration]')).toHaveAttribute('data-celebrate', '');
   });
@@ -75,6 +111,55 @@ test('a direct visit shows nothing personal, even with a stored form session', a
   const text = await page.locator('main').innerText();
   expect(text).not.toContain('Janneke');
   expect(text).not.toContain('janneke@example.be');
+});
+
+test.describe('the form card morph runs one way: from the form into the thank-you card', () => {
+  test('arriving from the form, the card carries form-card for the transition only', async ({
+    page,
+  }) => {
+    await recordCardNames(page);
+    await page.goto('/vergelijken/energie');
+    await expect(page.locator('main form button[type="submit"]')).toBeEnabled();
+    // How the form's "Verstuur" navigates (window.location.assign, FormIsland.tsx).
+    await page.evaluate(() => window.location.assign('/bedankt/energie'));
+    await page.waitForURL('**/bedankt/energie');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(block.title);
+    const card = page.locator('[data-morph="form-card"]');
+    const revealed = await page.evaluate(
+      () => (window as unknown as { __revealName?: string }).__revealName,
+    );
+    // Named when the new page is captured (pagereveal: Chromium, Safari 18.2+), then cleared
+    // once the transition is over.
+    expect(revealed).toBe('form-card');
+    await expect(card).toHaveCSS('view-transition-name', 'none');
+    // Leaving, the card is never named: nothing morphs back into a form card.
+    await clickHeaderCta(page);
+    await page.waitForURL('**/vergelijken');
+    expect(await page.evaluate(() => sessionStorage.getItem('e2e:swapName'))).toBe('none');
+  });
+
+  test('a direct visit, then the header CTA to /vergelijken: the card is never named', async ({
+    page,
+  }) => {
+    await recordCardNames(page);
+    await page.goto('/bedankt/energie');
+    const card = page.locator('[data-morph="form-card"]');
+    await expect(card).toHaveCSS('view-transition-name', 'none');
+    expect(await namedFormCard(page)).toBe(0);
+    const revealed = await page.evaluate(
+      () => (window as unknown as { __revealName?: string }).__revealName,
+    );
+    expect(revealed).toBe('none');
+
+    expect(site.header.cta.href).toBe('/vergelijken');
+    await clickHeaderCta(page);
+    await page.waitForURL('**/vergelijken');
+    await expect(page.locator('section[data-morph="form-card"]')).toHaveCSS(
+      'view-transition-name',
+      'form-card',
+    );
+    expect(await page.evaluate(() => sessionStorage.getItem('e2e:swapName'))).toBe('none');
+  });
 });
 
 test('the thank-you pages have no serious accessibility violations', async ({ page }) => {

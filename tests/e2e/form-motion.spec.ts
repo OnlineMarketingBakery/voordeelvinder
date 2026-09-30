@@ -150,6 +150,33 @@ test.describe('form motion: auto-advance', () => {
     await expect(heading(page)).toHaveText('Wat is je postcode?');
   });
 
+  test('a double click on a card moves one step and skips none', async ({ page }) => {
+    await open(page, '/vergelijken/thuisbatterij');
+    await control(page, 'Wat is je postcode?').fill('3000');
+    await next(page).click();
+    await expect(heading(page)).toHaveText('Heb je zonnepanelen?');
+    // The first click at t=0; the step changes about 300 ms later, and the second half of the
+    // double click (about 330 ms after the first) lands on a card of the new step.
+    const first = Date.now();
+    await tap(page, 'Ja');
+    await page.waitForFunction(
+      (title) => document.querySelector('main h2')?.textContent?.trim() === title,
+      'Hoeveel zonnepanelen heb je ongeveer?',
+      { polling: 'raf' },
+    );
+    await page.waitForTimeout(Math.max(0, first + 330 - Date.now()));
+    await tap(page, 'Minder dan 10');
+    // Well inside a double click (500 ms): otherwise the test proves nothing.
+    expect(Date.now() - first).toBeLessThan(AUTO_ADVANCE_DELAY_MS + 500);
+    // The click picked the card (visibly), but the form stays on the step it never showed long.
+    await expect(radio(page, 'Minder dan 10')).toBeChecked();
+    await settle(page);
+    await expect(heading(page)).toHaveText('Hoeveel zonnepanelen heb je ongeveer?');
+    // "Volgende" (or a later tap) moves on as usual.
+    await next(page).click();
+    await expect(heading(page)).toHaveText('Heb je een digitale meter?');
+  });
+
   test('"Terug" right after a click cancels the pending step', async ({ page }) => {
     await open(page, '/vergelijken/zonnepanelen');
     await control(page, 'Wat is je postcode?').fill('3000');

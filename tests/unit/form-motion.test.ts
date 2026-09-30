@@ -15,10 +15,12 @@ import { resolveFlow } from '../../src/lib/flow/resolve';
 import { flowCopyFile, flowFile, sharedStepsFile } from '../../src/lib/flow/schema';
 import {
   AUTO_ADVANCE_DELAY_MS,
+  AUTO_ADVANCE_GUARD_MS,
   animateHeight,
   checkVariants,
   indicatorVariants,
   INSTANT,
+  isNewShake,
   pickVia,
   POINTER_PICK_WINDOW_MS,
   progressOffset,
@@ -33,6 +35,7 @@ import {
   stepVariants,
   travelBetween,
   TRAVEL,
+  withinAutoAdvanceGuard,
   type AutoAdvanceInput,
 } from '../../src/lib/form/motion';
 import { FORM_CARD_MORPH, morphDestination, samePage } from '../../src/lib/morph';
@@ -154,6 +157,21 @@ describe('auto-advance guard', () => {
     expect(pickVia(tap, 'meter_type', 'dual', 900)).toBe('keyboard');
     expect(pickVia(null, 'meter_type', 'dual', 1100)).toBe('keyboard');
   });
+
+  it("doesn't advance again on the second half of a double click after an auto-advance", () => {
+    // The step changes 300 ms after the tap; a double click's second half (up to 500 ms after
+    // the first) lands on the new step's cards.
+    expect(AUTO_ADVANCE_GUARD_MS).toBeGreaterThanOrEqual(500 - AUTO_ADVANCE_DELAY_MS);
+    const advancedAt = 5000;
+    expect(withinAutoAdvanceGuard(advancedAt, advancedAt + 30)).toBe(true);
+    expect(withinAutoAdvanceGuard(advancedAt, advancedAt)).toBe(true);
+    expect(withinAutoAdvanceGuard(advancedAt, advancedAt + AUTO_ADVANCE_GUARD_MS - 1)).toBe(true);
+    // A deliberate tap once the new step has been on screen for a moment advances again.
+    expect(withinAutoAdvanceGuard(advancedAt, advancedAt + AUTO_ADVANCE_GUARD_MS)).toBe(false);
+    // No auto-advance yet (or "Terug" since), or a clock that went backwards: no guard.
+    expect(withinAutoAdvanceGuard(null, advancedAt)).toBe(false);
+    expect(withinAutoAdvanceGuard(advancedAt, advancedAt - 1)).toBe(false);
+  });
 });
 
 describe('reduced motion keeps only short fades', () => {
@@ -192,6 +210,16 @@ describe('reduced motion keeps only short fades', () => {
     expect(frames.at(-1)).toBe('translateX(0px)');
     expect(frames).toContain('translateX(-6px)');
     expect(frames).toContain('translateX(6px)');
+  });
+
+  it('shakes a field once per "Volgende", also when it collapses and comes back', () => {
+    // No error from a "Volgende" yet: nothing to play.
+    expect(isNewShake(0, undefined)).toBe(false);
+    // A new pulse plays, on first mount too (a "Volgende" that went back to an earlier step).
+    expect(isNewShake(1, undefined)).toBe(true);
+    expect(isNewShake(2, 1)).toBe(true);
+    // A field revealed again mounts with the pulse it already played: no second shake.
+    expect(isNewShake(2, 2)).toBe(false);
   });
 });
 
