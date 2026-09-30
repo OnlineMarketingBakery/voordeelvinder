@@ -9,8 +9,12 @@ interface Props {
   sections: Section[];
 }
 
-// Hidden blocks stay in the content file but are not rendered.
-const sections = Astro.props.sections.filter((section) => !section.hidden);
+// Hidden blocks stay in the content file but are not rendered. A block without an anchor id
+// gets `<type>-<position>` (reserved by the page schema), so the heading ids derived from it
+// are unique even with two blocks of one type.
+const sections = Astro.props.sections
+  .map((section, index) => ({ ...section, id: section.id ?? `${section.type}-${index + 1}` }))
+  .filter((section) => !section.hidden);
 ---
 
 {sections.map((section) => {

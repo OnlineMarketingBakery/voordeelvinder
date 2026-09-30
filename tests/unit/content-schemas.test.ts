@@ -37,6 +37,16 @@ describe('page schema', () => {
     expect(page.safeParse({ ...home, sections: [{ ...hero, hidden: true }] }).success).toBe(false);
   });
 
+  it('reserves the generated block ids (<type>-<n>) that Sections.astro gives blocks without one', () => {
+    const [hero, ...rest] = home.sections;
+    expect(
+      page.safeParse({ ...home, sections: [{ ...hero, id: 'steps-3' }, ...rest] }).success,
+    ).toBe(false);
+    expect(page.safeParse({ ...home, sections: [{ ...hero, id: 'intro' }, ...rest] }).success).toBe(
+      true,
+    );
+  });
+
   it('rejects unknown keys, unknown images and home-only fields on a product hero', () => {
     const hero = home.sections[0]!;
     expect(page.safeParse({ ...home, sections: [{ ...hero, subtitle: 'x' }] }).success).toBe(false);

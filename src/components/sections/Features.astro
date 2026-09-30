@@ -25,23 +25,29 @@ const slug = (value: string) =>
 const headingId = `${id ?? `features-${slug(title)}`}-title`;
 
 // Card front and plate lip per style and tone, from colour tokens. On hover the lip grows by
-// the `lift` distance, so the plate seems to stay put while the card rises.
+// the `lift` distance, so the plate seems to stay put while the card rises. Hover is taken from
+// the static <li> (`group`), so a card rising from under the cursor doesn't drop back.
 const cards = {
   translucent: {
     purple:
-      'bg-purple-600 bg-linear-to-b from-lavender-50 to-lavender-50/86 shadow-[0_6px_0_var(--color-purple-600)] motion-safe:hover:shadow-[0_calc(6px_+_var(--motion-distance-1)/2)_0_var(--color-purple-600)]',
-    lime: 'border border-lime-400 bg-lime-300 bg-linear-to-b from-white to-white/85 shadow-[0_6px_0_var(--color-lime-300)] motion-safe:hover:shadow-[0_calc(6px_+_var(--motion-distance-1)/2)_0_var(--color-lime-300)]',
+      'bg-purple-600 bg-linear-to-b from-lavender-50 to-lavender-50/86 shadow-[0_6px_0_var(--color-purple-600)] motion-safe:group-hover:shadow-[0_calc(6px_+_var(--motion-distance-1)/2)_0_var(--color-purple-600)]',
+    lime: 'border border-lime-400 bg-lime-300 bg-linear-to-b from-white to-white/85 shadow-[0_6px_0_var(--color-lime-300)] motion-safe:group-hover:shadow-[0_calc(6px_+_var(--motion-distance-1)/2)_0_var(--color-lime-300)]',
   },
   solid: {
     purple:
-      'bg-lavender-50 shadow-[0_9px_0_var(--color-purple-600)] motion-safe:hover:shadow-[0_calc(9px_+_var(--motion-distance-1)/2)_0_var(--color-purple-600)]',
-    lime: 'bg-lime-50 shadow-[0_9px_0_var(--color-lime-300)] motion-safe:hover:shadow-[0_calc(9px_+_var(--motion-distance-1)/2)_0_var(--color-lime-300)]',
+      'bg-lavender-50 shadow-[0_9px_0_var(--color-purple-600)] motion-safe:group-hover:shadow-[0_calc(9px_+_var(--motion-distance-1)/2)_0_var(--color-purple-600)]',
+    lime: 'bg-lime-50 shadow-[0_9px_0_var(--color-lime-300)] motion-safe:group-hover:shadow-[0_calc(9px_+_var(--motion-distance-1)/2)_0_var(--color-lime-300)]',
   },
 } as const;
 
-// translucent: only the body is pinned to the card bottom; solid: title and body together.
+// translucent: only the body is pinned to the card bottom, in a box of the same height in every
+// card so the first lines line up (Figma); solid: title and body together.
 const layout = {
-  translucent: { card: 'lg:min-h-[402px]', title: 'lg:mt-12', body: 'lg:mt-auto lg:pt-8' },
+  translucent: {
+    card: 'lg:min-h-[402px]',
+    title: 'lg:mt-12',
+    body: 'lg:mt-auto lg:pt-8 lg:min-h-[152px] xl:min-h-[104px]',
+  },
   solid: { card: 'lg:min-h-[361px]', title: 'lg:mt-auto lg:pt-12', body: '' },
 } as const;
 
@@ -71,16 +77,22 @@ const glyphs: Record<FeaturesBlock['items'][number]['icon'], string> = {
       {title}
       {intro}
       align="center"
-      titleClass="mx-auto max-w-[713px] text-h3 lg:text-h2"
+      titleClass="mx-auto max-w-[713px] text-h3 md:text-h2"
       introClass="max-w-[788px] max-md:text-body"
     />
     <ul
       role="list"
-      class="mx-auto mt-8 flex max-w-xl flex-col gap-8 lg:mt-10 lg:max-w-none lg:flex-row lg:justify-center lg:gap-[30px]"
+      class:list={[
+        'mx-auto mt-8 flex max-w-xl flex-col gap-8 lg:mt-10',
+        // Four cards (not designed) go 2 × 2 instead of shrinking below a readable width.
+        visible.length === 4
+          ? 'lg:grid lg:max-w-[770px] lg:grid-cols-2 lg:gap-[30px]'
+          : 'lg:max-w-none lg:flex-row lg:justify-center lg:gap-[30px]',
+      ]}
       data-reveal-stagger
     >
       {visible.map((item) => (
-        <li class="flex lg:min-w-0 lg:basis-[370px]">
+        <li class="group flex lg:min-w-0 lg:basis-[370px]">
           <div
             class:list={[
               'lift flex w-full flex-col rounded-3xl p-6 md:p-8 lg:p-[34px]',
@@ -98,7 +110,7 @@ const glyphs: Record<FeaturesBlock['items'][number]['icon'], string> = {
             </span>
             <h3
               class:list={[
-                'mt-8 text-title-sm text-ink-800 md:text-title',
+                'mt-8 text-title-sm hyphens-auto text-ink-800 md:text-title',
                 layout[cardStyle].title,
               ]}
             >

@@ -35,6 +35,14 @@ export const page = z
       });
     }
     const ids = value.sections.map((s) => s.id).filter((id): id is string => id !== undefined);
+    const reserved = ids.find((id) => /^[a-z][a-zA-Z]*-\d+$/.test(id));
+    if (reserved) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['sections'],
+        message: `block id "${reserved}" looks like a generated one (<type>-<n>); pick another`,
+      });
+    }
     const duplicate = ids.find((id, index) => ids.indexOf(id) !== index);
     if (duplicate) {
       ctx.addIssue({
