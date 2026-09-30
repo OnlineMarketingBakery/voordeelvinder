@@ -78,7 +78,7 @@ const ringEntrance =
   'motion-safe:animate-[ring-in_var(--motion-duration-slow)_var(--ease-out)_120ms_both]';
 ---
 
-<div class:list={['relative', layout.box]} aria-hidden="true">
+<div class:list={['pointer-events-none relative', layout.box]} aria-hidden="true">
   <div class="pointer-events-none absolute top-[44%] left-[48.6%] aspect-square w-[154%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(circle_closest-side,rgb(255_255_255/0.12),rgb(255_255_255/0.06)_40%,transparent)]"></div>
   {layout.rings.map((position) => (
     <div

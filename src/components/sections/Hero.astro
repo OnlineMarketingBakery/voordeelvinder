@@ -136,6 +136,8 @@ const spacing = isHome
       <div
         class:list={[
           'mx-auto mt-8 w-full max-w-[358px] md:mt-10 lg:mt-0 lg:max-w-none',
+          // The battery rings reach 41 px above the art box: keep them off the full-width CTA.
+          art.preset === 'battery' && 'max-md:mt-12',
           isHome
             ? 'md:max-w-[34rem] lg:-ml-10 lg:w-[clamp(34rem,52vw,48.625rem)] xl:-mr-[min(111px,calc(50vw-585px))] xl:-ml-17 xl:w-[48.625rem]'
             : ['md:max-w-[30rem] lg:ml-10', preset.art],

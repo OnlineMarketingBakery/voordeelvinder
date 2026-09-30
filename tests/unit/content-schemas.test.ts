@@ -47,6 +47,27 @@ describe('page schema', () => {
     );
   });
 
+  it('pairs the hero variant with its art preset', () => {
+    const hero = home.sections[0]!;
+    const withPreset = (variant: string, preset: string) => ({
+      ...home,
+      sections: [{ ...hero, variant, art: { ...hero.art, preset } }],
+    });
+    expect(page.safeParse(withPreset('home', 'solar')).success).toBe(false);
+    const {
+      eyebrow: _e,
+      usps: _u,
+      socialProof: _s,
+      ...productHero
+    } = hero as Record<string, unknown>;
+    const product = (preset: string) => ({
+      ...home,
+      sections: [{ ...productHero, variant: 'product', art: { ...hero.art, preset } }],
+    });
+    expect(page.safeParse(product('home')).success).toBe(false);
+    expect(page.safeParse(product('battery')).success).toBe(true);
+  });
+
   it('rejects unknown keys, unknown images and home-only fields on a product hero', () => {
     const hero = home.sections[0]!;
     expect(page.safeParse({ ...home, sections: [{ ...hero, subtitle: 'x' }] }).success).toBe(false);
