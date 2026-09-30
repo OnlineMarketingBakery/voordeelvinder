@@ -1,26 +1,28 @@
-// Validates every form flow in src/content/flows (brief §7.1): reachability, dead ends,
-// loops, goto targets, var references, unique option codes, locale parity, shared contact step.
-// The flow engine and flows arrive in Phase 4; until then this only checks that no flow
-// files exist that would go unvalidated.
-import { existsSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+// Validates every form flow in src/content/flows (brief §7.1): schema, goto targets, dead ends,
+// loops, unreachable steps, known vars read after they're asked, option codes (unique, and
+// identical across locales), and that every flow ends with the shared contact step. The checks
+// live in src/lib/flow/validate.ts. Runs before every build (prebuild) and in CI.
+//
+//   npm run validate:flows              the site's flows
+//   tsx scripts/validate-flows.ts DIR   another flows folder (the tests' fixtures)
+import { join, resolve } from 'node:path';
 
-const FLOWS_DIR = join(import.meta.dirname, '..', 'src', 'content', 'flows');
+import { validateFlowSources } from '../src/lib/flow/validate';
+import { loadFlowSources } from './lib/flow-sources';
 
-function listJson(dir: string): string[] {
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir, { withFileTypes: true, recursive: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
-    .map((entry) => join(entry.parentPath, entry.name));
-}
+const root = resolve(process.argv[2] ?? join(import.meta.dirname, '..', 'src', 'content', 'flows'));
+const { locales, issues: readIssues } = loadFlowSources(root);
+const issues = [...readIssues, ...validateFlowSources(locales)];
+const flowCount = locales.reduce((count, locale) => count + locale.flows.length, 0);
 
-const files = listJson(FLOWS_DIR);
-
-if (files.length > 0) {
-  console.error(
-    `validate:flows found ${files.length} flow file(s) but the validator is not implemented yet (Phase 4).`,
-  );
+if (issues.length > 0) {
+  console.error(`validate:flows: ${issues.length} problem(s) in ${root}`);
+  for (const { file, message } of issues) console.error(`  ${file}: ${message}`);
   process.exit(1);
 }
 
-console.log('validate:flows: no flows yet (Phase 4).');
+console.log(
+  flowCount === 0
+    ? 'validate:flows: no flow files yet.'
+    : `validate:flows: ${flowCount} flow(s) in ${locales.length} locale(s) are valid.`,
+);

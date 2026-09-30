@@ -1,0 +1,27 @@
+{
+  "id": "zonnepanelen",
+  "version": 1,
+  "product": "zonnepanelen",
+  "firstStep": "product",
+  "steps": [
+    { "use": "product", "next": [{ "goto": "postcode" }] },
+    { "use": "postcode", "next": [{ "goto": "ownership" }] },
+    {
+      "id": "ownership",
+      "title": "Ben je eigenaar van de woning?",
+      "fields": [
+        {
+          "id": "ownership",
+          "type": "single_choice",
+          "required": true,
+          "options": [
+            { "code": "owner", "label": "Eigenaar" },
+            { "code": "tenant", "label": "Huurder" }
+          ]
+        }
+      ],
+      "next": [{ "goto": "contact" }]
+    },
+    { "use": "contact" }
+  ]
+}

@@ -2,6 +2,7 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
+import { flowFile, sharedStepsFile } from './lib/flow/schema';
 import { blogCopy, postFrontmatter } from './schemas/blog';
 import { legalCopy, legalFrontmatter } from './schemas/legal';
 import { landing as landingSchema } from './schemas/landing';
@@ -108,4 +109,16 @@ const landing = defineCollection({
   schema: landingSchema,
 });
 
-export const collections = { site, pages, legal, blog, landing };
+// Form flows (src/content/flows/<locale>/<product>.json, ids such as "nl/energie") and the steps
+// they share (<locale>/_shared.json): see src/lib/flow/schema.ts. The schema checks each file;
+// validate:flows (prebuild) checks references, paths, vars and codes across files.
+const flows = defineCollection({
+  loader: glob({ pattern: ['*/*.json', '!*/_shared.json'], base: './src/content/flows' }),
+  schema: flowFile,
+});
+const flowSteps = defineCollection({
+  loader: glob({ pattern: '*/_shared.json', base: './src/content/flows' }),
+  schema: sharedStepsFile,
+});
+
+export const collections = { site, pages, legal, blog, landing, flows, flowSteps };

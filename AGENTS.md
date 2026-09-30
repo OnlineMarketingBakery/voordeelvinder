@@ -11,7 +11,7 @@ deviate from it are recorded in `docs/decisions/`.
 | `src/content.config.ts`                | Every content collection and its Zod schema                                                                                        |
 | `src/content/site.json`                | Site-wide copy and settings                                                                                                        |
 | `src/content/pages/*.json`             | Page copy as an ordered list of typed section blocks                                                                               |
-| `src/content/flows/nl/*.json`          | Form flows: questions, options, conditions (Phase 4)                                                                               |
+| `src/content/flows/nl/*.json`          | Form flows: questions, options, conditions; `_shared.json` holds the steps all flows share                                         |
 | `src/content/legal`, `blog`, `landing` | Markdown: legal pages, blog posts, campaign landing variants (Phase 3)                                                             |
 | `src/components/sections/`             | One Astro component per section block type; `Sections.astro` maps type → component                                                 |
 | `src/components/site/`, `ui/`          | Header/Footer (copy from `site.json`); Button, SectionPill, Logo, Container, Prose                                                 |
@@ -22,7 +22,7 @@ deviate from it are recorded in `docs/decisions/`.
 | `src/server/env.ts`                    | Typed, validated server environment. The only reader of `process.env`                                                              |
 | `src/server/rules/`                    | Qualification rules — server-only, never shipped to the browser (Phase 5)                                                          |
 | `src/server/lead/`                     | Lead pipeline: validate, derive, classify, backup, forward, rate limit (Phase 5)                                                   |
-| `src/lib/`                             | Framework-free logic (`seo/`, later `flow/` engine, `motion.ts`)                                                                   |
+| `src/lib/`                             | Framework-free logic (`seo/`, `flow/` engine, JSONLogic subset and flow validation, `motion.ts`)                                   |
 | `src/styles/global.css`                | Tailwind entry and design tokens (`@theme`)                                                                                        |
 | `scripts/`                             | `deploy.sh` (run by Ploi), `validate-flows.ts`, cron jobs `leads-retry.ts`, `backups-prune.ts`                                     |
 | `tests/unit`, `tests/e2e`              | Vitest and Playwright (+ axe)                                                                                                      |
@@ -86,9 +86,17 @@ referenced by key (`mascot/fox-waving`, `money`): files in `src/assets/images` a
   `src/schemas/blocks/<name>.ts`, register it in the `section` union in `src/schemas/page.ts`,
   create `src/components/sections/<Name>.astro`, add the case to `Sections.astro`, and add a
   row to the table above.
-- **Add a flow step** (Phase 4): add the step to `src/content/flows/nl/<product>.json`, wire it
-  into `next` of the previous step, give every option a new, unique `code`, then run
-  `npm run validate:flows` and add e2e coverage for the new path.
+- **Add a flow step:** flows live in `src/content/flows/nl/<product>.json` (schema:
+  `src/lib/flow/schema.ts`, engine: `src/lib/flow/engine.ts`). Steps every flow shares (product
+  choice, postcode + business, contact) are defined once in `nl/_shared.json` and used with
+  `{ "use": "<id>", "next": [...] }`. A step is `{ id, title, subtitle?, hint?, visibleIf?,
+fields, next }`; `next` is an ordered list of `{ if?, goto }` whose last entry has no `if`.
+  Add the step, point the previous step's `next` at it, give every option a new, unique `code`
+  (never reuse or rename one), and use only the JSONLogic operators in
+  `src/lib/flow/logic.ts` (ADR 0006); conditions read answers by field id and `derived.<key>`.
+  Field ids are payload keys: the field's `payload` (default `answers`) says where its value
+  goes (docs/PAYLOAD.md). Then run `npm run validate:flows` (also run before every build) and
+  add e2e coverage for the new path.
 - **Add a product** (Phase 4/5): a flow file, a page JSON (its route `src/pages/<product>.astro`
   renders `<ContentPage id="<product>" />`), a `/vergelijken/<product>` and
   `/bedankt/<product>` route, and either a rules file in `src/server/rules/` or nothing (the

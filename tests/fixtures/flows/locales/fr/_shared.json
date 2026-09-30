@@ -1,0 +1,17 @@
+{
+  "steps": [
+    {
+      "id": "contact",
+      "title": "Tes coordonnées",
+      "fields": [
+        {
+          "id": "email",
+          "type": "email",
+          "label": "E-mail",
+          "required": true,
+          "payload": "contact"
+        }
+      ]
+    }
+  ]
+}

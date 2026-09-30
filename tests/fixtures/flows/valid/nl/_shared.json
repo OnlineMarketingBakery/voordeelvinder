@@ -1,0 +1,149 @@
+{
+  "steps": [
+    {
+      "id": "product",
+      "title": "Wat wil je vergelijken?",
+      "visibleIf": { "!": [{ "var": "derived.preselected" }] },
+      "fields": [
+        {
+          "id": "product_choice",
+          "type": "single_choice",
+          "required": true,
+          "payload": "none",
+          "options": [
+            {
+              "code": "electricity",
+              "label": "Elektriciteit",
+              "product": "energie",
+              "sets": { "energy_type": "electricity" }
+            },
+            {
+              "code": "gas",
+              "label": "Gas",
+              "product": "energie",
+              "sets": { "energy_type": "gas" }
+            },
+            {
+              "code": "both",
+              "label": "Elektriciteit + gas",
+              "product": "energie",
+              "sets": { "energy_type": "both" }
+            },
+            { "code": "zonnepanelen", "label": "Zonnepanelen", "product": "zonnepanelen" },
+            { "code": "thuisbatterij", "label": "Thuisbatterij", "product": "thuisbatterij" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "postcode",
+      "title": "Wat is je postcode?",
+      "fields": [
+        { "id": "postcode", "type": "postcode", "required": true, "payload": "derived" },
+        { "id": "is_business", "type": "checkbox", "label": "Dit is een zakelijk adres." },
+        {
+          "id": "business_electricity_band",
+          "type": "single_choice",
+          "label": "Elektriciteit: wat is je geschat jaarverbruik?",
+          "required": true,
+          "visibleIf": {
+            "and": [
+              { "var": "is_business" },
+              { "in": [{ "var": "energy_type" }, ["electricity", "both"]] }
+            ]
+          },
+          "options": [
+            { "code": "under_100k", "label": "Minder dan 100.000 kWh per jaar" },
+            { "code": "over_100k", "label": "Meer dan 100.000 kWh per jaar" }
+          ]
+        },
+        {
+          "id": "business_gas_band",
+          "type": "single_choice",
+          "label": "Aardgas: wat is je geschat jaarverbruik?",
+          "required": true,
+          "visibleIf": {
+            "and": [{ "var": "is_business" }, { "in": [{ "var": "energy_type" }, ["gas", "both"]] }]
+          },
+          "options": [
+            { "code": "under_100k", "label": "Minder dan 100.000 kWh per jaar" },
+            { "code": "over_100k", "label": "Meer dan 100.000 kWh per jaar" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "contact",
+      "title": "Jouw gegevens",
+      "fields": [
+        {
+          "id": "first_name",
+          "type": "text",
+          "label": "Voornaam",
+          "required": true,
+          "payload": "contact",
+          "autocomplete": "given-name",
+          "maxLength": 60
+        },
+        {
+          "id": "last_name",
+          "type": "text",
+          "label": "Achternaam",
+          "required": true,
+          "payload": "contact",
+          "autocomplete": "family-name"
+        },
+        {
+          "id": "phone",
+          "type": "phone",
+          "label": "Telefoonnummer",
+          "required": true,
+          "payload": "contact"
+        },
+        {
+          "id": "email",
+          "type": "email",
+          "label": "E-mail",
+          "required": true,
+          "payload": "contact"
+        },
+        {
+          "id": "call_moment",
+          "type": "day_slot",
+          "label": "Wanneer mogen we je bellen?",
+          "required": true,
+          "payload": "call_preference",
+          "days": [
+            { "code": "mon", "label": "Maandag" },
+            { "code": "tue", "label": "Dinsdag" },
+            { "code": "wed", "label": "Woensdag" },
+            { "code": "thu", "label": "Donderdag" },
+            { "code": "fri", "label": "Vrijdag" }
+          ],
+          "slots": [
+            { "code": "09-10", "label": "09-10" },
+            { "code": "10-11", "label": "10-11" },
+            { "code": "11-12", "label": "11-12" },
+            { "code": "12-13", "label": "12-13" },
+            { "code": "13-14", "label": "13-14" },
+            { "code": "14-15", "label": "14-15" },
+            { "code": "15-16", "label": "15-16" }
+          ]
+        },
+        {
+          "id": "terms",
+          "type": "consent",
+          "label": "Ik ga akkoord met de algemene voorwaarden en het privacybeleid.",
+          "required": true,
+          "payload": "consent"
+        },
+        {
+          "id": "newsletter",
+          "type": "checkbox",
+          "label": "Ik wil tips en aanbiedingen via e-mail ontvangen.",
+          "payload": "consent"
+        }
+      ]
+    }
+  ]
+}
