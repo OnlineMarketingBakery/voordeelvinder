@@ -485,7 +485,8 @@ export default function FormIsland({
       return;
     }
     advancedAt.current = now;
-    if (auto) autoAdvancedAt.current = now;
+    // The double-tap guard covers only the step an auto-advance shows; any other move resets it.
+    autoAdvancedAt.current = auto ? now : null;
     goTo(next, state.answers, TRAVEL.forward);
   };
 

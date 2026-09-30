@@ -199,6 +199,31 @@ test.describe('form motion: reduced motion (the suite default)', () => {
   });
 });
 
+test.describe('form motion: the double-tap guard', () => {
+  test.use({ reducedMotion: 'reduce' });
+
+  test('covers only the step an auto-advance showed: a tap right after a "Volgende" advances', async ({
+    page,
+  }) => {
+    await open(page, '/vergelijken/zonnepanelen');
+    await control(page, 'Wat is je postcode?').fill('3000');
+    await next(page).click();
+    await tap(page, 'Eigenaar');
+    await expect(heading(page)).toHaveText('Wat voor dak heb je?');
+    await tap(page, 'Hellend dak');
+    await tap(page, 'Zuid');
+    await next(page).click();
+    await tap(page, 'Ja');
+    // Straight after that auto-advance: answer, "Volgende" and a tap, well within the guard.
+    await expect(heading(page)).toHaveText('Je jaarverbruik');
+    await control(page, 'Elektriciteit (kWh per jaar)').fill('3500');
+    await next(page).click();
+    await expect(heading(page)).toHaveText('Wil je ook een thuisbatterij?');
+    await tap(page, 'Nee');
+    await expect(heading(page)).toHaveText('Jouw gegevens');
+  });
+});
+
 test.describe('form motion: motion on', () => {
   test.use({ reducedMotion: 'no-preference' });
 
