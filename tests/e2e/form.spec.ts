@@ -1,9 +1,10 @@
 // The form island (brief §7.6, §12): /vergelijken and /vergelijken/<product>. Phase 4: the submit
-// builds the lead but sends nothing, and goes to /bedankt/<product> (a 404 until PR 18).
+// builds the lead but sends nothing, and goes to the thank-you page /bedankt/<product>.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Route } from '@playwright/test';
 
 import copy from '../../src/content/flows/nl/_copy.json' with { type: 'json' };
+import thanks from '../../src/content/pages/bedankt.json' with { type: 'json' };
 import { STEP_GUARD_MS } from '../../src/lib/form/submit';
 
 const { buttons, errors, requiredByType } = copy;
@@ -56,10 +57,17 @@ const next = (page: Page) => page.getByRole('button', { name: buttons.next, exac
 const back = (page: Page) => page.getByRole('button', { name: buttons.back, exact: true });
 const submit = (page: Page) => page.getByRole('button', { name: buttons.submit, exact: true });
 
-/** Clicks the card of a radio (the whole card is the target, brief §7.6). */
+/**
+ * Picks a radio with the keyboard (focus + Space). A tap or click on a card of a single-choice
+ * step moves on by itself after 300 ms (auto-advance, brief §6.1), which would race the next
+ * action here; tests/e2e/form-motion.spec.ts covers the taps.
+ */
 async function choose(page: Page, name: string, group?: string) {
   const scope = group ? page.getByRole('radiogroup', { name: group }) : page;
-  await scope.getByRole('radio', { name, exact: true }).check({ force: true });
+  const radio = scope.getByRole('radio', { name, exact: true });
+  await radio.focus();
+  await page.keyboard.press('Space');
+  await expect(radio).toBeChecked();
 }
 
 /** "Volgende" with the keyboard. */
@@ -111,7 +119,13 @@ async function toContact(page: Page) {
 test.describe('form: energy flow', () => {
   test('the "Ja" path end to end with the keyboard', async ({ page }) => {
     const pageErrors: string[] = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
+    page.on('pageerror', (error) => {
+      // WebKit reports a fetch it cancels because the page navigates away as a page error: the
+      // viewport prefetch of the consent links, cut off by "Verstuur". Not an error of the page.
+      if (!/^Fetch API cannot load .* due to access control checks\.$/.test(error.message)) {
+        pageErrors.push(error.message);
+      }
+    });
     await open(page, '/vergelijken');
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
     await expect(heading(page)).toHaveText('Wat wil je vergelijken?');
@@ -199,6 +213,7 @@ test.describe('form: energy flow', () => {
     await page.keyboard.press('Enter');
 
     await page.waitForURL('**/bedankt/energie');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(thanks.sections[0]!.title);
     expect(
       await page.evaluate(() => sessionStorage.getItem('voordeelvinder:form:vergelijken')),
     ).toBeNull();
@@ -385,14 +400,67 @@ test.describe('form: submit', () => {
         unexpected.push(`${request.method()} ${request.url()}`);
       }
     });
+    const response = page.waitForResponse(
+      (candidate) =>
+        candidate.request().isNavigationRequest() && candidate.url().includes('/bedankt/'),
+    );
     await submit(page).click();
     await page.waitForURL('**/bedankt/energie');
+    // The thank-you page exists (a real 200, not the 404 page) and shows its h1.
+    expect((await response).status()).toBe(200);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(thanks.sections[0]!.title);
     expect(unexpected).toEqual([]);
     expect(
       await page.evaluate(() =>
         Object.keys(sessionStorage).filter((key) => key.startsWith('voordeelvinder:form:')),
       ),
     ).toEqual([]);
+  });
+
+  test('the solar panel form lands on /bedankt/zonnepanelen', async ({ page }) => {
+    await open(page, '/vergelijken/zonnepanelen');
+    await control(page, 'Wat is je postcode?').fill('9000');
+    await goNext(page, 'Ben je eigenaar van de woning?');
+    await choose(page, 'Eigenaar');
+    await goNext(page, 'Wat voor dak heb je?');
+    await choose(page, 'Hellend dak', 'Wat voor dak heb je?');
+    await choose(page, 'Zuid', 'Waar is je dak op gericht?');
+    await goNext(page, 'Ken je je jaarlijks energieverbruik?');
+    await choose(page, 'Ja');
+    await goNext(page, 'Je jaarverbruik');
+    await control(page, 'Elektriciteit (kWh per jaar)').fill('3500');
+    await goNext(page, 'Wil je ook een thuisbatterij?');
+    await choose(page, 'Nee');
+    await goNext(page, 'Jouw gegevens');
+    await fillContact(page);
+    await submit(page).click();
+    await page.waitForURL('**/bedankt/zonnepanelen');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(thanks.sections[0]!.title);
+  });
+
+  test('the home battery form lands on /bedankt/thuisbatterij', async ({ page }) => {
+    await open(page, '/vergelijken/thuisbatterij');
+    await control(page, 'Wat is je postcode?').fill('9000');
+    await goNext(page, 'Heb je zonnepanelen?');
+    await choose(page, 'Nee, nog niet');
+    await goNext(page, 'Heb je een digitale meter?');
+    await choose(page, 'Ja');
+    await goNext(page, 'Ken je je jaarlijks energieverbruik?');
+    await choose(page, 'Ja');
+    await goNext(page, 'Je jaarverbruik');
+    await control(page, 'Elektriciteit (kWh per jaar)').fill('3500');
+    // The thank-you page is fetched ahead as soon as the contact step (the last) shows (brief
+    // §6.1), not as a navigation.
+    const prefetched = page.waitForRequest(
+      (request) =>
+        request.url().includes('/bedankt/thuisbatterij') && !request.isNavigationRequest(),
+    );
+    await goNext(page, 'Jouw gegevens');
+    await prefetched;
+    await fillContact(page);
+    await submit(page).click();
+    await page.waitForURL('**/bedankt/thuisbatterij');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(thanks.sections[0]!.title);
   });
 
   test('a double click submits once', async ({ page }) => {
@@ -437,11 +505,13 @@ test.describe('form: double clicks', () => {
 
 test.describe('form: server render and before hydration', () => {
   test('/vergelijken/energie renders the ?energie= start on the server', async ({ request }) => {
+    // The progress numbers are separate spans (they roll): compare it as text.
+    const text = (html: string) => html.replace(/<[^>]+>/g, '');
     const both = await (
       await request.get('/vergelijken/energie?energie=both&utm_source=meta')
     ).text();
     expect(both).toContain('>Wat is je postcode?</h2>');
-    expect(both).toContain(progress(1, 9));
+    expect(text(both)).toContain(progress(1, 9));
     expect(both).not.toContain('>Wat wil je vergelijken?</h2>');
     expect(both).not.toContain('utm_source'); // only the validated preselect reaches the props
     expect(both).toContain('<link rel="canonical" href="');
@@ -449,7 +519,7 @@ test.describe('form: server render and before hydration', () => {
 
     const plain = await (await request.get('/vergelijken/energie')).text();
     expect(plain).toContain('>Wat wil je vergelijken?</h2>');
-    expect(plain).toContain(progress(1, 10));
+    expect(text(plain)).toContain(progress(1, 10));
     // An unknown value is dropped, like in the island.
     const unknown = await (await request.get('/vergelijken/energie?energie=water')).text();
     expect(unknown).toContain('>Wat wil je vergelijken?</h2>');
@@ -543,6 +613,12 @@ test.describe('form: lead ids', () => {
 
 test.describe('form: accessibility and layout', () => {
   async function axe(page: Page, label: string) {
+    // Error lines fade in (also with reduced motion): let them finish, or axe measures the
+    // contrast of a half-transparent line.
+    await page.waitForFunction(() =>
+      document.getAnimations().every((animation) => animation.playState !== 'running'),
+    );
+    await page.waitForTimeout(200);
     const results = await new AxeBuilder({ page }).include('main').analyze();
     const serious = results.violations.filter(
       (violation) => violation.impact === 'serious' || violation.impact === 'critical',

@@ -8,8 +8,20 @@
 // (src/lib/form/initial.ts). Until then the form is inert: "Volgende" is disabled, and Form.astro
 // cancels any native submit, so nothing typed before hydration ends up in the URL.
 //
-// No animations yet (PR 17 brings the form motion): only CSS state transitions.
-import { useEffect, useRef, useState, type SubmitEvent } from 'react';
+// Motion (brief §6.1, docs/MOTION.md; src/components/form/motion.tsx): the engine moves at once
+// and the animation is only visual. Focus, scrolling and the aria-live announcement never wait
+// for it. Auto-advance (a tap on a single-question choice step) is `settings.autoAdvance` in
+// _copy.json. The form card is named `form-card` for the page transitions from a product card
+// and into the thank-you card.
+import { prefetch } from 'astro:prefetch';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+  type SubmitEvent,
+} from 'react';
 
 import {
   buildSubmission,
@@ -36,6 +48,14 @@ import {
 import { choiceOptions, domId, UI_ICONS } from '../../lib/form/labels';
 import { errorMessage, liveText, progressLabel, warningMessage } from '../../lib/form/messages';
 import {
+  AUTO_ADVANCE_DELAY_MS,
+  pickVia,
+  shouldAutoAdvance,
+  TRAVEL,
+  type PointerPick,
+  type Travel,
+} from '../../lib/form/motion';
+import {
   clearAllSessions,
   flowFingerprint,
   flowFingerprints,
@@ -59,6 +79,7 @@ import type {
   FormPanel as FormPanelData,
 } from '../../lib/form/types';
 import { FormPanel } from './FormPanel';
+import { FormMotion, StepStage } from './motion';
 import { ProgressCard } from './ProgressCard';
 import { StepView } from './StepView';
 import { FormButton } from './ui';
@@ -89,10 +110,17 @@ type State = FormStart & {
   suggestions: Record<string, string>;
   /** The aria-live announcement of the last step change or failed validation. */
   announcement: string;
+  /** How the current step was reached: it slides in from that side (none after a restore). */
+  travel: Travel;
+  /** The last "Volgende" that found errors: those fields shake once (brief §6.1). */
+  shake: { pulse: number; fields: string[] };
   ids: Ids | null;
   restored: boolean;
   submitting: boolean;
 };
+
+/** A scheduled auto-advance: the step it was scheduled on and the picked field. */
+type AutoAdvance = { stepId: string; fieldId: string };
 
 type PendingFocus = { kind: 'step' } | { kind: 'error'; field: Field; code: ErrorCode } | null;
 
@@ -129,6 +157,12 @@ function focusTarget(field: Field, answers: Answers, code: ErrorCode, copy: Form
   return document.getElementById(domId.field(field.id));
 }
 
+function clearTimer(timer: RefObject<number | undefined>) {
+  if (timer.current === undefined) return;
+  window.clearTimeout(timer.current);
+  timer.current = undefined;
+}
+
 function prefersReducedMotion(): boolean {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
@@ -151,6 +185,8 @@ export default function FormIsland({
     warnings: {},
     suggestions: {},
     announcement: '',
+    travel: TRAVEL.none,
+    shake: { pulse: 0, fields: [] },
     ids: null,
     restored: false,
     submitting: false,
@@ -160,8 +196,15 @@ export default function FormIsland({
   const pendingFocus = useRef<PendingFocus>(null);
   const submitting = useRef(false);
   const submitted = useRef(false);
-  /** When "Volgende" last moved forward (event.timeStamp), until the next answer or "Terug". */
+  /**
+   * When the form last moved forward ("Volgende" or an auto-advance; event.timeStamp or
+   * performance.now(), the same clock), until the next answer or "Terug": the double-click guard.
+   */
   const advancedAt = useRef<number | null>(null);
+  const lastPointer = useRef<PointerPick | null>(null);
+  const autoTimer = useRef<number | undefined>(undefined);
+  /** The latest "Volgende" handler, for the auto-advance timer (set after every render). */
+  const advance = useRef<((now: number, auto?: AutoAdvance) => void) | null>(null);
 
   const flow = flowOf(flows, state.product);
   const derived = engineDerived(state.flags, state.answers);
@@ -180,7 +223,7 @@ export default function FormIsland({
       ? { leadId: stored.leadId, eventId: stored.eventId }
       : { leadId: newId(), eventId: newId() };
     // eslint-disable-next-line react-hooks/set-state-in-effect -- a one-time sync with browser-only state (URL, sessionStorage) after hydration
-    setState((current) => ({ ...current, ...start, ids, restored: true }));
+    setState((current) => ({ ...current, ...start, ids, restored: true, travel: TRAVEL.none }));
   }, [flows, entry, pageProduct, preselected, preselect]);
 
   // Persist after every change (brief §7.6): only the visitor's own answers, abandoned
@@ -217,6 +260,15 @@ export default function FormIsland({
     return () => window.removeEventListener('pageshow', onShow);
   }, []);
 
+  // The thank-you page is fetched ahead as soon as the last step shows (brief §6.1), so the
+  // submit lands on a page that is already there.
+  useEffect(() => {
+    if (isLast) prefetch(thanksPath(state.product));
+  }, [isLast, state.product]);
+
+  // A pending auto-advance belongs to its step: any step change (or unmounting) cancels it.
+  useEffect(() => () => clearTimer(autoTimer), [state.step]);
+
   // Focus and scroll after the render that showed the new step or the errors. Never waits for
   // an animation (brief §6.1).
   useEffect(() => {
@@ -240,7 +292,10 @@ export default function FormIsland({
     box?.scrollIntoView({ behavior, block: 'center' });
   });
 
-  const goTo = (stepId: string, answers: Answers) => {
+  const cancelAutoAdvance = () => clearTimer(autoTimer);
+
+  const goTo = (stepId: string, answers: Answers, travel: Travel) => {
+    cancelAutoAdvance();
     const nextDerived = engineDerived(state.flags, answers);
     const title = getStep(flow, stepId).title;
     const label = progressLabel(copy, progress(flow, stepId, answers, nextDerived));
@@ -253,13 +308,20 @@ export default function FormIsland({
       warnings: {},
       suggestions: {},
       announcement: `${title}. ${label}`,
+      travel,
+      shake: { pulse: current.shake.pulse, fields: [] },
     }));
   };
 
-  /** Shows a step with the errors of its validation, focuses and announces the first one. */
+  /**
+   * Shows a step with the errors of its validation, focuses and announces the first one, and
+   * shakes the fields with an error once (brief §6.1). Focus and the announcement never wait
+   * for the shake.
+   */
   const showErrors = (stepId: string, answers: Answers, result: StepValidation) => {
     const shown = visibleFields(flow, stepId, answers, engineDerived(state.flags, answers));
-    const first = shown.find((field) => result.errors[field.id] !== undefined);
+    const flagged = shown.filter((field) => result.errors[field.id] !== undefined);
+    const first = flagged[0];
     const code = first ? result.errors[first.id] : undefined;
     if (first && code) pendingFocus.current = { kind: 'error', field: first, code };
     // Focus alone doesn't make every screen reader read the error: announce it as well.
@@ -272,6 +334,9 @@ export default function FormIsland({
       warnings: result.warnings,
       suggestions: result.suggestions,
       announcement: text ? liveText(current.announcement, text) : current.announcement,
+      // Back to an earlier step (a submission that no longer builds): it slides in from the left.
+      travel: stepId === current.step ? current.travel : TRAVEL.back,
+      shake: { pulse: current.shake.pulse + 1, fields: flagged.map((field) => field.id) },
     }));
   };
 
@@ -327,6 +392,7 @@ export default function FormIsland({
 
   const submit = async () => {
     if (submitting.current) return;
+    cancelAutoAdvance();
     submitting.current = true;
     setState((current) => ({ ...current, submitting: true }));
     const ids = state.ids ?? { leadId: newId(), eventId: newId() };
@@ -366,15 +432,35 @@ export default function FormIsland({
     submitted.current = true;
     // Every form page's session, not only this one: no contact details outlive the lead.
     clearAllSessions(sessionStore());
-    // The thank-you page arrives in PR 18; until then this URL is a 404.
+    // TODO(Phase 5): once /api/lead answered OK, set the "lead is safe" flag the thank-you page
+    // reads before it celebrates (src/scripts/celebrate.ts).
     window.location.assign(thanksPath(state.product));
   };
 
-  const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  /**
+   * "Volgende": validate the step, then show the errors or go on (or submit on the last step).
+   * The auto-advance timer calls it too, and then first checks that its step is still shown
+   * and still qualifies (a pick can reveal a second question).
+   */
+  const onNext = (now: number, auto?: AutoAdvance) => {
     if (submitting.current) return;
-    // The second click of a double click on "Volgende" lands on the new step: ignore it.
-    if (isRepeatSubmit(advancedAt.current, event.timeStamp)) return;
+    // Inert until the stored session is restored ("Volgende" is disabled until then).
+    if (!state.restored) return;
+    // The second half of a double click or tap lands on the new step: ignore it. This covers
+    // auto-advance too: an auto-advance and a "Volgende" never both move on.
+    if (isRepeatSubmit(advancedAt.current, now)) return;
+    if (auto) {
+      const qualifies = shouldAutoAdvance({
+        enabled: copy.settings.autoAdvance,
+        via: 'pointer',
+        fieldId: auto.fieldId,
+        fields,
+        isLast,
+        busy: submitting.current,
+      });
+      if (auto.stepId !== state.step || !qualifies) return;
+    }
+    cancelAutoAdvance();
     const result = validateStep(flow, state.step, state.answers, derived);
     if (!result.valid) {
       showErrors(state.step, state.answers, result);
@@ -385,16 +471,56 @@ export default function FormIsland({
       void submit();
       return;
     }
-    advancedAt.current = event.timeStamp;
-    goTo(next, state.answers);
+    advancedAt.current = now;
+    goTo(next, state.answers, TRAVEL.forward);
+  };
+
+  // The timer runs the handler of the render after the pick, which has the new answer.
+  useLayoutEffect(() => {
+    advance.current = onNext;
+  });
+
+  const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onNext(event.timeStamp);
+  };
+
+  // Auto-advance (brief §6.1): only after a pointer tap or click on a card, never on keyboard
+  // input. "Volgende" stays visible and works as before.
+  const onPointerPick = (field: Field, code: string) => {
+    lastPointer.current = { fieldId: field.id, code, at: performance.now() };
+  };
+
+  const onPick = (field: Field, code: string) => {
+    const now = performance.now();
+    const via = pickVia(lastPointer.current, field.id, code, now);
+    lastPointer.current = null;
+    cancelAutoAdvance();
+    // Not before the stored session is restored: the form is inert until then.
+    if (!state.restored) return;
+    const auto = shouldAutoAdvance({
+      enabled: copy.settings.autoAdvance,
+      via,
+      fieldId: field.id,
+      fields,
+      isLast,
+      busy: submitting.current,
+    });
+    if (!auto) return;
+    const stepId = state.step;
+    autoTimer.current = window.setTimeout(() => {
+      autoTimer.current = undefined;
+      advance.current?.(performance.now(), { stepId, fieldId: field.id });
+    }, AUTO_ADVANCE_DELAY_MS);
   };
 
   const onBack = () => {
     if (submitting.current) return;
     advancedAt.current = null;
+    cancelAutoAdvance();
     const previous = previousStep(flow, state.step, state.answers, derived);
     if (previous !== null) {
-      goTo(previous, state.answers);
+      goTo(previous, state.answers, TRAVEL.back);
       return;
     }
     const target = firstStepBack({
@@ -426,64 +552,71 @@ export default function FormIsland({
   );
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,372fr)_minmax(0,767fr)] lg:gap-6">
-      {panel && <FormPanel panel={panel} />}
-      <div ref={topRef} className="flex min-w-0 flex-col gap-4 lg:gap-6">
-        <ProgressCard
-          label={progressLabel(copy, { step: stepNumber, total })}
-          step={stepNumber}
-          total={total}
-        />
-        <section
-          data-morph="form-card"
-          aria-labelledby="formulier-stap-titel"
-          className="flex flex-1 flex-col rounded-2xl border border-lavender-300 bg-white px-5 pt-6 pb-6 shadow-form md:px-12 md:pt-12 md:pb-[50px]"
-        >
-          <form noValidate onSubmit={onSubmit} className="flex flex-1 flex-col">
-            <StepView
-              step={step}
-              fields={fields}
-              answers={state.answers}
-              errors={errors}
-              warnings={warnings}
-              suggestions={state.suggestions}
-              onChange={onChange}
-              onBlur={onBlur}
-              onApplySuggestion={onApplySuggestion}
-              icons={icons}
-              flag={flag}
-              copy={copy}
-              headingRef={headingRef}
-            />
-            <div className="mt-auto pt-8">
-              <div className="grid grid-cols-[auto_1fr] gap-3 border-t border-lavender-400 pt-6 md:flex md:justify-between md:pt-[52px]">
-                <FormButton
-                  type="button"
-                  variant="secondary"
-                  icon={icons[UI_ICONS.back]}
-                  iconPosition="start"
-                  onClick={onBack}
-                >
-                  {copy.buttons.back}
-                </FormButton>
-                <FormButton
-                  type="submit"
-                  variant="primary"
-                  icon={icons[UI_ICONS.next]}
-                  iconPosition="end"
-                  busy={state.submitting}
-                  disabled={!state.restored}
-                >
-                  {isLast ? copy.buttons.submit : copy.buttons.next}
-                </FormButton>
+    <FormMotion>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,372fr)_minmax(0,767fr)] lg:gap-6">
+        {panel && <FormPanel panel={panel} />}
+        <div ref={topRef} className="flex min-w-0 flex-col gap-4 lg:gap-6">
+          <ProgressCard template={copy.progress} step={stepNumber} total={total} />
+          {/* The one element named form-card on this page: a product card's CTA morphs into it
+            and it morphs into the thank-you card (src/scripts/morph.ts, docs/MOTION.md). */}
+          <section
+            data-morph="form-card"
+            aria-labelledby="formulier-stap-titel"
+            className="flex flex-1 flex-col rounded-2xl border border-lavender-300 bg-white px-5 pt-6 pb-6 shadow-form [view-transition-name:form-card] md:px-12 md:pt-12 md:pb-[50px]"
+          >
+            <form noValidate onSubmit={onSubmit} className="flex flex-1 flex-col">
+              {/* Keyed by the step id only: a product card on step 1 switches the flow but
+                  stays on the same step, so its radios (and their focus) are kept. */}
+              <StepStage stepKey={state.step} travel={state.travel}>
+                <StepView
+                  step={step}
+                  fields={fields}
+                  answers={state.answers}
+                  errors={errors}
+                  warnings={warnings}
+                  suggestions={state.suggestions}
+                  onChange={onChange}
+                  onBlur={onBlur}
+                  onApplySuggestion={onApplySuggestion}
+                  icons={icons}
+                  flag={flag}
+                  copy={copy}
+                  headingRef={headingRef}
+                  shake={state.shake}
+                  onPointerPick={onPointerPick}
+                  onPick={onPick}
+                />
+              </StepStage>
+              <div className="mt-auto pt-8">
+                <div className="grid grid-cols-[auto_1fr] gap-3 border-t border-lavender-400 pt-6 md:flex md:justify-between md:pt-[52px]">
+                  <FormButton
+                    type="button"
+                    variant="secondary"
+                    icon={icons[UI_ICONS.back]}
+                    iconPosition="start"
+                    onClick={onBack}
+                  >
+                    {copy.buttons.back}
+                  </FormButton>
+                  <FormButton
+                    type="submit"
+                    variant="primary"
+                    icon={icons[UI_ICONS.next]}
+                    iconPosition="end"
+                    busy={state.submitting}
+                    disabled={!state.restored}
+                  >
+                    {isLast ? copy.buttons.submit : copy.buttons.next}
+                  </FormButton>
+                </div>
               </div>
-            </div>
-          </form>
-        </section>
-        <p className="sr-only" aria-live="polite" aria-atomic="true">
-          {state.announcement}
-        </p>
+            </form>
+          </section>
+          <p className="sr-only" aria-live="polite" aria-atomic="true">
+            {state.announcement}
+          </p>
+        </div>
       </div>
-    </div>
+    </FormMotion>
   );
 }

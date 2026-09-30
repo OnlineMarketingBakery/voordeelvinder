@@ -4,6 +4,7 @@ import type { Field, Step } from '../../../lib/flow/schema';
 import type { AnswerValue } from '../../../lib/flow/types';
 import { domId } from '../../../lib/form/labels';
 import type { FormCopy } from '../../../lib/form/types';
+import { FadeInText } from '../motion';
 
 export type FieldProps<F extends Field = Field> = {
   field: F;
@@ -43,7 +44,7 @@ export function FieldHint({ field }: { field: Field }) {
   );
 }
 
-/** The error (blocks "Volgende") or else the warning (doesn't) under a field. */
+/** The error (blocks "Volgende") or else the warning (doesn't) under a field; fades in. */
 export function FieldMessage({
   field,
   error,
@@ -55,16 +56,16 @@ export function FieldMessage({
 }) {
   if (error) {
     return (
-      <p id={domId.error(field.id)} className="mt-2 text-body text-danger">
+      <FadeInText id={domId.error(field.id)} className="mt-2 text-body text-danger">
         {error}
-      </p>
+      </FadeInText>
     );
   }
   if (!warning) return null;
   return (
-    <p id={domId.warning(field.id)} className="mt-2 text-body text-ink-600">
+    <FadeInText id={domId.warning(field.id)} className="mt-2 text-body text-ink-600">
       {warning}
-    </p>
+    </FadeInText>
   );
 }
 

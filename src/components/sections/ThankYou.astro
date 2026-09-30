@@ -1,0 +1,179 @@
+---
+// The thank-you card (brief §5; Figma "Thank you page" 91:13857): a white card (767 wide,
+// border lavender-300, radius 24) on a purple base that shows as an 8px lip at the bottom, with
+// the thumbs-up badge (91:14643), the h1, the text and a purple button home. Centred between
+// the shared header and footer, 149px from both on desktop.
+//
+// The badge: a white circle (156) with a purple one inside (146), the fox clipped to the purple
+// circle, and the same image a second time clipped to a rectangle, so the head and the thumb
+// break out of the circle (Figma draws it the same way, with a mask). Both layers use the same
+// srcset, so the browser loads the image once.
+//
+// Motion (docs/MOTION.md, brief §6.1 "celebrate once the lead is safe"): the badge hops once and
+// a little confetti bursts out, CSS only, when src/scripts/celebrate.ts sets data-celebrate. No
+// loop, nothing with reduced motion. The card and the badge carry data-morph so the page
+// transition (Phase 7) can morph the form card and the panel mascot into them. The card already
+// carries `view-transition-name: form-card`, the name of the form card (the only one on either
+// page), so "Verstuur" morphs the form card into it (docs/MOTION.md).
+import CopyText from '../ui/CopyText.astro';
+import Button from '../ui/Button.astro';
+import Illustration from '../ui/Illustration.astro';
+import type { Copy } from '../../lib/copy';
+
+interface Props {
+  id?: string | undefined;
+  title: string;
+  body: Copy;
+  cta: { label: string; href: string };
+  image: { src: string; alt: string };
+}
+
+const { id, title, body, cta, image } = Astro.props;
+const titleId = `${id ?? 'bedankt'}-title`;
+
+// The fox image in badge units (Figma: 265x257 at -50.5/-59.1 of the 156px white circle).
+const foxBox = 'absolute top-[-37.89%] left-[-32.39%] h-auto w-[169.98%] max-w-none';
+// The purple circle (inset 5px) and the head/thumb rectangle (161x133), in image units.
+const inCircle = '[clip-path:ellipse(27.44%_28.36%_at_48.43%_53.37%)]';
+const headAndThumb = '[clip-path:inset(13.6%_15.3%_34.6%_23.98%)]';
+// Both layers are drawn at 265px; the srcset covers 2x and 3x screens.
+const foxWidths = [265, 530, 795];
+
+// Confetti: where each piece lands (px from the badge centre), its turn and colour.
+const confetti = [
+  { x: -118, y: -46, r: -160, tone: 'bg-lime-300', shape: 'rect' },
+  { x: -96, y: -92, r: 120, tone: 'bg-purple-500', shape: 'dot' },
+  { x: -52, y: -124, r: -80, tone: 'bg-lime-400', shape: 'rect' },
+  { x: -8, y: -138, r: 200, tone: 'bg-purple-700', shape: 'dot' },
+  { x: 44, y: -128, r: 140, tone: 'bg-lime-300', shape: 'rect' },
+  { x: 94, y: -96, r: -140, tone: 'bg-purple-500', shape: 'rect' },
+  { x: 124, y: -44, r: 90, tone: 'bg-lime-400', shape: 'dot' },
+  { x: 132, y: 18, r: -210, tone: 'bg-purple-700', shape: 'rect' },
+  { x: -128, y: 20, r: 170, tone: 'bg-purple-500', shape: 'rect' },
+  { x: -104, y: 64, r: -100, tone: 'bg-lime-300', shape: 'dot' },
+] as const;
+---
+
+<section id={id} aria-labelledby={titleId} class="px-4 py-10 md:px-6 md:py-20 lg:py-[149px]">
+  <div
+    data-morph="form-card"
+    class="mx-auto max-w-[767px] rounded-2xl bg-purple-600 pb-2 shadow-form [view-transition-name:form-card]"
+  >
+    <div class="flex flex-col items-center rounded-2xl border border-lavender-300 bg-white px-5 pt-16 pb-10 text-center md:px-12 md:pt-24 md:pb-[101px]">
+      <div data-morph="form-mascot" data-celebration class="relative size-39 shrink-0">
+        <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+          {confetti.map((piece) => (
+            <span
+              class:list={[
+                'confetti absolute top-1/2 left-1/2 opacity-0',
+                piece.tone,
+                piece.shape === 'dot' ? 'size-2 rounded-full' : 'h-2.5 w-1.5 rounded-[2px]',
+              ]}
+              style={`--x: ${piece.x}px; --y: ${piece.y}px; --r: ${piece.r}deg`}
+            />
+          ))}
+        </div>
+        <div class="badge absolute inset-0 origin-bottom">
+          <div
+            class="absolute inset-0 rounded-full bg-white shadow-[0_1px_1.9px_rgb(0_0_0/0.17)]"
+            aria-hidden="true"
+          ></div>
+          <div class="absolute inset-[3.3%] rounded-full bg-purple-600" aria-hidden="true"></div>
+          <Illustration
+            src={image.src}
+            alt={image.alt}
+            widths={foxWidths}
+            sizes="265px"
+            eager
+            class:list={[foxBox, inCircle]}
+          />
+          <Illustration
+            src={image.src}
+            alt=""
+            widths={foxWidths}
+            sizes="265px"
+            eager
+            class:list={[foxBox, headAndThumb]}
+          />
+        </div>
+      </div>
+
+      <h1 id={titleId} class="mt-7 max-w-[24rem] text-h4 text-ink-900 md:text-h3">
+        {title}
+      </h1>
+      <CopyText copy={body} class="mt-6 max-w-[31.5rem] text-body-lg text-pretty text-ink-600" />
+      <Button
+        href={cta.href}
+        variant="purple"
+        size="lg"
+        icon="arrow-up-right"
+        class="mt-7 w-full sm:w-[352px] sm:justify-between"
+      >
+        {cta.label}
+      </Button>
+    </div>
+  </div>
+</section>
+
+<script>
+  import '../../scripts/celebrate';
+</script>
+
+<style>
+  /* After the page crossfade: a crouch, a hop of distance-3 and a soft landing, once. */
+  @keyframes badge-hop {
+    0%,
+    100% {
+      translate: 0 0;
+      scale: 1;
+    }
+
+    15% {
+      translate: 0 0;
+      scale: 1.04 0.94;
+    }
+
+    45% {
+      translate: 0 calc(-1 * var(--motion-distance-3));
+      scale: 0.97 1.04;
+    }
+
+    75% {
+      translate: 0 0;
+      scale: 1.03 0.97;
+    }
+  }
+
+  /* Each piece flies from behind the badge to (--x, --y), turning, and fades out. */
+  @keyframes confetti-burst {
+    0% {
+      opacity: 0;
+      translate: -50% -50%;
+      rotate: 0deg;
+      scale: 0.4;
+    }
+
+    15% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+      translate: calc(-50% + var(--x)) calc(-50% + var(--y));
+      rotate: var(--r);
+      scale: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    [data-celebrate] .badge {
+      animation: badge-hop calc(2 * var(--motion-duration-slow)) var(--ease-out)
+        var(--motion-duration-page) both;
+    }
+
+    [data-celebrate] .confetti {
+      animation: confetti-burst calc(3 * var(--motion-duration-slow)) var(--ease-out)
+        calc(var(--motion-duration-page) + var(--motion-duration-base)) both;
+    }
+  }
+</style>

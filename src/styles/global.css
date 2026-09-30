@@ -220,6 +220,34 @@
   display: none;
 }
 
+/*
+ * Product card → form card (brief §6.1; src/scripts/morph.ts, docs/MOTION.md). The clicked
+ * card and the form card share `form-card`: the box moves and resizes on the in-out easing
+ * while the two snapshots crossfade at page speed. Arriving any other way, the form card only
+ * fades in with the page. The header stays on top of the moving card.
+ */
+::view-transition-group(form-card) {
+  animation-duration: var(--motion-duration-slow);
+  animation-timing-function: var(--ease-in-out);
+}
+
+::view-transition-old(form-card),
+::view-transition-new(form-card) {
+  animation-duration: var(--motion-duration-page);
+}
+
+::view-transition-group(site-header) {
+  z-index: 1;
+}
+
+/* The named rules above outrank the reduced-motion `(*)` rules at the end of this file. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(form-card),
+  ::view-transition-new(form-card) {
+    animation-duration: var(--motion-duration-fast);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;

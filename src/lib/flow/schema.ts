@@ -330,6 +330,14 @@ export const flowCopyFile = z.strictObject({
   warnings: z.partialRecord(z.enum(WARNING_CODES), text).optional(),
   /** The e-mail typo suggestion, e.g. "Bedoel je {suggestion}?". */
   emailSuggestion: template('suggestion'),
+  /** How the form behaves (not copy, but switched per locale like it; docs/MOTION.md). */
+  settings: z.strictObject({
+    /**
+     * Auto-advance (brief §6.1, Tanjil approves on staging): a tap or click on an answer card of
+     * a single-question choice step moves on after about 300 ms. Never on keyboard input.
+     */
+    autoAdvance: z.boolean(),
+  }),
 });
 
 export type Option = z.infer<typeof option>;

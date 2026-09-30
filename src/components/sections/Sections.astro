@@ -11,6 +11,7 @@ import NotFound from './NotFound.astro';
 import ProductSpotlight from './ProductSpotlight.astro';
 import Steps from './Steps.astro';
 import Testimonials from './Testimonials.astro';
+import ThankYou from './ThankYou.astro';
 
 interface Props {
   sections: Section[];
@@ -48,6 +49,8 @@ const sections = Astro.props.sections
       return <CtaMascot {...section} />;
     case 'notFound':
       return <NotFound {...section} />;
+    case 'thankYou':
+      return <ThankYou {...section} />;
     default: {
       // A schema type without a component fails astro check here instead of rendering nothing.
       const unhandled: never = section;

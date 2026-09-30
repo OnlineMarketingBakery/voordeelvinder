@@ -1,0 +1,16 @@
+---
+// The thank-you page per product (brief §5; Figma "Thank you page" 91:13857): the form's
+// "Verstuur" lands here. One content file (src/content/pages/bedankt.json), three URLs, so ads
+// and analytics can tell the products apart. Always noindex (brief §11) and out of the sitemap
+// (src/lib/seo/indexing.ts); each URL is its own canonical. A direct visit renders the same
+// page: nothing on it comes from the visitor's answers (and, from Phase 5, it fires no lead).
+import type { GetStaticPaths } from 'astro';
+
+import ContentPage from '../../layouts/ContentPage.astro';
+import { PRODUCTS } from '../../lib/flow/types';
+
+export const getStaticPaths = (() =>
+  PRODUCTS.map((product) => ({ params: { product } }))) satisfies GetStaticPaths;
+---
+
+<ContentPage id="bedankt" />
