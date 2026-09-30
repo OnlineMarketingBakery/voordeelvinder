@@ -1,11 +1,17 @@
 # Lead payload contract (`schema_version: 1`)
 
+> **Tanjil, 2026-09-30:** qualification (promo / no_promo / pending) happens in n8n; the site
+> sends every lead and never classifies it (ADR 0009). The brief's `outcome` and
+> `outcome_reasons` are therefore not part of the payload. What n8n applies is described in
+> [n8n-qualification.md](n8n-qualification.md).
+
 The JSON the lead endpoint (`POST /api/lead`, Phase 5) sends to n8n. It is the contract with n8n,
 the lead sheet and the Meta integration: **change it only with explicit approval in the PR**
 (AGENTS.md), and bump `schema_version` for any change that isn't purely additive.
 
-Source: build brief §9.2, transcribed as is. The only additions are the notes under
-"Where each part comes from", which describe the implementation.
+Source: build brief §9.2, transcribed as is except for the two outcome fields removed by
+ADR 0009. The only additions are the notes under "Where each part comes from", which describe
+the implementation.
 
 ## Example
 
@@ -19,8 +25,6 @@ Source: build brief §9.2, transcribed as is. The only additions are the notes u
   "submitted_at": "2026-10-01T09:30:00.000Z",
   "product": "energie",
   "flow_version": 1,
-  "outcome": "promo",
-  "outcome_reasons": [],
   "answers": {
     "energy_type": "both",
     "is_business": false,
@@ -85,8 +89,8 @@ Source: build brief §9.2, transcribed as is. The only additions are the notes u
 
 ## Related rules elsewhere in the brief
 
-- `outcome` is `promo`, `no_promo` or `pending`, with `outcome_reasons[]` such as
-  `region_not_flanders` (§8). The visitor never sees it.
+- The brief's `outcome` / `outcome_reasons` (§8) are decided in n8n, not sent by the site
+  (ADR 0009). The visitor never sees them.
 - `is_test` is true unless `SITE_ENV=production`, or when the visitor arrived with `?test=1`
   (§9.4, ADR 0004).
 - `event_id` is shared by the browser `Lead` event and the server-side Meta events, so each lead
@@ -100,17 +104,46 @@ already normalised by the field validators (`src/lib/flow/validators/`); the ser
 it against the flow with the same validators, adds what only it can know and forwards the
 payload.
 
-| Part                                             | Form submission                                                                                                                                   | Added or recomputed by the server (Phase 5)        |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| `schema_version`, `lead_id`, `event_id`          | yes (`lead_id` is generated once per form session)                                                                                                |                                                    |
-| `submitted_at`                                   | yes                                                                                                                                               | may replace it with its own clock                  |
-| `product`, `flow_version`                        | yes (plus `flow_id`, to find the flow)                                                                                                            | checked against the flow                           |
-| `answers`                                        | codes of shown fields with payload `answers`, plus implied answers such as `energy_type`; abandoned answers are cleared first                     | re-validated; unknown fields or codes are rejected |
-| `labels`                                         | no                                                                                                                                                | from its own copy of the flow (`answerLabels`)     |
-| `derived`                                        | `postcode` (the postcode field) and the region/province the form worked out                                                                       | recomputed from the postcode                       |
-| `contact`                                        | `first_name`, `last_name` (trimmed), `phone_e164` and `phone_display` (the phone normalised by the field validator), `email` (trimmed, lowercase) | re-validated with the same field validators        |
-| `call_preference`                                | the `day_slot` field                                                                                                                              |                                                    |
-| `consent`                                        | `terms`, `newsletter` and the cookie banner's `cookies` state                                                                                     |                                                    |
-| `tracking`                                       | every key, `""` when unknown                                                                                                                      |                                                    |
-| `meta`                                           | `page`, and `test` (the visitor arrived with `?test=1`)                                                                                           | `user_agent`, `ip`, `site_env`                     |
-| `brand`, `is_test`, `outcome`, `outcome_reasons` | no                                                                                                                                                | yes                                                |
+| Part                                    | Form submission                                                                                                                                   | Added or recomputed by the server (Phase 5)        |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `schema_version`, `lead_id`, `event_id` | yes (`lead_id` is generated once per form session)                                                                                                |                                                    |
+| `submitted_at`                          | yes                                                                                                                                               | may replace it with its own clock                  |
+| `product`, `flow_version`               | yes (plus `flow_id`, to find the flow)                                                                                                            | checked against the flow                           |
+| `answers`                               | codes of shown fields with payload `answers`, plus implied answers such as `energy_type`; abandoned answers are cleared first                     | re-validated; unknown fields or codes are rejected |
+| `labels`                                | no                                                                                                                                                | from its own copy of the flow (`answerLabels`)     |
+| `derived`                               | `postcode` (the postcode field) and the region/province the form worked out                                                                       | recomputed from the postcode                       |
+| `contact`                               | `first_name`, `last_name` (trimmed), `phone_e164` and `phone_display` (the phone normalised by the field validator), `email` (trimmed, lowercase) | re-validated with the same field validators        |
+| `call_preference`                       | the `day_slot` field                                                                                                                              |                                                    |
+| `consent`                               | `terms`, `newsletter` and the cookie banner's `cookies` state                                                                                     |                                                    |
+| `tracking`                              | every key, `""` when unknown                                                                                                                      |                                                    |
+| `meta`                                  | `page`, and `test` (the visitor arrived with `?test=1`)                                                                                           | `user_agent`, `ip`, `site_env`                     |
+| `brand`, `is_test`                      | no                                                                                                                                                | yes                                                |
+
+# Newsletter sign-up (`type: "newsletter"`, `schema_version: 1`)
+
+What `POST /api/newsletter` (the footer form, brief §5 and §9.1) sends to n8n, which runs the
+Mailchimp double opt-in. It is a **separate payload**, not part of the lead contract above: it
+goes to `N8N_NEWSLETTER_WEBHOOK_URL`, or to the lead webhook when that isn't set, and its
+`type` tells the two apart (a lead has no `type`). Same `X-VV-Secret` header, same backup and
+retry as a lead. Change it only with approval in the PR, like the lead contract.
+
+```json
+{
+  "type": "newsletter",
+  "schema_version": 1,
+  "brand": "voordeelvinder",
+  "signup_id": "uuid-v4",
+  "is_test": false,
+  "submitted_at": "2026-10-01T09:30:00.000Z",
+  "email": "jan@example.be",
+  "consent": { "newsletter": true },
+  "meta": { "page": "/", "user_agent": "…", "ip": "…", "site_env": "production" }
+}
+```
+
+- The form posts `{ email, consent: true, website: "", turnstile_token, page, test }`; unknown
+  keys are refused. `email` is trimmed and lowercased by the form's own e-mail validator.
+- `signup_id` and `submitted_at` come from the server. There is no client id, so a double
+  submit gives two sign-ups; Mailchimp keys on the e-mail address.
+- `is_test` follows the lead rule: true unless `SITE_ENV=production`, or when the visitor
+  arrived with `?test=1` (`test: true`).

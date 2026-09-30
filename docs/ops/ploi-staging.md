@@ -52,9 +52,29 @@ PORT=3001
 PUBLIC_SITE_URL=https://voordeelvinder.onlinemarketingbakery.nl
 LEAD_BACKUP_DIR=/home/voordeelvinder-9eyyh/lead-backups
 RATE_LIMIT_PER_HOUR=10
-# Phase 5: N8N_LEAD_WEBHOOK_URL (mock/test only), N8N_WEBHOOK_SECRET, TURNSTILE_SECRET_KEY, PUBLIC_TURNSTILE_SITE_KEY
+# n8n: staging only ever points at n8n's TEST webhook (never the production one).
+N8N_LEAD_WEBHOOK_URL=https://<n8n>/webhook-test/…
+N8N_NEWSLETTER_WEBHOOK_URL=            # optional; defaults to the lead webhook
+N8N_WEBHOOK_SECRET=<at least 16 characters, same value as in n8n>
+TURNSTILE_SECRET_KEY=                  # empty: Cloudflare's always-passing test secret
+PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
 # Phase 6: PUBLIC_GTM_ID
 ```
+
+Lead pipeline settings (`src/server/env.ts`, brief §9.1):
+
+| Variable                     | Staging                                                                                  | Production                               |
+| ---------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `N8N_LEAD_WEBHOOK_URL`       | optional, https, **test webhook only**; empty = leads are only backed up (`backup_only`) | required, https                          |
+| `N8N_NEWSLETTER_WEBHOOK_URL` | optional (default: the lead webhook)                                                     | optional                                 |
+| `N8N_WEBHOOK_SECRET`         | required when a webhook is set; sent as `X-VV-Secret`                                    | required                                 |
+| `TURNSTILE_SECRET_KEY`       | optional; empty = test secret `1x0000000000000000000000000000000AA` (always passes)      | required; Cloudflare's test keys refused |
+| `TURNSTILE_VERIFY_URL`       | refused (local and CI only: the e2e siteverify stand-in)                                 | refused                                  |
+| `LEAD_BACKUP_DIR`            | absolute, outside the site directory; created with mode 700, files 600                   | same                                     |
+| `RATE_LIMIT_PER_HOUR`        | requests per visitor IP per hour on `/api/lead` and `/api/newsletter` (each its own)     | same                                     |
+
+Every lead from staging is a test lead (`is_test: true`) whatever the webhook. The secrets are
+read at runtime: after changing one, `pm2 reload voordeelvinder --update-env` is enough.
 
 - Don't set `NODE_ENV` (PM2 sets it for the process).
 - `SITE_ENV` and `PUBLIC_*` are fixed at build time. After changing them, **redeploy**.
@@ -72,8 +92,9 @@ change the live file. It contains these changes compared with Ploi's template:
 - `proxy_pass http://127.0.0.1:3001`;
 - the visitor IP is passed as `$remote_addr`, plus the forwarded protocol and
   `X-Forwarded-Host $host`. Astro only trusts the visitor IP with a valid forwarded host.
-  Added via the API on 2026-09-29; it takes effect at the next Nginx reload. Without basic
-  auth nothing triggers one, so reload Nginx before Phase 5 (the rate limiter needs it);
+  Added via the API on 2026-09-29 and reloaded on 2026-09-30 (Tanjil's OK); X-Forwarded-Host
+  is active. The lead endpoint's rate limiter keys on this IP (`src/server/lead/rate-limit.ts`):
+  without it every visitor would be `127.0.0.1` and share one bucket;
 - `location = /api/health` is exempt from basic auth;
 - HSTS, `Referrer-Policy`, `Permissions-Policy`, and `X-Robots-Tag: noindex, nofollow`
   (staging only).
@@ -83,14 +104,34 @@ a web-directory change), re-apply the copy.
 
 ## Cron jobs (Ploi → server → Cron jobs, user `voordeelvinder-9eyyh`)
 
-| Frequency     | Command                                                                                                                                                 | Purpose                                                    |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| `@reboot`     | `/usr/bin/pm2 resurrect`                                                                                                                                | Restart the site after a server reboot                     |
-| `*/5 * * * *` | `cd /home/voordeelvinder-9eyyh/voordeelvinder.onlinemarketingbakery.nl && flock -n /home/voordeelvinder-9eyyh/.leads-retry.lock npm run -s leads:retry` | Resend leads n8n didn't accept (§9.1), stub until Phase 5  |
-| `17 3 * * *`  | `cd /home/voordeelvinder-9eyyh/voordeelvinder.onlinemarketingbakery.nl && npm run -s backups:prune`                                                     | Delete lead backups older than 30 days, stub until Phase 5 |
+| Frequency     | Command                                                                                                                                                 | Purpose                                                   |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `@reboot`     | `/usr/bin/pm2 resurrect`                                                                                                                                | Restart the site after a server reboot                    |
+| `*/5 * * * *` | `cd /home/voordeelvinder-9eyyh/voordeelvinder.onlinemarketingbakery.nl && flock -n /home/voordeelvinder-9eyyh/.leads-retry.lock npm run -s leads:retry` | Resend leads n8n didn't accept (§9.1)                     |
+| `17 3 * * *`  | `cd /home/voordeelvinder-9eyyh/voordeelvinder.onlinemarketingbakery.nl && npm run -s backups:prune`                                                     | Delete lead backups older than 30 days, compact the files |
 
 Ploi writes these to `/etc/crontab`. Each job logs to
 `/home/voordeelvinder-9eyyh/.ploi/scheduled-<id>.log`.
+
+- **`leads:retry`** resends backup records still `pending_forward` (older than 2 minutes, one
+  attempt each, oldest first; it stops after 3 failures in a row). When a record has been
+  pending for more than 30 minutes it logs an `"event":"alert"` line and exits with code 1.
+  Check it with `grep '"alert"' ~/.ploi/scheduled-*.log`. The alert e-mail of brief §13 isn't
+  wired yet (see ADR 0008).
+- **`backups:prune`** deletes records older than 30 days (a `"removedPending"` above 0 in its
+  log means a lead was never forwarded) and folds the status updates into the records.
+
+## Lead backups
+
+`$LEAD_BACKUP_DIR/YYYY-MM.jsonl` (UTC month), one JSON line per record (format in
+`src/server/lead/backup.ts`, ADR 0008). Every write takes the lock file `.lock` in that
+directory; a lock older than a minute is taken over. Look without printing personal data:
+
+```bash
+cd /home/voordeelvinder-9eyyh/lead-backups
+# pending records per month file (ids only)
+node -e 'for (const f of require("fs").readdirSync(".").filter(f=>/^\d{4}-\d{2}\.jsonl$/.test(f))) { const s=new Map(); for (const l of require("fs").readFileSync(f,"utf8").split("\n").filter(Boolean)) { try { const r=JSON.parse(l); s.set(r.id, r.status) } catch {} } console.log(f, [...s].filter(([,v])=>v==="pending_forward").map(([k])=>k)) }'
+```
 
 ## Basic auth
 

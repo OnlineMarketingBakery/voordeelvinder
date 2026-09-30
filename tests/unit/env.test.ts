@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { isTestEnvironment, parseServerEnv } from '../../src/server/env';
+import {
+  isTestEnvironment,
+  newsletterWebhookUrl,
+  parseServerEnv,
+  TURNSTILE_TEST_SECRET,
+  turnstileSecret,
+} from '../../src/server/env';
 
 const staging = {
   SITE_ENV: 'staging',
@@ -50,6 +56,91 @@ describe('parseServerEnv', () => {
     expect(() => parseServerEnv({ ...staging, N8N_LEAD_WEBHOOK_URL: secret })).toThrow(
       expect.objectContaining({ message: expect.not.stringContaining(secret) }),
     );
+  });
+});
+
+describe('parseServerEnv: n8n and Turnstile (Phase 5)', () => {
+  const secret = 'test-webhook-secret-0000';
+  const production = {
+    ...staging,
+    SITE_ENV: 'production',
+    PUBLIC_SITE_URL: 'https://voordeelvinder.be',
+    N8N_LEAD_WEBHOOK_URL: 'https://n8n.example.test/webhook/lead',
+    N8N_WEBHOOK_SECRET: secret,
+    TURNSTILE_SECRET_KEY: '0x4AAAAAAAfakefakefakefakefake',
+  };
+
+  it('keeps them optional on local, CI and staging, and treats NAME= as not set', () => {
+    const env = parseServerEnv({
+      ...staging,
+      N8N_LEAD_WEBHOOK_URL: '',
+      N8N_WEBHOOK_SECRET: '',
+      TURNSTILE_SECRET_KEY: '',
+    });
+    expect(env.N8N_LEAD_WEBHOOK_URL).toBeUndefined();
+    expect(env.TURNSTILE_SECRET_KEY).toBeUndefined();
+    expect(turnstileSecret(env)).toBe(TURNSTILE_TEST_SECRET);
+    expect(newsletterWebhookUrl(env)).toBeUndefined();
+  });
+
+  it('accepts a complete production environment', () => {
+    const env = parseServerEnv(production);
+    expect(turnstileSecret(env)).toBe(production.TURNSTILE_SECRET_KEY);
+    expect(newsletterWebhookUrl(env)).toBe(production.N8N_LEAD_WEBHOOK_URL);
+    expect(
+      newsletterWebhookUrl(
+        parseServerEnv({
+          ...production,
+          N8N_NEWSLETTER_WEBHOOK_URL: 'https://n8n.example.test/webhook/nl',
+        }),
+      ),
+    ).toBe('https://n8n.example.test/webhook/nl');
+  });
+
+  it('requires the webhook, its secret and a real Turnstile key on production', () => {
+    for (const key of ['N8N_LEAD_WEBHOOK_URL', 'N8N_WEBHOOK_SECRET', 'TURNSTILE_SECRET_KEY']) {
+      expect(() => parseServerEnv({ ...production, [key]: undefined })).toThrow(key);
+    }
+    for (const test of ['1x', '2x', '3x']) {
+      expect(() =>
+        parseServerEnv({
+          ...production,
+          TURNSTILE_SECRET_KEY: `${test}0000000000000000000000000000000AA`,
+        }),
+      ).toThrow(/test key/);
+    }
+  });
+
+  it('requires https webhooks and a secret with a webhook on staging', () => {
+    expect(() =>
+      parseServerEnv({ ...staging, N8N_LEAD_WEBHOOK_URL: 'http://n8n.example.test/webhook' }),
+    ).toThrow(/N8N_LEAD_WEBHOOK_URL/);
+    expect(() =>
+      parseServerEnv({
+        ...staging,
+        N8N_NEWSLETTER_WEBHOOK_URL: 'http://n8n.example.test/webhook',
+        N8N_WEBHOOK_SECRET: secret,
+      }),
+    ).toThrow(/N8N_NEWSLETTER_WEBHOOK_URL/);
+    expect(() =>
+      parseServerEnv({ ...staging, N8N_LEAD_WEBHOOK_URL: 'https://n8n.example.test/webhook' }),
+    ).toThrow(/N8N_WEBHOOK_SECRET/);
+    expect(() => parseServerEnv({ ...staging, N8N_WEBHOOK_SECRET: 'short' })).toThrow(
+      /N8N_WEBHOOK_SECRET/,
+    );
+  });
+
+  it('allows a plain-http mock webhook and a siteverify stand-in only on local and CI', () => {
+    const local = {
+      SITE_ENV: 'ci',
+      PUBLIC_SITE_URL: 'http://localhost:4321',
+      N8N_LEAD_WEBHOOK_URL: 'http://127.0.0.1:4390/webhook/lead',
+      TURNSTILE_VERIFY_URL: 'http://127.0.0.1:4390/turnstile/siteverify',
+    };
+    expect(parseServerEnv(local).TURNSTILE_VERIFY_URL).toBe(local.TURNSTILE_VERIFY_URL);
+    expect(() =>
+      parseServerEnv({ ...staging, TURNSTILE_VERIFY_URL: local.TURNSTILE_VERIFY_URL }),
+    ).toThrow(/TURNSTILE_VERIFY_URL/);
   });
 });
 
