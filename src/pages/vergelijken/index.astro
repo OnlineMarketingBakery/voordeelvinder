@@ -1,0 +1,14 @@
+---
+// The form, starting at step 1 "Wat wil je vergelijken?" (brief §5; Figma Step - 1 84:3972).
+// The header CTA and the homepage CTAs link here. A real page: indexable in production.
+import Form from '../../components/form/Form.astro';
+import Page from '../../layouts/Page.astro';
+import { loadFormContent } from '../../lib/form-content';
+
+const { copy } = await loadFormContent();
+const seo = copy.pages.vergelijken;
+---
+
+<Page title={seo.title} description={seo.description}>
+  <Form entry="vergelijken" />
+</Page>

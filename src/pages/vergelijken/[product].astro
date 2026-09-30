@@ -1,0 +1,21 @@
+---
+// The form with the product preselected (brief §5, §7.6): step 1 is skipped. For ads and the
+// product pages' CTAs; /vergelijken/energie also takes ?energie=electricity|gas|both.
+import type { GetStaticPaths } from 'astro';
+
+import Form from '../../components/form/Form.astro';
+import Page from '../../layouts/Page.astro';
+import { PRODUCTS, type Product } from '../../lib/flow/types';
+import { loadFormContent } from '../../lib/form-content';
+
+export const getStaticPaths = (() =>
+  PRODUCTS.map((product) => ({ params: { product } }))) satisfies GetStaticPaths;
+
+const product = Astro.params.product as Product;
+const { copy } = await loadFormContent();
+const seo = copy.pages[product];
+---
+
+<Page title={seo.title} description={seo.description}>
+  <Form entry={product} />
+</Page>

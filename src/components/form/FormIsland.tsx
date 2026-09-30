@@ -1,0 +1,440 @@
+// The form island (brief §7.6): a state machine over the flow engine (src/lib/flow/engine.ts).
+// The engine decides which step and fields show, validates and builds the submission; this
+// component renders it and handles focus, scrolling, persistence and navigation.
+//
+// Rendered on the server with the page's first step (client:load, brief §6.1), so there is
+// something to see and to morph into before hydration. Right after mounting it restores the
+// session once (URL preselect, sessionStorage; src/lib/form/initial.ts).
+//
+// No animations yet (PR 17 brings the form motion): only CSS state transitions.
+import { useEffect, useRef, useState, type SubmitEvent } from 'react';
+
+import {
+  buildSubmission,
+  getStep,
+  nextStep,
+  previousStep,
+  progress,
+  validateStep,
+  visibleFields,
+  type ErrorCode,
+  type WarningCode,
+} from '../../lib/flow/engine';
+import type { Field } from '../../lib/flow/schema';
+import type { AnswerValue, Answers, DaySlotAnswer, Product } from '../../lib/flow/types';
+import { engineDerived, productOf, storableAnswers, withAnswer } from '../../lib/form/answers';
+import { restoreStart, serverStart, type FormStart } from '../../lib/form/initial';
+import { choiceOptions, domId, UI_ICONS } from '../../lib/form/labels';
+import { errorMessage, progressLabel, warningMessage } from '../../lib/form/messages';
+import {
+  clearSession,
+  newId,
+  readSession,
+  sessionStore,
+  STORAGE_VERSION,
+  writeSession,
+} from '../../lib/form/storage';
+import { firstStepBack, sendLead, submissionContext, thanksPath } from '../../lib/form/submit';
+import type {
+  FormCopy,
+  FormEntry,
+  FormFlows,
+  FormPanel as FormPanelData,
+} from '../../lib/form/types';
+import { FormPanel } from './FormPanel';
+import { ProgressCard } from './ProgressCard';
+import { StepView } from './StepView';
+import { FormButton } from './ui';
+
+export type FormIslandProps = {
+  entry: FormEntry;
+  /** Resolved flows (resolveFlow at build time): one on /vergelijken/<product>, all on /vergelijken. */
+  flows: FormFlows;
+  /** The page's product; on /vergelijken the energy flow, whose step 1 can switch flows. */
+  product: Product;
+  preselected: boolean;
+  copy: FormCopy;
+  /** Icon key → URL (resolved in Form.astro). */
+  icons: Record<string, string>;
+  panels: Partial<Record<Product, FormPanelData>>;
+  flag: { src: string; width: number; height: number };
+  /** Where "Terug" on the first step goes: the product page (preselected) or the home page. */
+  backHref: string;
+};
+
+type Ids = { leadId: string; eventId: string };
+
+type State = FormStart & {
+  errors: Record<string, ErrorCode>;
+  warnings: Record<string, WarningCode>;
+  suggestions: Record<string, string>;
+  /** The aria-live announcement of the last step change. */
+  announcement: string;
+  ids: Ids | null;
+  restored: boolean;
+  submitting: boolean;
+};
+
+type PendingFocus = { kind: 'step' } | { kind: 'error'; field: Field; code: ErrorCode } | null;
+
+const INPUT_TYPES: ReadonlySet<Field['type']> = new Set([
+  'text',
+  'number',
+  'postcode',
+  'phone',
+  'email',
+]);
+
+function flowOf(flows: FormFlows, product: Product) {
+  const flow = flows[product];
+  if (!flow) throw new Error(`no flow for "${product}"`);
+  return flow;
+}
+
+/** The control to focus for a field's error (brief §7.6: focus the first error). */
+function focusTarget(field: Field, answers: Answers, code: ErrorCode, copy: FormCopy) {
+  if (field.type === 'single_choice' || field.type === 'yes_no') {
+    const codes = choiceOptions(field, copy).map((option) => option.code);
+    const value = answers[field.id];
+    const code0 = typeof value === 'string' && codes.includes(value) ? value : codes[0];
+    return code0 === undefined ? null : document.getElementById(domId.option(field.id, code0));
+  }
+  if (field.type === 'day_slot') {
+    const answer = (answers[field.id] ?? {}) as DaySlotAnswer;
+    const slot = code === 'slot_required' || code === 'slot_unknown';
+    const options = slot ? field.slots : field.days;
+    const chosen = slot ? answer.slot : answer.day;
+    const pick = options.find((option) => option.code === chosen) ?? options[0];
+    return pick ? document.getElementById(domId.option(field.id, pick.code)) : null;
+  }
+  return document.getElementById(domId.field(field.id));
+}
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
+export default function FormIsland({
+  entry,
+  flows,
+  product: pageProduct,
+  preselected,
+  copy,
+  icons,
+  panels,
+  flag,
+  backHref,
+}: FormIslandProps) {
+  const [state, setState] = useState<State>(() => ({
+    ...serverStart(flows, pageProduct, preselected),
+    errors: {},
+    warnings: {},
+    suggestions: {},
+    announcement: '',
+    ids: null,
+    restored: false,
+    submitting: false,
+  }));
+  const topRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const pendingFocus = useRef<PendingFocus>(null);
+  const submitting = useRef(false);
+  const submitted = useRef(false);
+
+  const flow = flowOf(flows, state.product);
+  const derived = engineDerived(state.flags, state.answers);
+  const step = getStep(flow, state.step);
+  const fields = visibleFields(flow, state.step, state.answers, derived);
+  const { step: stepNumber, total } = progress(flow, state.step, state.answers, derived);
+  const isLast = nextStep(flow, state.step, state.answers, derived) === null;
+  const panel = panels[state.product] ?? panels[pageProduct];
+
+  // Restore once after mounting: the URL and storage only exist in the browser, and reading them
+  // during the first render would not match the server-rendered HTML.
+  useEffect(() => {
+    const versions = Object.fromEntries(
+      Object.entries(flows).map(([key, value]) => [key, value.version]),
+    );
+    const stored = readSession(sessionStore(), entry, versions);
+    const start = restoreStart({
+      flows,
+      product: pageProduct,
+      preselected,
+      search: window.location.search,
+      stored,
+    });
+    const ids = stored
+      ? { leadId: stored.leadId, eventId: stored.eventId }
+      : { leadId: newId(), eventId: newId() };
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- a one-time sync with browser-only state (URL, sessionStorage) after hydration
+    setState((current) => ({ ...current, ...start, ids, restored: true }));
+  }, [flows, entry, pageProduct, preselected]);
+
+  // Persist after every change (brief §7.6): only the visitor's own answers, abandoned
+  // branches cleared first.
+  useEffect(() => {
+    if (!state.restored || !state.ids || submitted.current) return;
+    const active = flowOf(flows, state.product);
+    writeSession(sessionStore(), entry, {
+      version: STORAGE_VERSION,
+      product: state.product,
+      flowVersion: active.version,
+      step: state.step,
+      answers: storableAnswers(active, state.answers, engineDerived(state.flags, state.answers)),
+      leadId: state.ids.leadId,
+      eventId: state.ids.eventId,
+    });
+  }, [
+    flows,
+    entry,
+    state.restored,
+    state.ids,
+    state.product,
+    state.step,
+    state.answers,
+    state.flags,
+  ]);
+
+  // Back from the thank-you page (bfcache): start clean, the session was cleared on submit.
+  useEffect(() => {
+    const onShow = (event: PageTransitionEvent) => {
+      if (event.persisted && submitted.current) window.location.reload();
+    };
+    window.addEventListener('pageshow', onShow);
+    return () => window.removeEventListener('pageshow', onShow);
+  }, []);
+
+  // Focus and scroll after the render that showed the new step or the errors. Never waits for
+  // an animation (brief §6.1).
+  useEffect(() => {
+    const pending = pendingFocus.current;
+    if (!pending) return;
+    pendingFocus.current = null;
+    const behavior: ScrollBehavior = prefersReducedMotion() ? 'auto' : 'smooth';
+    if (pending.kind === 'step') {
+      headingRef.current?.focus({ preventScroll: true });
+      // Scroll to the top of the form when it is under the sticky header or above the screen.
+      const top = topRef.current;
+      const header = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+      if (top && top.getBoundingClientRect().top < header) {
+        top.scrollIntoView({ behavior, block: 'start' });
+      }
+      return;
+    }
+    const target = focusTarget(pending.field, state.answers, pending.code, copy);
+    const box = document.getElementById(`${domId.field(pending.field.id)}-vak`) ?? target;
+    target?.focus({ preventScroll: true });
+    box?.scrollIntoView({ behavior, block: 'center' });
+  });
+
+  const goTo = (stepId: string, answers: Answers) => {
+    const nextDerived = engineDerived(state.flags, answers);
+    const title = getStep(flow, stepId).title;
+    const label = progressLabel(copy, progress(flow, stepId, answers, nextDerived));
+    pendingFocus.current = { kind: 'step' };
+    setState((current) => ({
+      ...current,
+      answers,
+      step: stepId,
+      errors: {},
+      warnings: {},
+      suggestions: {},
+      announcement: `${title}. ${label}`,
+    }));
+  };
+
+  const onChange = (field: Field, value: AnswerValue | undefined) => {
+    setState((current) => {
+      const answers = withAnswer(current.answers, field.id, value);
+      const { [field.id]: _error, ...errors } = current.errors;
+      const { [field.id]: _suggestion, ...suggestions } = current.suggestions;
+      const { [field.id]: _warning, ...warnings } = current.warnings;
+      // A card of another product on step 1 continues in that product's flow (docs/FLOWS.md).
+      const switchTo = typeof value === 'string' ? productOf(field, value) : undefined;
+      const product =
+        !current.flags.preselected && switchTo && flows[switchTo] ? switchTo : current.product;
+      return { ...current, answers, product, errors, suggestions, warnings };
+    });
+  };
+
+  // Text-like fields validate on blur once something is typed (brief §7.5); "required" waits
+  // for "Volgende".
+  const onBlur = (field: Field) => {
+    if (!INPUT_TYPES.has(field.type)) return;
+    const value = state.answers[field.id];
+    if (value === undefined || (typeof value === 'string' && value.trim() === '')) return;
+    const result = validateStep(flow, state.step, state.answers, derived);
+    setState((current) => {
+      const errors = { ...current.errors };
+      const warnings = { ...current.warnings };
+      const suggestions = { ...current.suggestions };
+      const error = result.errors[field.id];
+      const warning = result.warnings[field.id];
+      const suggestion = result.suggestions[field.id];
+      if (error) errors[field.id] = error;
+      else delete errors[field.id];
+      if (warning) warnings[field.id] = warning;
+      else delete warnings[field.id];
+      if (suggestion) suggestions[field.id] = suggestion;
+      else delete suggestions[field.id];
+      return { ...current, errors, warnings, suggestions };
+    });
+  };
+
+  const onApplySuggestion = (field: Field, value: string) => {
+    onChange(field, value);
+    document.getElementById(domId.field(field.id))?.focus();
+  };
+
+  const submit = async () => {
+    if (submitting.current) return;
+    submitting.current = true;
+    setState((current) => ({ ...current, submitting: true }));
+    const ids = state.ids ?? { leadId: newId(), eventId: newId() };
+    try {
+      const submission = buildSubmission(
+        flow,
+        state.answers,
+        submissionContext({
+          leadId: ids.leadId,
+          eventId: ids.eventId,
+          derived,
+          page: window.location.pathname,
+          search: window.location.search,
+          now: new Date(),
+        }),
+      );
+      await sendLead(submission);
+    } catch {
+      // A state validate:flows rules out; say so without the (personal) answers.
+      console.error('form: the submission could not be built');
+      submitting.current = false;
+      setState((current) => ({ ...current, submitting: false }));
+      return;
+    }
+    submitted.current = true;
+    clearSession(sessionStore(), entry);
+    // The thank-you page arrives in PR 18; until then this URL is a 404.
+    window.location.assign(thanksPath(state.product));
+  };
+
+  const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (submitting.current) return;
+    const result = validateStep(flow, state.step, state.answers, derived);
+    if (!result.valid) {
+      const first = fields.find((field) => result.errors[field.id] !== undefined);
+      if (first)
+        pendingFocus.current = { kind: 'error', field: first, code: result.errors[first.id]! };
+      setState((current) => ({
+        ...current,
+        errors: result.errors,
+        warnings: result.warnings,
+        suggestions: result.suggestions,
+      }));
+      return;
+    }
+    const next = nextStep(flow, state.step, state.answers, derived);
+    if (next === null) {
+      void submit();
+      return;
+    }
+    goTo(next, state.answers);
+  };
+
+  const onBack = () => {
+    if (submitting.current) return;
+    const previous = previousStep(flow, state.step, state.answers, derived);
+    if (previous !== null) {
+      goTo(previous, state.answers);
+      return;
+    }
+    const target = firstStepBack({
+      preselected: state.flags.preselected,
+      productPage: backHref,
+      fallback: backHref,
+      referrer: document.referrer,
+      origin: window.location.origin,
+      historyLength: window.history.length,
+    });
+    if (target.kind === 'history') window.history.back();
+    else window.location.assign(target.href);
+  };
+
+  const message = (field: Field, code: ErrorCode | undefined) =>
+    code === undefined ? undefined : errorMessage(copy, field, code);
+  const errors = Object.fromEntries(
+    fields.flatMap((field) => {
+      const text = message(field, state.errors[field.id]);
+      return text === undefined ? [] : [[field.id, text]];
+    }),
+  );
+  const warnings = Object.fromEntries(
+    fields.flatMap((field) => {
+      const code = state.warnings[field.id];
+      const text = code === undefined ? undefined : warningMessage(copy, field, code);
+      return text === undefined ? [] : [[field.id, text]];
+    }),
+  );
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,372fr)_minmax(0,767fr)] lg:gap-6">
+      {panel && <FormPanel panel={panel} />}
+      <div ref={topRef} className="flex min-w-0 flex-col gap-4 lg:gap-6">
+        <ProgressCard
+          label={progressLabel(copy, { step: stepNumber, total })}
+          step={stepNumber}
+          total={total}
+        />
+        <section
+          data-morph="form-card"
+          aria-labelledby="formulier-stap-titel"
+          className="flex flex-1 flex-col rounded-2xl border border-lavender-300 bg-white px-5 pt-6 pb-6 shadow-form md:px-12 md:pt-12 md:pb-[50px]"
+        >
+          <form noValidate onSubmit={onSubmit} className="flex flex-1 flex-col">
+            <StepView
+              step={step}
+              fields={fields}
+              answers={state.answers}
+              errors={errors}
+              warnings={warnings}
+              suggestions={state.suggestions}
+              onChange={onChange}
+              onBlur={onBlur}
+              onApplySuggestion={onApplySuggestion}
+              icons={icons}
+              flag={flag}
+              copy={copy}
+              headingRef={headingRef}
+            />
+            <div className="mt-auto pt-8">
+              <div className="grid grid-cols-[auto_1fr] gap-3 border-t border-lavender-400 pt-6 md:flex md:justify-between md:pt-[52px]">
+                <FormButton
+                  type="button"
+                  variant="secondary"
+                  icon={icons[UI_ICONS.back]}
+                  iconPosition="start"
+                  onClick={onBack}
+                >
+                  {copy.buttons.back}
+                </FormButton>
+                <FormButton
+                  type="submit"
+                  variant="primary"
+                  icon={icons[UI_ICONS.next]}
+                  iconPosition="end"
+                  busy={state.submitting}
+                >
+                  {isLast ? copy.buttons.submit : copy.buttons.next}
+                </FormButton>
+              </div>
+            </div>
+          </form>
+        </section>
+        <p className="sr-only" aria-live="polite" aria-atomic="true">
+          {state.announcement}
+        </p>
+      </div>
+    </div>
+  );
+}
