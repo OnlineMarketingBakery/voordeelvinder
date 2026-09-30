@@ -2,17 +2,38 @@
   "name": "VoordeelVinder",
   "locale": "nl-BE",
   "skipLink": "Naar de inhoud",
+  "seo": {
+    "titleTemplate": "{title} | VoordeelVinder",
+    "defaultDescription": "De eenvoudige energievergelijker voor Belgische gezinnen en alleenstaanden.",
+    "ogImageAlt": "VoordeelVinder, met de vos met de groene pet"
+  },
   "header": {
     "logoLabel": "VoordeelVinder – naar de homepage",
     "navLabel": "Hoofdmenu",
     "menuLabel": "Menu",
     "nav": [
-      { "label": "Hoe het werkt", "href": "/#hoe-het-werkt" },
-      { "label": "Veelgestelde vragen", "href": "/#veelgestelde-vragen" },
-      { "label": "Over ons", "href": "/#over-ons" },
-      { "label": "Blogs", "href": "/blog", "requires": "blogPosts" }
+      {
+        "label": "Hoe het werkt",
+        "href": "/#hoe-het-werkt"
+      },
+      {
+        "label": "Veelgestelde vragen",
+        "href": "/#veelgestelde-vragen"
+      },
+      {
+        "label": "Over ons",
+        "href": "/#over-ons"
+      },
+      {
+        "label": "Blogs",
+        "href": "/blog",
+        "requires": "blogPosts"
+      }
     ],
-    "cta": { "label": "Gratis beginnen", "href": "/vergelijken" }
+    "cta": {
+      "label": "Gratis beginnen",
+      "href": "/vergelijken"
+    }
   },
   "footer": {
     "logoLabel": "VoordeelVinder – naar de homepage",
@@ -26,17 +47,35 @@
     "links": {
       "heading": "Snelle links",
       "items": [
-        { "label": "Hoe het werkt", "href": "/#hoe-het-werkt" },
-        { "label": "Veelgestelde vragen", "href": "/#veelgestelde-vragen" },
-        { "label": "Over ons", "href": "/#over-ons" }
+        {
+          "label": "Hoe het werkt",
+          "href": "/#hoe-het-werkt"
+        },
+        {
+          "label": "Veelgestelde vragen",
+          "href": "/#veelgestelde-vragen"
+        },
+        {
+          "label": "Over ons",
+          "href": "/#over-ons"
+        }
       ]
     },
     "legal": {
       "heading": "Juridisch",
       "items": [
-        { "label": "Privacybeleid", "href": "/privacybeleid" },
-        { "label": "Cookiebeleid", "href": "/cookiebeleid" },
-        { "label": "Algemene voorwaarden", "href": "/algemene-voorwaarden" }
+        {
+          "label": "Privacybeleid",
+          "href": "/privacybeleid"
+        },
+        {
+          "label": "Cookiebeleid",
+          "href": "/cookiebeleid"
+        },
+        {
+          "label": "Algemene voorwaarden",
+          "href": "/algemene-voorwaarden"
+        }
       ]
     },
     "contact": {
@@ -50,7 +89,13 @@
     }
   },
   "contact": {
-    "email": { "value": "info@voordeelvinder.com", "todo": true },
-    "phone": { "display": "335 224 654", "todo": true }
+    "email": {
+      "value": "info@voordeelvinder.com",
+      "todo": true
+    },
+    "phone": {
+      "display": "335 224 654",
+      "todo": true
+    }
   }
 }

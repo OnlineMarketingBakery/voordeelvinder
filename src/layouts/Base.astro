@@ -1,8 +1,10 @@
 ---
 import { Font } from 'astro:assets';
-import { getEntry } from 'astro:content';
 
+import defaultOgImage from '../assets/og/default.png';
+import { getSite } from '../lib/site';
 import { isIndexable } from '../lib/seo/indexing';
+import { jsonLd, pageTitle } from '../lib/seo/structured-data';
 import '../styles/global.css';
 
 interface Props {
@@ -10,26 +12,54 @@ interface Props {
   description?: string | undefined;
   /** Keep this page out of search results even in production (thank-you pages, /l/*). */
   noindex?: boolean;
+  /** schema.org objects for this page (JSON-LD). */
+  structuredData?: object[];
 }
 
-const { title, description, noindex = false } = Astro.props;
-const site = await getEntry('site', 'site');
-if (!site) throw new Error('src/content/site.json is missing');
+const { title, description, noindex = false, structuredData = [] } = Astro.props;
+const site = await getSite();
+
+const fullTitle = pageTitle(title, site.name, site.seo.titleTemplate);
+const metaDescription = description ?? site.seo.defaultDescription;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL(defaultOgImage.src, Astro.site);
 
 // Only production is indexable (brief §4.5); Nginx also sends X-Robots-Tag on staging.
 const robots = noindex || !isIndexable(__SITE_ENV__) ? 'noindex, nofollow' : undefined;
 ---
 
 <!doctype html>
-<html lang={site.data.locale}>
+<html lang={site.locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>{title}</title>
-    {description && <meta name="description" content={description} />}
+    <title>{fullTitle}</title>
+    <meta name="description" content={metaDescription} />
     {robots && <meta name="robots" content={robots} />}
-    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <link rel="canonical" href={canonical} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:locale" content="nl_BE" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={metaDescription} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content={String(defaultOgImage.width)} />
+    <meta property="og:image:height" content={String(defaultOgImage.height)} />
+    <meta property="og:image:alt" content={site.seo.ogImageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#ffffff" />
+
     <Font cssVariable="--font-bricolage" preload />
+    {structuredData.map((data) => (
+      <script type="application/ld+json" set:html={jsonLd(data)} />
+    ))}
   </head>
   <body class="font-sans">
     <slot />
