@@ -4,7 +4,9 @@
 // Labels here are token names, not site copy, so they don't live in content files.
 import globalCss from '../styles/global.css?raw';
 
-import Base from '../layouts/Base.astro';
+import Button, { type ButtonSize, type ButtonVariant } from '../components/ui/Button.astro';
+import SectionPill from '../components/ui/SectionPill.astro';
+import Page from '../layouts/Page.astro';
 import { contrastRatio } from '../lib/design/contrast';
 import { readTokens, tokenValue } from '../lib/design/tokens';
 
@@ -46,10 +48,21 @@ const shadowSurface = (name: string) =>
       : white;
 const ratio = (value: string, bg: string) => contrastRatio(value, bg).toFixed(2);
 const sample = 'Betaal jij te veel voor energie?';
+
+// Component demos use design copy from the Figma file.
+const buttons: Array<{ variant: ButtonVariant; size: ButtonSize; label: string; surface: string }> =
+  [
+    { variant: 'lime', size: 'sm', label: 'Gratis beginnen', surface: white },
+    { variant: 'lime', size: 'md', label: 'Vergelijk nu gratis', surface: purple },
+    { variant: 'purple', size: 'lg', label: 'Start je vergelijking', surface: white },
+    { variant: 'white', size: 'lg', label: 'Start je vergelijking', surface: lime },
+    { variant: 'form', size: 'form', label: 'Volgende', surface: white },
+    { variant: 'form-secondary', size: 'form', label: 'Terug', surface: white },
+  ];
 ---
 
-<Base title="Styleguide — VoordeelVinder" noindex>
-  <main class="mx-auto max-w-content px-4 py-12 md:px-6">
+<Page title="Styleguide — VoordeelVinder" noindex>
+  <div class="mx-auto max-w-content px-4 py-12 md:px-6 xl:px-0">
     <h1 class="text-h2 text-ink-900">Styleguide</h1>
     <p class="mt-2 text-body text-ink-600">
       Tokens from <code>src/styles/global.css</code>. "NEW" entries are proposals to confirm with
@@ -133,5 +146,43 @@ const sample = 'Betaal jij te veel voor energie?';
         ))}
       </ul>
     </section>
-  </main>
-</Base>
+    <section class="mt-16" aria-labelledby="components">
+      <h2 id="components" class="text-h4">
+        Components
+      </h2>
+      <h3 class="mt-6 text-title">Buttons</h3>
+      <ul class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {buttons.map((b) => (
+          <li class="text-sm text-ink-600">
+            <div
+              class:list={[
+                'flex h-28 items-center justify-center rounded-2xl',
+                b.surface === purple && 'surface-dark',
+              ]}
+              style={`background:${b.surface}`}
+            >
+              <Button
+                href="#components"
+                variant={b.variant}
+                size={b.size}
+                icon={b.variant === 'lime' ? 'arrow-up-right' : undefined}
+              >
+                {b.label}
+              </Button>
+            </div>
+            <p class="mt-2">
+              variant="{b.variant}" size="{b.size}"
+            </p>
+          </li>
+        ))}
+      </ul>
+      <h3 class="mt-10 text-title">Section pill</h3>
+      <div class="mt-4 flex flex-wrap items-center gap-6">
+        <SectionPill label="Over ons" />
+        <div class="rounded-2xl bg-lavender-100 p-6">
+          <SectionPill label="Veelgestelde vragen" tone="purple" />
+        </div>
+      </div>
+    </section>
+  </div>
+</Page>

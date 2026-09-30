@@ -1,0 +1,132 @@
+---
+// Site header (Figma 60:118/60:119): lime strip + white bar with logo, centred nav and CTA.
+// The bar is sticky and keeps its place during page transitions (view-transition-name).
+// Below lg the nav moves into a disclosure menu (not designed; proposal, see the PR).
+import { contentAvailability, getSite, isLinkVisible } from '../../lib/site';
+import Button from '../ui/Button.astro';
+import Container from '../ui/Container.astro';
+import Logo from '../ui/Logo.astro';
+
+const site = await getSite();
+const available = await contentAvailability();
+const nav = site.header.nav.filter((link) => isLinkVisible(link, available));
+const { cta } = site.header;
+const current = Astro.url.pathname;
+---
+
+<a
+  href="#main"
+  class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-body focus:shadow-card"
+>
+  {site.skipLink}
+</a>
+<div class="h-2 bg-lime-300 lg:h-4" aria-hidden="true"></div>
+<header class="sticky top-0 z-50 bg-white shadow-header [view-transition-name:site-header]">
+  <Container class="flex h-16 items-center justify-between lg:grid lg:h-[69px] lg:grid-cols-[1fr_auto_1fr]">
+    <Logo label={site.header.logoLabel} />
+
+    <nav aria-label={site.header.navLabel} class="hidden lg:block">
+      <ul class="flex gap-8">
+        {nav.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              aria-current={link.href === current ? 'page' : undefined}
+              class="text-sm leading-9 text-ink-800 decoration-2 underline-offset-[6px] transition-colors duration-(--motion-duration-fast) hover:text-purple-500 hover:underline aria-[current=page]:text-purple-500"
+            >
+              {link.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="hidden justify-self-end lg:block">
+      <Button href={cta.href} size="sm" icon="arrow-up-right">
+        {cta.label}
+      </Button>
+    </div>
+
+    <button
+      type="button"
+      class="group -mr-2 grid size-11 place-items-center rounded-md text-ink-800 lg:hidden"
+      aria-expanded="false"
+      aria-controls="mobile-menu"
+      data-menu-button
+      hidden
+    >
+      <span class="sr-only">{site.header.menuLabel}</span>
+      <span class="relative block h-4 w-6" aria-hidden="true">
+        <span class="absolute inset-x-0 top-0 h-0.5 rounded-full bg-current transition-transform duration-(--motion-duration-fast) group-aria-expanded:translate-y-[7px] group-aria-expanded:rotate-45"></span>
+        <span class="absolute inset-x-0 top-[7px] h-0.5 rounded-full bg-current transition-opacity duration-(--motion-duration-fast) group-aria-expanded:opacity-0"></span>
+        <span class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-current transition-transform duration-(--motion-duration-fast) group-aria-expanded:-translate-y-[7px] group-aria-expanded:-rotate-45"></span>
+      </span>
+    </button>
+  </Container>
+
+  <nav
+    id="mobile-menu"
+    aria-label={site.header.navLabel}
+    class="absolute inset-x-0 top-full max-h-[calc(100dvh-4.5rem)] overflow-y-auto border-t border-lavender-400 bg-white px-4 pt-2 pb-6 shadow-header motion-safe:animate-[menu-in_var(--motion-duration-fast)_var(--ease-out)] md:px-6 lg:hidden"
+    hidden
+    data-menu
+  >
+    <ul>
+      {nav.map((link) => (
+        <li class="border-b border-lavender-400">
+          <a
+            href={link.href}
+            aria-current={link.href === current ? 'page' : undefined}
+            class="flex min-h-12 items-center text-body-lg text-ink-800 aria-[current=page]:text-purple-500"
+          >
+            {link.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+    <Button href={cta.href} size="md" icon="arrow-up-right" fullWidth class="mt-4">
+      {cta.label}
+    </Button>
+  </nav>
+</header>
+
+<style>
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+      translate: 0 calc(-1 * var(--motion-distance-1));
+    }
+  }
+</style>
+
+<script>
+  // Disclosure menu: no focus trap or scroll lock needed. Without JS the button stays hidden and
+  // the footer links remain available.
+  const button = document.querySelector<HTMLButtonElement>('[data-menu-button]');
+  const menu = document.querySelector<HTMLElement>('[data-menu]');
+
+  if (button && menu) {
+    const desktop = window.matchMedia('(min-width: 64rem)');
+    const setOpen = (open: boolean, restoreFocus = false) => {
+      button.setAttribute('aria-expanded', String(open));
+      menu.hidden = !open;
+      if (!open && restoreFocus) button.focus();
+    };
+
+    button.hidden = false;
+    button.addEventListener('click', () => setOpen(menu.hidden === true));
+    menu.addEventListener('click', (event) => {
+      if ((event.target as Element).closest('a')) setOpen(false);
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !menu.hidden) setOpen(false, true);
+    });
+    document.addEventListener('click', (event) => {
+      const target = event.target as Node;
+      if (!menu.hidden && !menu.contains(target) && !button.contains(target)) setOpen(false);
+    });
+    desktop.addEventListener('change', (event) => {
+      if (event.matches) setOpen(false);
+    });
+  }
+</script>

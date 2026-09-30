@@ -1,4 +1,56 @@
 {
   "name": "VoordeelVinder",
-  "locale": "nl-BE"
+  "locale": "nl-BE",
+  "skipLink": "Naar de inhoud",
+  "header": {
+    "logoLabel": "VoordeelVinder – naar de homepage",
+    "navLabel": "Hoofdmenu",
+    "menuLabel": "Menu",
+    "nav": [
+      { "label": "Hoe het werkt", "href": "/#hoe-het-werkt" },
+      { "label": "Veelgestelde vragen", "href": "/#veelgestelde-vragen" },
+      { "label": "Over ons", "href": "/#over-ons" },
+      { "label": "Blogs", "href": "/blog", "requires": "blogPosts" }
+    ],
+    "cta": { "label": "Gratis beginnen", "href": "/vergelijken" }
+  },
+  "footer": {
+    "logoLabel": "VoordeelVinder – naar de homepage",
+    "tagline": "De eenvoudige energievergelijker voor Belgische gezinnen en alleenstaanden.",
+    "newsletter": {
+      "enabled": false,
+      "label": "E-mailadres",
+      "placeholder": "Voer je e-mailadres in",
+      "button": "Abonneren"
+    },
+    "links": {
+      "heading": "Snelle links",
+      "items": [
+        { "label": "Hoe het werkt", "href": "/#hoe-het-werkt" },
+        { "label": "Veelgestelde vragen", "href": "/#veelgestelde-vragen" },
+        { "label": "Over ons", "href": "/#over-ons" }
+      ]
+    },
+    "legal": {
+      "heading": "Juridisch",
+      "items": [
+        { "label": "Privacybeleid", "href": "/privacybeleid" },
+        { "label": "Cookiebeleid", "href": "/cookiebeleid" },
+        { "label": "Algemene voorwaarden", "href": "/algemene-voorwaarden" }
+      ]
+    },
+    "contact": {
+      "heading": "Contact",
+      "emailLabel": "E-mail:",
+      "phoneLabel": "Telefoon:"
+    },
+    "copyright": {
+      "holder": "© {year} VoordeelVinder.be",
+      "rights": " — Alle rechten voorbehouden."
+    }
+  },
+  "contact": {
+    "email": { "value": "info@voordeelvinder.com", "todo": true },
+    "phone": { "display": "335 224 654", "todo": true }
+  }
 }
