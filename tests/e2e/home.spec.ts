@@ -1,0 +1,45 @@
+import { expect, test } from '@playwright/test';
+
+import home from '../../src/content/pages/home.json' with { type: 'json' };
+
+const hero = home.sections.find((s) => s.type === 'hero')!;
+
+test.describe('home hero', () => {
+  test('shows the only h1, the copy and the CTA to the form', async ({ page }) => {
+    await page.goto('/');
+    const section = page.getByRole('region', { name: hero.title });
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+    await expect(section.getByRole('heading', { level: 1 })).toHaveText(hero.title);
+    await expect(section).toContainText(hero.eyebrow!.text);
+    await expect(section).toContainText('voordeligst');
+    const cta = section.getByRole('link', { name: hero.cta.label });
+    await expect(cta).toHaveAttribute('href', hero.cta.href);
+    await expect(cta).toBeVisible();
+  });
+
+  test('loads the mascot as the priority image, in modern formats', async ({ page }) => {
+    await page.goto('/');
+    const mascot = page.locator('img[fetchpriority="high"]');
+    await expect(mascot).toHaveCount(1);
+    await expect(mascot).toHaveAttribute('loading', 'eager');
+    await expect(page.locator('picture source[type="image/avif"]').first()).toBeAttached();
+    await expect
+      .poll(() => mascot.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0))
+      .toBe(true);
+  });
+
+  test('lists the three USPs', async ({ page }) => {
+    await page.goto('/');
+    const items = page.getByRole('region', { name: hero.title }).getByRole('listitem');
+    await expect(items).toHaveCount(hero.usps!.length);
+    for (const usp of hero.usps!) {
+      await expect(items.filter({ hasText: usp.label.at(-1)! })).toHaveCount(1);
+    }
+  });
+
+  test('never hides the h1 while waiting for motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCSS('opacity', '1');
+  });
+});

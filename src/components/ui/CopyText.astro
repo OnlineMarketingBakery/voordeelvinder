@@ -1,0 +1,21 @@
+---
+// Renders `copy` from content: a string, or sentences of which hidden ones (claims waiting for
+// sign-off, docs/CONTENT-TODO.md) are left out.
+import { visibleCopy, type Copy } from '../../lib/copy';
+
+interface Props {
+  copy: Copy;
+  as?: 'p' | 'span';
+  class?: string;
+  id?: string;
+}
+
+const { copy, as: Tag = 'p', class: className, id } = Astro.props;
+const text = visibleCopy(copy);
+---
+
+{text && (
+  <Tag class={className} id={id}>
+    {text}
+  </Tag>
+)}

@@ -1,0 +1,63 @@
+---
+// The USP card overlapping the bottom of the home hero (Figma 60:381). A purple strip behind
+// its top edge makes the overlap without coupling it to the next section.
+import Blob from '../../../assets/images/decor/usp-highlight-blob.svg';
+import Container from '../../ui/Container.astro';
+import Icon from '../../ui/Icon.astro';
+
+interface Usp {
+  icon: 'no-call' | 'eye-off' | 'file-check';
+  label: [string] | [string, string];
+  highlight?: boolean | undefined;
+}
+
+interface Props {
+  items: Usp[];
+}
+
+const { items } = Astro.props;
+
+// Icon sizes and colours from Figma (60:390, 60:393, 60:397).
+const icons = {
+  'no-call': 'size-7 md:size-8 text-purple-500',
+  'eye-off': 'size-[30px] md:size-[34px] text-ink-900',
+  'file-check': 'size-[22px] md:size-[26px] text-purple-500',
+} as const;
+---
+
+<div class="relative z-10 bg-[linear-gradient(var(--color-purple-600)_40px,transparent_0)] md:bg-[linear-gradient(var(--color-purple-600)_48px,transparent_0)] lg:bg-[linear-gradient(var(--color-purple-600)_68px,transparent_0)]">
+  <Container>
+    <ul
+      class="relative overflow-hidden rounded-2xl border border-lavender-300/60 bg-white px-4 py-2 shadow-soft md:grid md:grid-cols-3 md:p-2.5 lg:h-[104px] lg:items-center lg:p-0"
+      data-reveal-stagger
+    >
+      <Blob
+        class="pointer-events-none absolute bottom-0 left-1/2 hidden h-[93px] w-[543px] -translate-x-1/2 text-lime-400 lg:block"
+        aria-hidden="true"
+      />
+      {items.map((item) => (
+        <li
+          class:list={[
+            'relative flex items-center gap-3 py-3 md:flex-col md:justify-center md:py-5 md:text-center lg:flex-row lg:justify-self-center lg:gap-[13px] lg:py-0 lg:text-left',
+            item.highlight &&
+              'max-md:-mx-2 max-md:rounded-xl max-md:px-2 max-lg:bg-lime-400 md:max-lg:rounded-2xl',
+          ]}
+        >
+          <span
+            class:list={[
+              'grid size-12 shrink-0 place-items-center rounded-full ring-2 ring-purple-500/18 md:size-14',
+              item.highlight ? 'bg-white' : 'bg-lavender-100',
+            ]}
+          >
+            <Icon name={item.icon} class={icons[item.icon]} />
+          </span>
+          <p class="text-body-lg text-ink-900 md:text-body-xl md:leading-tight lg:leading-none">
+            {item.label.map((part, index) => (
+              <span class="md:block">{`${index > 0 ? ' ' : ''}${part}`}</span>
+            ))}
+          </p>
+        </li>
+      ))}
+    </ul>
+  </Container>
+</div>

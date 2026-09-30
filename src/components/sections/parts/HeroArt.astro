@@ -1,0 +1,99 @@
+---
+// The hero illustration: CSS rings, glow and floor shadow plus the product and mascot images,
+// positioned in % of an art box so the composition scales at every breakpoint. Geometry per
+// preset is measured from Figma (home 60:2, solar 69:931, battery 80:2867).
+import Illustration from '../../ui/Illustration.astro';
+
+interface ImageRef {
+  src: string;
+  alt: string;
+}
+
+interface Props {
+  preset: 'home' | 'solar' | 'battery';
+  product: ImageRef;
+  mascot: ImageRef & { mirror?: boolean | undefined };
+}
+
+const { preset, product, mascot } = Astro.props;
+
+// left / top / width (/ height) in % of the art box; mascot geometry is for the designed image.
+const layouts = {
+  home: {
+    box: 'aspect-[778/604]',
+    rings: [
+      'left-[13.24%] top-0 w-[69.54%] h-[89.74%]',
+      'left-[20.95%] top-[9.44%] w-[54.11%] h-[69.87%]',
+    ],
+    shadow: 'left-[20.05%] top-[86.92%] w-[54.76%] h-[8.77%]',
+    product: 'left-0 top-[43.38%] w-[62.08%]',
+    mascot: 'left-[20.95%] top-0 w-[79.05%]',
+    // The production-safe vector fox (CONTENT-TODO 1.9) sits differently.
+    vectorMascot: 'left-[31.11%] top-[10.10%] w-[57.84%]',
+  },
+  solar: {
+    box: 'aspect-[555/468]',
+    rings: ['left-0 top-0 w-[84.1%] h-full', 'left-[9.55%] top-[10.47%] w-[65.2%] h-[78%]'],
+    shadow: 'left-[4.5%] top-[81%] w-[68.8%] h-[7.7%]',
+    product: 'left-0 top-[26.5%] w-[79.5%]',
+    mascot: 'left-[42.4%] top-[21.6%] w-[57.5%]',
+    vectorMascot: 'left-[42.4%] top-[21.6%] w-[57.5%]',
+  },
+  battery: {
+    box: 'aspect-[523/391]',
+    rings: [
+      'left-1/2 top-[44.5%] w-[89.3%] aspect-square -translate-x-1/2 -translate-y-1/2',
+      'left-1/2 top-[44.5%] w-[69.2%] aspect-square -translate-x-1/2 -translate-y-1/2',
+    ],
+    shadow: 'left-[15.3%] top-[81.6%] w-[73%] h-[9.2%]',
+    product: 'left-0 top-0 w-full',
+    mascot: 'left-[45.5%] top-[26.6%] w-[50.5%]',
+    vectorMascot: 'left-[45.5%] top-[26.6%] w-[50.5%]',
+  },
+} as const;
+
+const layout = layouts[preset];
+const vector = mascot.src.endsWith('fox-waving');
+const ringEntrance =
+  'motion-safe:animate-[ring-in_var(--motion-duration-slow)_var(--ease-out)_120ms_both]';
+---
+
+<div class:list={['relative', layout.box]} aria-hidden="true">
+  <div class="pointer-events-none absolute top-[44%] left-[48.6%] aspect-square w-[154%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(circle_closest-side,rgb(255_255_255/0.12),rgb(255_255_255/0.06)_40%,transparent)]"></div>
+  {layout.rings.map((position) => (
+    <div
+      class:list={[
+        'absolute rounded-full bg-linear-to-b from-white to-white/0 opacity-33',
+        position,
+        ringEntrance,
+      ]}
+    />
+  ))}
+  <div
+    class:list={[
+      'absolute bg-[radial-gradient(closest-side,var(--color-ink-800),transparent)] opacity-79',
+      layout.shadow,
+    ]}
+  ></div>
+  <div class:list={['absolute', layout.product]}>
+    <Illustration
+      src={product.src}
+      alt={product.alt}
+      widths={[483, 725, 966]}
+      sizes="(min-width: 1280px) 483px, (min-width: 1024px) 32vw, (min-width: 768px) 340px, 62vw"
+      eager
+      class="h-auto w-full"
+    />
+  </div>
+  <div class:list={['absolute', vector ? layout.vectorMascot : layout.mascot]}>
+    <Illustration
+      src={mascot.src}
+      alt={mascot.alt}
+      widths={[308, 460, 615]}
+      sizes="(min-width: 1280px) 615px, (min-width: 1024px) 41vw, (min-width: 768px) 430px, 79vw"
+      priority
+      mirror={mascot.mirror ?? false}
+      class="h-auto w-full"
+    />
+  </div>
+</div>

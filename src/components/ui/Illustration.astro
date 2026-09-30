@@ -1,0 +1,61 @@
+---
+// A mascot or illustration by key. Rasters become responsive AVIF/WebP via <Picture>; SVG art
+// is served as a cacheable <img>. The component owns loading priority and sizes.
+import { Picture } from 'astro:assets';
+
+import { image, isSvg } from '../../lib/assets';
+
+interface Props {
+  src: string;
+  alt: string;
+  /** Rendered widths for the srcset (rasters only). */
+  widths: number[];
+  sizes: string;
+  /** Above the fold: load eagerly. */
+  eager?: boolean;
+  /** The likely LCP image: also fetchpriority="high". */
+  priority?: boolean;
+  /** Mirror horizontally (the design flips the waving fox on some pages). */
+  mirror?: boolean;
+  class?: string;
+}
+
+const {
+  src,
+  alt,
+  widths,
+  sizes,
+  eager = false,
+  priority = false,
+  mirror = false,
+  class: className,
+} = Astro.props;
+const meta = image(src);
+const classes = [className, mirror && '-scale-x-100'];
+const loading = eager || priority ? 'eager' : 'lazy';
+---
+
+{isSvg(meta) ? (
+  <img
+    src={meta.src}
+    width={meta.width}
+    height={meta.height}
+    alt={alt}
+    loading={loading}
+    decoding="async"
+    fetchpriority={priority ? 'high' : undefined}
+    class:list={classes}
+  />
+) : (
+  <Picture
+    src={meta}
+    alt={alt}
+    widths={widths.filter((w) => w <= meta.width)}
+    sizes={sizes}
+    formats={['avif', 'webp']}
+    fallbackFormat="webp"
+    loading={loading}
+    fetchpriority={priority ? 'high' : undefined}
+    class:list={classes}
+  />
+)}

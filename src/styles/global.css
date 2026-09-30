@@ -225,6 +225,33 @@
   }
 }
 
+/* Hero entrance (CSS only, from first paint). The h1 and the LCP image never animate opacity. */
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    translate: 0 var(--motion-distance-2);
+  }
+}
+
+@keyframes ring-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+  }
+}
+
+/* One-shot wave for the eyebrow emoji (no loop). */
+@keyframes wave {
+  20%,
+  60% {
+    rotate: 14deg;
+  }
+
+  40% {
+    rotate: -8deg;
+  }
+}
+
 /* Scroll reveals (src/scripts/reveal.ts). Only elements the script prepared are hidden. */
 [data-reveal-ready] {
   transition:
