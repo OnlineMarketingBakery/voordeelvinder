@@ -1,0 +1,80 @@
+{
+  "id": "thuisbatterij",
+  "version": 1,
+  "product": "thuisbatterij",
+  "locale": "nl",
+  "firstStep": "product",
+  "steps": [
+    { "use": "product", "next": [{ "goto": "postcode" }] },
+    { "use": "postcode", "next": [{ "goto": "has_solar" }] },
+    {
+      "id": "has_solar",
+      "title": "Heb je zonnepanelen?",
+      "fields": [
+        {
+          "id": "has_solar",
+          "type": "single_choice",
+          "required": true,
+          "options": [
+            { "code": "yes", "label": "Ja" },
+            { "code": "no", "label": "Nee, nog niet" },
+            { "code": "planned", "label": "Gepland" }
+          ]
+        }
+      ],
+      "next": [{ "goto": "solar_size" }]
+    },
+    {
+      "id": "solar_size",
+      "title": "Hoeveel zonnepanelen heb je ongeveer?",
+      "visibleIf": { "==": [{ "var": "has_solar" }, "yes"] },
+      "fields": [
+        {
+          "id": "solar_size",
+          "type": "single_choice",
+          "required": true,
+          "options": [
+            { "code": "under_10", "label": "Minder dan 10" },
+            { "code": "10_to_20", "label": "10–20" },
+            { "code": "over_20", "label": "Meer dan 20" },
+            { "code": "unknown", "label": "Weet ik niet" }
+          ]
+        }
+      ],
+      "next": [{ "goto": "digital_meter" }]
+    },
+    {
+      "id": "digital_meter",
+      "title": "Heb je een digitale meter?",
+      "fields": [{ "id": "digital_meter", "type": "yes_no", "required": true }],
+      "next": [{ "goto": "knows_consumption" }]
+    },
+    {
+      "use": "knows_consumption",
+      "next": [
+        { "if": { "==": [{ "var": "knows_consumption" }, "yes"] }, "goto": "consumption_kwh" },
+        { "goto": "household" }
+      ]
+    },
+    {
+      "id": "consumption_kwh",
+      "title": "Je jaarverbruik",
+      "fields": [
+        {
+          "id": "electricity_kwh",
+          "type": "number",
+          "label": "Elektriciteit (kWh per jaar)",
+          "hint": "Een gemiddeld gezin verbruikt ±3.500 kWh elektriciteit.",
+          "required": true,
+          "unit": "kWh",
+          "min": 100,
+          "max": 100000
+        }
+      ],
+      "next": [{ "goto": "contact" }]
+    },
+    { "use": "household", "next": [{ "goto": "appliances" }] },
+    { "use": "appliances", "next": [{ "goto": "contact" }] },
+    { "use": "contact" }
+  ]
+}

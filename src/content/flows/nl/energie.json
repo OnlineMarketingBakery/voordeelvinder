@@ -1,0 +1,354 @@
+{
+  "id": "energie",
+  "version": 1,
+  "product": "energie",
+  "locale": "nl",
+  "firstStep": "product",
+  "steps": [
+    {
+      "use": "product",
+      "next": [
+        {
+          "goto": "energy_choice"
+        }
+      ]
+    },
+    {
+      "id": "energy_choice",
+      "title": "Wat wil je vergelijken?",
+      "visibleIf": {
+        "and": [
+          {
+            "var": "derived.preselected"
+          },
+          {
+            "!": [
+              {
+                "var": "derived.energy_preselected"
+              }
+            ]
+          }
+        ]
+      },
+      "fields": [
+        {
+          "id": "energy_choice",
+          "type": "single_choice",
+          "required": true,
+          "payload": "none",
+          "options": [
+            {
+              "code": "electricity",
+              "label": "Elektriciteit",
+              "icon": "renewable-energy",
+              "product": "energie",
+              "sets": {
+                "energy_type": "electricity"
+              }
+            },
+            {
+              "code": "gas",
+              "label": "Gas",
+              "icon": "home",
+              "product": "energie",
+              "sets": {
+                "energy_type": "gas"
+              },
+              "requires": "gas"
+            },
+            {
+              "code": "both",
+              "label": "Elektriciteit + gas",
+              "icon": "home-bolt",
+              "product": "energie",
+              "sets": {
+                "energy_type": "both"
+              },
+              "requires": "gas"
+            }
+          ]
+        }
+      ],
+      "next": [
+        {
+          "goto": "postcode"
+        }
+      ]
+    },
+    {
+      "use": "postcode",
+      "next": [
+        {
+          "goto": "supplier"
+        }
+      ]
+    },
+    {
+      "id": "supplier",
+      "title": "Wie is je huidige energieleverancier?",
+      "fields": [
+        {
+          "id": "supplier",
+          "type": "select",
+          "required": true,
+          "placeholder": "Selecteer je huidige leverancier",
+          "options": [
+            {
+              "code": "engie",
+              "label": "Engie"
+            },
+            {
+              "code": "luminus",
+              "label": "Luminus"
+            },
+            {
+              "code": "totalenergies",
+              "label": "TotalEnergies"
+            },
+            {
+              "code": "mega",
+              "label": "Mega"
+            },
+            {
+              "code": "eneco",
+              "label": "Eneco"
+            },
+            {
+              "code": "octa-plus",
+              "label": "Octa+"
+            },
+            {
+              "code": "bolt",
+              "label": "Bolt"
+            },
+            {
+              "code": "ecopower",
+              "label": "Ecopower"
+            },
+            {
+              "code": "elegant",
+              "label": "Elegant"
+            },
+            {
+              "code": "energie-be",
+              "label": "Energie.be"
+            },
+            {
+              "code": "dats-24",
+              "label": "DATS 24"
+            },
+            {
+              "code": "frank-energie",
+              "label": "Frank Energie"
+            },
+            {
+              "code": "other",
+              "label": "Andere"
+            },
+            {
+              "code": "unknown",
+              "label": "Weet ik niet"
+            }
+          ]
+        }
+      ],
+      "next": [
+        {
+          "goto": "meter_type"
+        }
+      ]
+    },
+    {
+      "id": "meter_type",
+      "title": "Wat voor meter heb je?",
+      "visibleIf": {
+        "in": [
+          {
+            "var": "energy_type"
+          },
+          ["electricity", "both"]
+        ]
+      },
+      "fields": [
+        {
+          "id": "meter_type",
+          "type": "single_choice",
+          "required": true,
+          "options": [
+            {
+              "code": "single",
+              "label": "Dagmeter (enkelvoudig tarief)"
+            },
+            {
+              "code": "dual",
+              "label": "Dag/nachtmeter (tweevoudig tarief)"
+            },
+            {
+              "code": "single_excl_night",
+              "label": "Dagmeter + exclusief nacht"
+            },
+            {
+              "code": "dual_excl_night",
+              "label": "Dag/nachtmeter + exclusief nacht"
+            }
+          ]
+        }
+      ],
+      "next": [
+        {
+          "goto": "meters_solar"
+        }
+      ]
+    },
+    {
+      "id": "meters_solar",
+      "title": "Heb je een digitale meter?",
+      "fields": [
+        {
+          "id": "digital_meter",
+          "type": "yes_no",
+          "required": true
+        },
+        {
+          "id": "has_solar",
+          "type": "yes_no",
+          "label": "Heb je zonnepanelen?",
+          "required": true,
+          "visibleIf": {
+            "in": [
+              {
+                "var": "energy_type"
+              },
+              ["electricity", "both"]
+            ]
+          }
+        }
+      ],
+      "next": [
+        {
+          "goto": "tariff_meter"
+        }
+      ]
+    },
+    {
+      "id": "tariff_meter",
+      "title": "Heb je een sociaal tarief?",
+      "fields": [
+        {
+          "id": "social_tariff",
+          "type": "yes_no",
+          "required": true
+        },
+        {
+          "id": "budget_meter",
+          "type": "single_choice",
+          "label": "Heb je een budgetmeter?",
+          "required": true,
+          "options": [
+            {
+              "code": "yes",
+              "label": "Ja"
+            },
+            {
+              "code": "no",
+              "label": "Nee"
+            },
+            {
+              "code": "unknown",
+              "label": "Weet ik niet"
+            }
+          ]
+        }
+      ],
+      "next": [
+        {
+          "goto": "knows_consumption"
+        }
+      ]
+    },
+    {
+      "use": "knows_consumption",
+      "next": [
+        {
+          "if": {
+            "==": [
+              {
+                "var": "knows_consumption"
+              },
+              "yes"
+            ]
+          },
+          "goto": "consumption_kwh"
+        },
+        {
+          "goto": "household"
+        }
+      ]
+    },
+    {
+      "id": "consumption_kwh",
+      "title": "Je jaarverbruik",
+      "fields": [
+        {
+          "id": "electricity_kwh",
+          "type": "number",
+          "label": "Elektriciteit (kWh per jaar)",
+          "hint": "Een gemiddeld gezin verbruikt ±3.500 kWh elektriciteit.",
+          "required": true,
+          "unit": "kWh",
+          "min": 100,
+          "max": 100000,
+          "visibleIf": {
+            "in": [
+              {
+                "var": "energy_type"
+              },
+              ["electricity", "both"]
+            ]
+          }
+        },
+        {
+          "id": "gas_kwh",
+          "type": "number",
+          "label": "Gas (kWh per jaar)",
+          "required": true,
+          "unit": "kWh",
+          "min": 100,
+          "max": 150000,
+          "visibleIf": {
+            "in": [
+              {
+                "var": "energy_type"
+              },
+              ["gas", "both"]
+            ]
+          }
+        }
+      ],
+      "next": [
+        {
+          "goto": "contact"
+        }
+      ]
+    },
+    {
+      "use": "household",
+      "next": [
+        {
+          "goto": "appliances"
+        }
+      ]
+    },
+    {
+      "use": "appliances",
+      "next": [
+        {
+          "goto": "contact"
+        }
+      ]
+    },
+    {
+      "use": "contact"
+    }
+  ]
+}

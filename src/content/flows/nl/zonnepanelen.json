@@ -1,0 +1,101 @@
+{
+  "id": "zonnepanelen",
+  "version": 1,
+  "product": "zonnepanelen",
+  "locale": "nl",
+  "firstStep": "product",
+  "steps": [
+    { "use": "product", "next": [{ "goto": "postcode" }] },
+    { "use": "postcode", "next": [{ "goto": "ownership" }] },
+    {
+      "id": "ownership",
+      "title": "Ben je eigenaar van de woning?",
+      "fields": [
+        {
+          "id": "ownership",
+          "type": "single_choice",
+          "required": true,
+          "options": [
+            { "code": "owner", "label": "Eigenaar" },
+            { "code": "tenant", "label": "Huurder" }
+          ]
+        }
+      ],
+      "next": [{ "goto": "roof" }]
+    },
+    {
+      "id": "roof",
+      "title": "Wat voor dak heb je?",
+      "fields": [
+        {
+          "id": "roof_type",
+          "type": "single_choice",
+          "required": true,
+          "options": [
+            { "code": "pitched", "label": "Hellend dak" },
+            { "code": "flat", "label": "Plat dak" },
+            { "code": "unknown", "label": "Weet ik niet" }
+          ]
+        },
+        {
+          "id": "roof_orientation",
+          "type": "single_choice",
+          "label": "Waar is je dak op gericht?",
+          "required": true,
+          "options": [
+            { "code": "south", "label": "Zuid" },
+            { "code": "east_west", "label": "Oost-West" },
+            { "code": "east_or_west", "label": "Oost of West" },
+            { "code": "north", "label": "Noord" },
+            { "code": "unknown", "label": "Weet ik niet" }
+          ]
+        }
+      ],
+      "next": [{ "goto": "knows_consumption" }]
+    },
+    {
+      "use": "knows_consumption",
+      "next": [
+        { "if": { "==": [{ "var": "knows_consumption" }, "yes"] }, "goto": "consumption_kwh" },
+        { "goto": "household" }
+      ]
+    },
+    {
+      "id": "consumption_kwh",
+      "title": "Je jaarverbruik",
+      "fields": [
+        {
+          "id": "electricity_kwh",
+          "type": "number",
+          "label": "Elektriciteit (kWh per jaar)",
+          "hint": "Een gemiddeld gezin verbruikt ±3.500 kWh elektriciteit.",
+          "required": true,
+          "unit": "kWh",
+          "min": 100,
+          "max": 100000
+        }
+      ],
+      "next": [{ "goto": "battery_interest" }]
+    },
+    { "use": "household", "next": [{ "goto": "appliances" }] },
+    { "use": "appliances", "next": [{ "goto": "battery_interest" }] },
+    {
+      "id": "battery_interest",
+      "title": "Wil je ook een thuisbatterij?",
+      "fields": [
+        {
+          "id": "battery_interest",
+          "type": "single_choice",
+          "required": true,
+          "options": [
+            { "code": "yes", "label": "Ja" },
+            { "code": "no", "label": "Nee" },
+            { "code": "maybe_later", "label": "Misschien later" }
+          ]
+        }
+      ],
+      "next": [{ "goto": "contact" }]
+    },
+    { "use": "contact" }
+  ]
+}

@@ -80,7 +80,7 @@ describe('validate:flows fixtures', () => {
       ],
       'nl/unknown_operator.json': ['steps.0.next.0.if: unknown JSONLogic operator "xor"'],
       'nl/unknown_var.json': [
-        'step "b" visibleIf: unknown var "energy_typ" (not a field, an implied answer or derived.postcode|derived.region|derived.province|derived.preselected)',
+        'step "b" visibleIf: unknown var "energy_typ" (not a field, an implied answer or derived.postcode|derived.region|derived.province|derived.preselected|derived.energy_preselected)',
       ],
       'nl/unreachable.json': ['step "orphan" can\'t be reached from firstStep'],
       'nl/wrong_name.json': ['id "other_name" must equal the file name ("wrong_name")'],
@@ -287,7 +287,7 @@ describe('validate:flows checks', () => {
       'nl/energie.json: field "newsletter" visibleIf: compares "energy_type" with "solar", which is not one of its codes (electricity, gas, both)',
     ]);
     const unknown = (path: string) =>
-      `nl/energie.json: step "household" visibleIf: unknown var "${path}" (not a field, an implied answer or derived.postcode|derived.region|derived.province|derived.preselected)`;
+      `nl/energie.json: step "household" visibleIf: unknown var "${path}" (not a field, an implied answer or derived.postcode|derived.region|derived.province|derived.preselected|derived.energy_preselected)`;
     for (const path of ['call_moment.hour', 'supplier.name', 'a.b.c', 'derived', 'derived.city']) {
       expect(mutated(on('household', { var: path }))).toEqual([unknown(path)]);
     }

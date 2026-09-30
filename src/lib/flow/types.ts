@@ -21,11 +21,20 @@ export type Answers = Readonly<Record<string, AnswerValue | undefined>>;
 /**
  * Values worked out rather than asked (brief §7.1): conditions read them as `derived.<key>`.
  * `preselected` is true when the product came from the URL (/vergelijken/<product>, a landing
- * variant), so the shared product step is skipped (brief §7.6); missing means false. The engine
+ * variant), so the shared product step is skipped (brief §7.6); missing means false.
+ * `energy_preselected` is true when the URL also gave a valid energy type (?energie=), so the
+ * energy flow's own "Wat wil je vergelijken?" step is skipped too; missing means false. Both are
+ * fixed for the whole form session, so conditions on them never change while it's filled in. The engine
  * treats a missing postcode, region or province as still to come only while the postcode
  * question can still be answered.
  */
-export const DERIVED_KEYS = ['postcode', 'region', 'province', 'preselected'] as const;
+export const DERIVED_KEYS = [
+  'postcode',
+  'region',
+  'province',
+  'preselected',
+  'energy_preselected',
+] as const;
 export type DerivedKey = (typeof DERIVED_KEYS)[number];
 
 /** The values of `derived.region` (brief §7.5, §8); validate:flows checks literals against them. */
@@ -38,4 +47,5 @@ export type Derived = Readonly<{
   /** A slug such as "oost-vlaanderen". */
   province?: string;
   preselected?: boolean;
+  energy_preselected?: boolean;
 }>;

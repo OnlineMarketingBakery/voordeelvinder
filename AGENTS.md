@@ -11,7 +11,7 @@ deviate from it are recorded in `docs/decisions/`.
 | `src/content.config.ts`                | Every content collection and its Zod schema                                                                                        |
 | `src/content/site.json`                | Site-wide copy and settings                                                                                                        |
 | `src/content/pages/*.json`             | Page copy as an ordered list of typed section blocks                                                                               |
-| `src/content/flows/nl/*.json`          | Form flows: questions, options, conditions; `_shared.json` holds the steps all flows share                                         |
+| `src/content/flows/nl/*.json`          | Form flows (codes: `docs/FLOWS.md`); `_shared.json`: shared steps and switches (gas); `_copy.json`: the form's interface copy      |
 | `src/content/legal`, `blog`, `landing` | Markdown: legal pages, blog posts, campaign landing variants (Phase 3)                                                             |
 | `src/components/sections/`             | One Astro component per section block type; `Sections.astro` maps type → component                                                 |
 | `src/components/site/`, `ui/`          | Header/Footer (copy from `site.json`); Button, SectionPill, Logo, Container, Prose                                                 |
@@ -87,16 +87,20 @@ referenced by key (`mascot/fox-waving`, `money`): files in `src/assets/images` a
   create `src/components/sections/<Name>.astro`, add the case to `Sections.astro`, and add a
   row to the table above.
 - **Add a flow step:** flows live in `src/content/flows/nl/<product>.json` (schema:
-  `src/lib/flow/schema.ts`, engine: `src/lib/flow/engine.ts`). Steps every flow shares (product
-  choice, postcode + business, contact) are defined once in `nl/_shared.json` and used with
-  `{ "use": "<id>", "next": [...] }`. A step is `{ id, title, subtitle?, hint?, visibleIf?,
+  `src/lib/flow/schema.ts`, engine: `src/lib/flow/engine.ts`). Steps several flows share
+  (product choice, postcode + business, the consumption branch, contact) are defined once in
+  `nl/_shared.json` and used with `{ "use": "<id>", "next": [...] }`. A step is `{ id, title, subtitle?, hint?, visibleIf?,
 fields, next }`; `next` is an ordered list of `{ if?, goto }` whose last entry has no `if`.
   Add the step, point the previous step's `next` at it, give every option a new, unique `code`
   (never reuse or rename one), and use only the JSONLogic operators in
   `src/lib/flow/logic.ts` (ADR 0006); conditions read answers by field id and `derived.<key>`.
   Field ids are payload keys: the field's `payload` (default `answers`) says where its value
-  goes (docs/PAYLOAD.md). Then run `npm run validate:flows` (also run before every build) and
-  add e2e coverage for the new path.
+  goes (docs/PAYLOAD.md). A field without `label` is named by the step title, so only a step's
+  first field may omit it. An option with `"requires": "<switch>"` is only offered while that
+  switch in `_shared.json` is on (the gas cards: `"switches": { "gas": true }`). New error or
+  warning codes need a message in `nl/_copy.json`. Update the code tables in `docs/FLOWS.md`,
+  then run `npm run validate:flows` (also run before every build) and add e2e coverage for the
+  new path.
 - **Add a product** (Phase 4/5): a flow file, a page JSON (its route `src/pages/<product>.astro`
   renders `<ContentPage id="<product>" />`), a `/vergelijken/<product>` and
   `/bedankt/<product>` route, and either a rules file in `src/server/rules/` or nothing (the

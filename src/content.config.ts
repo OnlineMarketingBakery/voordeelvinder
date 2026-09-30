@@ -2,7 +2,7 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
-import { flowFile, sharedStepsFile } from './lib/flow/schema';
+import { flowCopyFile, flowFile, sharedStepsFile } from './lib/flow/schema';
 import { blogCopy, postFrontmatter } from './schemas/blog';
 import { legalCopy, legalFrontmatter } from './schemas/legal';
 import { landing as landingSchema } from './schemas/landing';
@@ -109,16 +109,21 @@ const landing = defineCollection({
   schema: landingSchema,
 });
 
-// Form flows (src/content/flows/<locale>/<product>.json, ids such as "nl/energie") and the steps
-// they share (<locale>/_shared.json): see src/lib/flow/schema.ts. The schema checks each file;
-// validate:flows (prebuild) checks references, paths, vars and codes across files.
+// Form flows (src/content/flows/<locale>/<product>.json, ids such as "nl/energie"), the steps
+// they share and the switches (<locale>/_shared.json), and the form's interface copy
+// (<locale>/_copy.json): see src/lib/flow/schema.ts. The schema checks each file; validate:flows
+// (prebuild) checks references, paths, vars and codes across files.
 const flows = defineCollection({
-  loader: glob({ pattern: ['*/*.json', '!*/_shared.json'], base: './src/content/flows' }),
+  loader: glob({ pattern: ['*/*.json', '!*/_*.json'], base: './src/content/flows' }),
   schema: flowFile,
 });
 const flowSteps = defineCollection({
   loader: glob({ pattern: '*/_shared.json', base: './src/content/flows' }),
   schema: sharedStepsFile,
 });
+const flowCopy = defineCollection({
+  loader: glob({ pattern: '*/_copy.json', base: './src/content/flows' }),
+  schema: flowCopyFile,
+});
 
-export const collections = { site, pages, legal, blog, landing, flows, flowSteps };
+export const collections = { site, pages, legal, blog, landing, flows, flowSteps, flowCopy };

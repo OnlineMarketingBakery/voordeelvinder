@@ -13,6 +13,7 @@ import type { JsonValue, Rule } from './logic';
 import { resolveFlow } from './resolve';
 import {
   CONTACT_STEP_ID,
+  flowCopyFile,
   flowFile,
   sharedStepsFile,
   type Field,
@@ -25,7 +26,13 @@ import { DERIVED_KEYS, REGIONS } from './types';
 
 /** A file as read from disk: its path relative to the flows folder (nl/energie.json). */
 export type SourceFile = { path: string; data: unknown };
-export type LocaleSources = { locale: string; shared?: SourceFile; flows: SourceFile[] };
+export type LocaleSources = {
+  locale: string;
+  shared?: SourceFile;
+  /** _copy.json: the form's interface copy (schema flowCopyFile). */
+  copy?: SourceFile;
+  flows: SourceFile[];
+};
 export type FlowIssue = { file: string; message: string };
 
 /** The locale the others are compared with (brief §7.1: codes identical across locales). */
@@ -385,7 +392,7 @@ export function checkFlow(flow: Flow, file: FlowFile): string[] {
         path = varPath(args[0]);
         literals = args[1];
       }
-      if (path === 'derived.preselected') {
+      if (path === 'derived.preselected' || path === 'derived.energy_preselected') {
         for (const literal of literals) {
           if (typeof literal !== 'string' && typeof literal !== 'number') continue;
           problems.push(
@@ -409,16 +416,26 @@ export function checkFlow(flow: Flow, file: FlowFile): string[] {
   return problems;
 }
 
+/** The config switches of a locale, in a stable order (they must match across locales). */
+function switchesSignature(shared: SharedStepsFile | undefined): string {
+  const switches = shared?.switches ?? {};
+  return Object.keys(switches)
+    .sort()
+    .map((name) => `${name}=${switches[name]}`)
+    .join(', ');
+}
+
 /**
- * What must be identical across locales: per flow, its settings, every step's fields and
- * branching, and every field's codes, payload target and required flag. Only the copy differs,
- * so the lead payload, the rules and the paths are the same in every locale.
+ * What must be identical across locales: per flow, its settings (incl. the switches), every
+ * step's fields and branching, and every field's codes, payload target and required flag. Only
+ * the copy differs, so the lead payload, the rules and the paths are the same in every locale.
  */
-function codeSignature(flow: Flow): Map<string, string> {
+function codeSignature(flow: Flow, switches: string): Map<string, string> {
   const signature = new Map<string, string>([
     ['product', flow.product],
     ['version', String(flow.version)],
     ['firstStep', flow.firstStep],
+    ['switches', switches],
   ]);
   for (const step of flow.steps) {
     signature.set(`step "${step.id}" fields`, step.fields.map((field) => field.id).join(', '));
@@ -448,10 +465,11 @@ function codeSignature(flow: Flow): Map<string, string> {
       }
       if (field.type !== 'single_choice') continue;
       for (const option of field.options) {
-        if (option.product === undefined && option.sets === undefined) continue;
+        if (option.product === undefined && option.sets === undefined && !option.requires) continue;
         signature.set(
           `field "${field.id}" option "${option.code}"`,
-          `product ${option.product ?? '-'}, sets ${JSON.stringify(option.sets ?? {})}`,
+          `product ${option.product ?? '-'}, sets ${JSON.stringify(option.sets ?? {})}` +
+            (option.requires ? `, requires ${option.requires}` : ''),
         );
       }
     }
@@ -459,7 +477,8 @@ function codeSignature(flow: Flow): Map<string, string> {
   return signature;
 }
 
-type Resolved = { path: string; flow: Flow };
+/** A flow resolved with every switch on (what the checks see), and its locale's switches. */
+type Resolved = { path: string; flow: Flow; switches: string };
 
 /** A flow's name: its file name without the folder and ".json". */
 function flowName(path: string): string {
@@ -498,11 +517,11 @@ function checkLocales(
       }
     }
     // Only flows that are valid in both locales can be compared.
-    for (const [name, { path, flow }] of byLocale.get(locale)!) {
+    for (const [name, { path, flow, switches }] of byLocale.get(locale)!) {
       const ref = referenceFlows.get(name);
       if (!ref) continue;
-      const expected = codeSignature(ref.flow);
-      const actual = codeSignature(flow);
+      const expected = codeSignature(ref.flow, ref.switches);
+      const actual = codeSignature(flow, switches);
       for (const key of new Set([...expected.keys(), ...actual.keys()])) {
         const want = expected.get(key);
         const got = actual.get(key);
@@ -517,12 +536,46 @@ function checkLocales(
   return issues;
 }
 
-/** Validates every locale's shared steps and flows; an empty list means all is well. */
+/** Choice fields the switches, as set, leave without any option (a visitor couldn't answer). */
+function switchIssues(flow: Flow): string[] {
+  return flow.steps.flatMap((step) =>
+    step.fields.flatMap((field) =>
+      field.type === 'single_choice' && field.options.length === 0
+        ? [`field "${field.id}": the switches in _shared.json leave it without options`]
+        : [],
+    ),
+  );
+}
+
+/** The copy file's schema, and messages the locale's flows need beyond the required ones. */
+function copyIssues(copyFile: SourceFile, flows: Flow[]): FlowIssue[] {
+  const parsed = flowCopyFile.safeParse(copyFile.data);
+  if (!parsed.success) return schemaIssues(copyFile.path, parsed.error);
+  const soft = flows.some((flow) =>
+    flow.steps.some((step) =>
+      step.fields.some(
+        (field) =>
+          field.type === 'number' && (field.softMin !== undefined || field.softMax !== undefined),
+      ),
+    ),
+  );
+  if (soft && !parsed.data.warnings?.outside_typical) {
+    return [
+      {
+        file: copyFile.path,
+        message: 'warnings.outside_typical is needed: a number field has softMin/softMax',
+      },
+    ];
+  }
+  return [];
+}
+
+/** Validates every locale's shared steps, copy and flows; an empty list means all is well. */
 export function validateFlowSources(locales: LocaleSources[]): FlowIssue[] {
   const issues: FlowIssue[] = [];
   const byLocale = new Map<string, Map<string, Resolved>>();
 
-  for (const { locale, shared: sharedFile, flows } of locales) {
+  for (const { locale, shared: sharedFile, copy: copyFile, flows } of locales) {
     let shared: SharedStepsFile | undefined;
     if (sharedFile) {
       const parsed = sharedStepsFile.safeParse(sharedFile.data);
@@ -567,20 +620,33 @@ export function validateFlowSources(locales: LocaleSources[]): FlowIssue[] {
       }
       // With a broken _shared.json, its schema errors are the useful ones.
       if (sharedFile && !shared) continue;
+      // Checked with every switch on: switches only take options away, so every path of the
+      // flow as configured is a path of this one. The configured one must still be answerable.
       let flow: Flow;
+      let configured: Flow;
       try {
-        flow = resolveFlow(file, shared);
+        flow = resolveFlow(file, shared, { allSwitchesOn: true });
+        configured = resolveFlow(file, shared);
       } catch (error) {
         issues.push({ file: path, message: (error as Error).message });
         continue;
       }
-      issues.push(...checkFlow(flow, file).map((message) => ({ file: path, message })));
-      resolved.set(name, { path, flow });
+      const problems = [...checkFlow(flow, file), ...switchIssues(configured)];
+      issues.push(...problems.map((message) => ({ file: path, message })));
+      resolved.set(name, { path, flow, switches: switchesSignature(shared) });
       // resolveFlow keeps the order: a step from a reference lives in _shared.json.
       flow.steps.forEach((step, index) => {
         const where = 'use' in file.steps[index]! ? sharedFile!.path : path;
         choices.push(...productChoices(step, where));
       });
+    }
+    if (copyFile) {
+      issues.push(
+        ...copyIssues(
+          copyFile,
+          [...resolved.values()].map(({ flow }) => flow),
+        ),
+      );
     }
     issues.push(...missingProductFlows(locale, choices, products));
   }
