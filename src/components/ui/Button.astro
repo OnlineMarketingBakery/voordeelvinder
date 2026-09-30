@@ -1,19 +1,29 @@
 ---
-// Buttons and pill CTAs from the design. Renders a link when `href` is set, else a <button>.
+// Buttons and pill CTAs from the design. Renders a link when `href` is set, a <span> with
+// `as="span"` (a decorative pill inside a card that is itself the link), else a <button>.
 // Labels always come from content files (slot).
 import ArrowUpRight from '../../assets/icons/arrow-up-right.svg';
+import ChevronLeft from '../../assets/icons/chevron-left.svg';
+import ChevronRight from '../../assets/icons/chevron-right.svg';
 
 export type ButtonVariant = 'lime' | 'purple' | 'white' | 'form' | 'form-secondary' | 'newsletter';
-export type ButtonSize = 'sm' | 'md' | 'lg' | 'form' | 'newsletter';
+export type ButtonSize = 'sm' | 'md' | 'lg' | 'form' | 'newsletter' | 'card' | 'pill';
 export type ButtonGlow = 'default' | 'purple' | 'none';
+export type ButtonIcon = 'arrow-up-right' | 'chevron-left' | 'chevron-right';
 
 interface Props {
   href?: string;
   type?: 'button' | 'submit';
   variant?: ButtonVariant;
   size?: ButtonSize;
-  icon?: 'arrow-up-right';
+  icon?: ButtonIcon;
+  /** The icon before or after the label (post nav "Terug" has its chevron first). */
+  iconPosition?: 'start' | 'end';
   glow?: ButtonGlow;
+  /** No white border, glow or gloss (the blog pills). */
+  flat?: boolean;
+  /** Render a non-interactive <span> (the card around it is the link). */
+  as?: 'span';
   fullWidth?: boolean;
   disabled?: boolean;
   class?: string;
@@ -25,7 +35,10 @@ const {
   variant = 'lime',
   size = 'md',
   icon,
+  iconPosition = 'end',
   glow = 'default',
+  flat = false,
+  as,
   fullWidth = false,
   disabled = false,
   class: className,
@@ -62,43 +75,71 @@ const glows: Partial<Record<ButtonVariant, Record<ButtonGlow, string>>> = {
   },
 };
 
+// Flat pills (blog, Figma 118:1926 and 118:1933): the colour only.
+const flatVariants: Partial<Record<ButtonVariant, string>> = {
+  lime: 'rounded-full bg-lime-300 text-ink-900',
+  purple: 'rounded-full bg-purple-600 text-white',
+};
+
 const sizes: Record<ButtonSize, string> = {
-  sm: 'h-[42px] px-3 text-button', // header CTA, 170x42
-  md: 'h-[54px] px-6 text-button', // hero CTA
-  lg: 'h-[62px] px-8 text-button-lg', // CTA band / final CTA
-  form: 'h-[52px] px-5 text-body-lg', // form buttons, 18px Regular
-  newsletter: 'h-12 px-[21px] text-button sm:h-[46px]', // Abonneren: stacked below sm, in the pill from sm
+  sm: 'h-[42px] gap-1 px-3 text-button', // header CTA, 170x42
+  md: 'h-[54px] gap-1 px-6 text-button', // hero CTA
+  lg: 'h-[62px] gap-1 px-8 text-button-lg', // CTA band / final CTA
+  form: 'h-[52px] gap-1 px-5 text-body-lg', // form buttons, 18px Regular
+  newsletter: 'h-12 gap-1 px-[21px] text-button sm:h-[46px]', // Abonneren: stacked below sm, in the pill from sm
+  card: 'h-12 gap-[25px] pr-[17px] pl-[21px] text-button', // featured blog post "Lees meer", 170x48
+  pill: 'h-[42px] gap-[7px] pr-3 pl-4 text-button', // blog card "Lees meer", 137x42
 };
 
 const classes = [
-  'inline-flex shrink-0 items-center justify-center gap-1 font-medium whitespace-nowrap select-none',
+  'inline-flex shrink-0 items-center justify-center font-medium whitespace-nowrap select-none',
   'transition-[translate,scale,background-color,box-shadow] duration-(--motion-duration-fast) ease-out',
   'motion-safe:hover:-translate-y-px motion-safe:active:scale-[0.97]',
   'aria-disabled:pointer-events-none aria-disabled:opacity-60 disabled:pointer-events-none disabled:opacity-60',
-  variants[variant],
-  glows[variant]?.[glow],
+  flat ? (flatVariants[variant] ?? variants[variant]) : variants[variant],
+  !flat && glows[variant]?.[glow],
   sizes[size],
   fullWidth && 'w-full',
   className,
 ];
 
-// Arrow sizes from Figma: 22 (header), 28 (md), 32 (lg).
-const iconSize = size === 'sm' ? 'size-[22px]' : size === 'lg' ? 'size-8' : 'size-7';
+// Arrow sizes from Figma: 22 (header), 23 (blog card), 28 (md, featured post), 32 (lg);
+// chevrons 24.
+const arrowSizes: Partial<Record<ButtonSize, string>> = {
+  sm: 'size-[22px]',
+  pill: 'size-[23px]',
+  lg: 'size-8',
+};
+const iconSize = icon === 'arrow-up-right' ? (arrowSizes[size] ?? 'size-7') : 'size-6';
+const Glyph =
+  icon &&
+  { 'arrow-up-right': ArrowUpRight, 'chevron-left': ChevronLeft, 'chevron-right': ChevronRight }[
+    icon
+  ];
+const before = iconPosition === 'start';
 ---
 
-{href ? (
+{as === 'span' ? (
+  <span class:list={classes}>
+    {Glyph && before && <Glyph class={iconSize} aria-hidden="true" />}
+    <slot />
+    {Glyph && !before && <Glyph class={iconSize} aria-hidden="true" />}
+  </span>
+) : href ? (
   <a
     href={disabled ? undefined : href}
     role={disabled ? 'link' : undefined}
     class:list={classes}
     aria-disabled={disabled ? 'true' : undefined}
   >
+    {Glyph && before && <Glyph class={iconSize} aria-hidden="true" />}
     <slot />
-    {icon === 'arrow-up-right' && <ArrowUpRight class={iconSize} aria-hidden="true" />}
+    {Glyph && !before && <Glyph class={iconSize} aria-hidden="true" />}
   </a>
 ) : (
   <button type={type} class:list={classes} disabled={disabled}>
+    {Glyph && before && <Glyph class={iconSize} aria-hidden="true" />}
     <slot />
-    {icon === 'arrow-up-right' && <ArrowUpRight class={iconSize} aria-hidden="true" />}
+    {Glyph && !before && <Glyph class={iconSize} aria-hidden="true" />}
   </button>
 )}

@@ -1,0 +1,20 @@
+---
+// The purple title band of the legal pages (Figma 140:3200 + 140:3201): only the h1, at the
+// bottom of the band. Built flat, without the design's grain (CONTENT-TODO 5.3).
+import Container from '../ui/Container.astro';
+
+interface Props {
+  title: string;
+  /** A line under the title, e.g. "Laatst bijgewerkt: …" (not designed; proposed). */
+  meta?: string | undefined;
+}
+
+const { title, meta } = Astro.props;
+---
+
+<div class="flex min-h-44 items-end bg-purple-600 pt-16 pb-8 surface-dark md:min-h-56 md:pb-12 lg:min-h-[308px] lg:pb-19">
+  <Container>
+    <h1 class="text-h3 text-white md:text-h2 lg:text-h1">{title}</h1>
+    {meta && <p class="mt-3 text-body-lg text-on-purple-muted">{meta}</p>}
+  </Container>
+</div>

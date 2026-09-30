@@ -1,0 +1,50 @@
+---
+// A legal page from src/content/legal/<slug>.md (Figma 134:2705 terms, 140:3318 privacy; the
+// cookie policy reuses the template, CONTENT-TODO 5.12): the title band, then the table of
+// contents beside the text. While `placeholder` is set, a notice sits above the text (staging;
+// production builds fail in getLegalPages()).
+import { render } from 'astro:content';
+
+import PageHero from '../components/legal/PageHero.astro';
+import Toc from '../components/legal/Toc.astro';
+import Container from '../components/ui/Container.astro';
+import Prose from '../components/ui/Prose.astro';
+import { fill } from '../lib/copy';
+import { formatDate } from '../lib/dates';
+import { type LegalEntry, tocItems } from '../lib/legal';
+import { getSite } from '../lib/site';
+import Page from './Page.astro';
+
+interface Props {
+  entry: LegalEntry;
+}
+
+const { entry } = Astro.props;
+const { title, seo, lastUpdated, placeholder } = entry.data;
+const site = await getSite();
+const { Content, headings } = await render(entry);
+const toc = tocItems(headings);
+const meta = lastUpdated
+  ? fill(site.legal.lastUpdated, { date: formatDate(lastUpdated, site.locale) })
+  : undefined;
+---
+
+<Page {title} description={seo.description} noindex={seo.noindex ?? false}>
+  <PageHero {title} {meta} />
+  <Container class="pt-10 pb-20 md:pt-14 lg:pt-19 lg:pb-35">
+    {placeholder && (
+      <p
+        role="note"
+        class="mb-10 rounded-lg border border-lime-400 bg-lime-50 px-5 py-4 text-body text-ink-800"
+      >
+        {site.legal.placeholderNotice}
+      </p>
+    )}
+    <div class:list={[toc.length > 0 && 'lg:grid lg:grid-cols-[374px_minmax(0,1fr)] lg:gap-x-10']}>
+      <Toc label={site.legal.tocLabel} items={toc} />
+      <Prose variant="legal">
+        <Content />
+      </Prose>
+    </div>
+  </Container>
+</Page>

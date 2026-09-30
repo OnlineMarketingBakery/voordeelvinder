@@ -6,27 +6,28 @@ deviate from it are recorded in `docs/decisions/`.
 
 ## Repo map
 
-| Path                                   | What lives there                                                                               |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `src/content.config.ts`                | Every content collection and its Zod schema                                                    |
-| `src/content/site.json`                | Site-wide copy and settings                                                                    |
-| `src/content/pages/*.json`             | Page copy as an ordered list of typed section blocks                                           |
-| `src/content/flows/nl/*.json`          | Form flows: questions, options, conditions (Phase 4)                                           |
-| `src/content/legal`, `blog`, `landing` | Markdown: legal pages, blog posts, campaign landing variants (Phase 3)                         |
-| `src/components/sections/`             | One Astro component per section block type; `Sections.astro` maps type → component             |
-| `src/components/site/`, `ui/`          | Header/Footer (copy from `site.json`); Button, SectionPill, Logo, Container                    |
-| `src/layouts/Page.astro`               | Standard page: header, `<main id="main">`, footer                                              |
-| `src/layouts/`                         | Layouts: `Base.astro` (`<head>`, robots, canonical), `ContentPage.astro` (pages/*.json route)  |
-| `src/pages/`                           | Routes; `api/*` are on-demand (`export const prerender = false`)                               |
-| `src/server/env.ts`                    | Typed, validated server environment. The only reader of `process.env`                          |
-| `src/server/rules/`                    | Qualification rules — server-only, never shipped to the browser (Phase 5)                      |
-| `src/server/lead/`                     | Lead pipeline: validate, derive, classify, backup, forward, rate limit (Phase 5)               |
-| `src/lib/`                             | Framework-free logic (`seo/`, later `flow/` engine, `motion.ts`)                               |
-| `src/styles/global.css`                | Tailwind entry and design tokens (`@theme`)                                                    |
-| `scripts/`                             | `deploy.sh` (run by Ploi), `validate-flows.ts`, cron jobs `leads-retry.ts`, `backups-prune.ts` |
-| `tests/unit`, `tests/e2e`              | Vitest and Playwright (+ axe)                                                                  |
-| `server.mjs`, `ecosystem.config.cjs`   | Production entry (loads `.env`) and its PM2 definition                                         |
-| `docs/`                                | Brief, decisions (ADRs), content to-do list, design review, ops runbook                        |
+| Path                                   | What lives there                                                                                                                   |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `src/content.config.ts`                | Every content collection and its Zod schema                                                                                        |
+| `src/content/site.json`                | Site-wide copy and settings                                                                                                        |
+| `src/content/pages/*.json`             | Page copy as an ordered list of typed section blocks                                                                               |
+| `src/content/flows/nl/*.json`          | Form flows: questions, options, conditions (Phase 4)                                                                               |
+| `src/content/legal`, `blog`, `landing` | Markdown: legal pages, blog posts, campaign landing variants (Phase 3)                                                             |
+| `src/components/sections/`             | One Astro component per section block type; `Sections.astro` maps type → component                                                 |
+| `src/components/site/`, `ui/`          | Header/Footer (copy from `site.json`); Button, SectionPill, Logo, Container, Prose                                                 |
+| `src/components/blog/`, `legal/`       | Blog listing/post parts (cards, pagination, post nav); legal title band and table of contents                                      |
+| `src/layouts/Page.astro`               | Standard page: header, `<main id="main">`, footer                                                                                  |
+| `src/layouts/`                         | Layouts: `Base.astro` (`<head>`, robots, canonical), `ContentPage.astro` (pages/*.json route), `LegalPage.astro`, `BlogPost.astro` |
+| `src/pages/`                           | Routes; `api/*` are on-demand (`export const prerender = false`)                                                                   |
+| `src/server/env.ts`                    | Typed, validated server environment. The only reader of `process.env`                                                              |
+| `src/server/rules/`                    | Qualification rules — server-only, never shipped to the browser (Phase 5)                                                          |
+| `src/server/lead/`                     | Lead pipeline: validate, derive, classify, backup, forward, rate limit (Phase 5)                                                   |
+| `src/lib/`                             | Framework-free logic (`seo/`, later `flow/` engine, `motion.ts`)                                                                   |
+| `src/styles/global.css`                | Tailwind entry and design tokens (`@theme`)                                                                                        |
+| `scripts/`                             | `deploy.sh` (run by Ploi), `validate-flows.ts`, cron jobs `leads-retry.ts`, `backups-prune.ts`                                     |
+| `tests/unit`, `tests/e2e`              | Vitest and Playwright (+ axe)                                                                                                      |
+| `server.mjs`, `ecosystem.config.cjs`   | Production entry (loads `.env`) and its PM2 definition                                                                             |
+| `docs/`                                | Brief, decisions (ADRs), content to-do list, design review, ops runbook                                                            |
 
 ## Commands
 
@@ -77,6 +78,7 @@ referenced by key (`mascot/fox-waving`, `money`): files in `src/assets/images` a
 | `faq`              | `Faq.astro` (+ `parts/AccordionItem`, `ContactCard`) | Native `<details>` questions (not headings) beside a contact card (`site.json faq`); only answered items render and feed FAQPage JSON-LD; `tone` lavender (home) or white                                                  |
 | `testimonials`     | `Testimonials.astro` (+ `ui/Rating`)                 | Reviews in a swipe track (`li > figure > blockquote`), prev/next buttons from md; `labels` for a11y; a visible `placeholder` item or "[X]" fails a production build                                                        |
 | `ctaMascot`        | `CtaMascot.astro`                                    | Final CTA (home, last block): mascot in a white/lime ring beside a multi-line `h2` (`\n` = new line); `highlight` must equal one line (tilted lime chip + sparkle); `body`, purple `cta` button                            |
+| `notFound`         | `NotFound.astro`                                     | The 404 page (`pages/404.json`, not designed): fox in a lavender circle, `eyebrow` pill, the page's `h1` (instead of a hero), `text`, lime `primaryCta` and a `secondaryLink`; `seo.noindex`                               |
 
 ## How to…
 
@@ -91,8 +93,28 @@ referenced by key (`mascot/fox-waving`, `money`): files in `src/assets/images` a
   renders `<ContentPage id="<product>" />`), a `/vergelijken/<product>` and
   `/bedankt/<product>` route, and either a rules file in `src/server/rules/` or nothing (the
   outcome is then `pending`).
-- **Add a campaign landing variant** (Phase 3): a Markdown file in `src/content/landing/`;
-  frontmatter holds the copy, product preselect and SEO; it is served at `/l/<slug>`.
+- **Add a blog post:** a Markdown file `src/content/blog/<slug>.md`, served at `/blog/<slug>`
+  (frontmatter schema: `src/schemas/blog.ts`). Required: `title`, `excerpt` (card text and
+  meta description), `date` (`2026-09-29`). Optional: `cover` (`{ src: <image key>, alt }`;
+  without it the placeholder box shows), `updated`, `author`, `tags`, `featured`, `related` (up
+  to 3 slugs), `seo`. Start the body at `##`: the title is the h1. `draft: true` builds
+  everywhere except production; `placeholder: true` fails a production build. The first
+  published post also builds `/blog` and shows "Blogs" in the header; blog labels live in
+  `site.json` `blog`.
+- **Legal texts** (privacybeleid, cookiebeleid, algemene voorwaarden) live in
+  `src/content/legal/<slug>.md`, served at `/<slug>`; every footer legal link needs one (the
+  build fails otherwise). `##` headings make the table of contents. They are neutral
+  placeholders (`placeholder: true`): staging shows a notice and a production build fails until
+  the lawyer's final text replaces them and the flag is set to `false` (CONTENT-TODO 3.1). Never
+  write legal text yourself.
+- **Add a campaign landing variant:** a Markdown file `src/content/landing/<slug>.md`, served at
+  `/l/<slug>` (fields: `src/content/landing/README.md`, schema `src/schemas/landing.ts`). The
+  frontmatter holds `product` (`energie` | `zonnepanelen` | `thuisbatterij`: the preselect),
+  the hero copy (`title`, `subtitle`, optional `cta` and `heroImage`) and `seo`; the rest of the
+  page is the product's own page (home sections for `energie`), so a variant is copy-only. Every
+  CTA to the form goes to `/vergelijken/<product>` and keeps the ad's query string
+  (`src/scripts/keep-query.ts`). Variants are always `noindex` and stay out of the sitemap.
+  Leave the body empty (not rendered yet; the build fails on one). Never invent campaign copy.
 
 ## Environment and secrets
 

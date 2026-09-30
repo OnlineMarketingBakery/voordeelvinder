@@ -1,0 +1,60 @@
+---
+// /blog and /blog/pagina/<n> (Figma 113:1135): the featured post on page 1, then the grid with
+// page links. Nothing is built while there are no posts (CONTENT-TODO 2.14), so /blog is a 404
+// and the "Blogs" nav link stays hidden (contentAvailability()).
+import BlogFeatured from '../../components/blog/BlogFeatured.astro';
+import BlogGrid from '../../components/blog/BlogGrid.astro';
+import Page from '../../layouts/Page.astro';
+import { getPosts, listingHref, listingPages, type Post, toCard } from '../../lib/blog';
+import { fill } from '../../lib/copy';
+import { getSite } from '../../lib/site';
+
+export async function getStaticPaths() {
+  const [posts, site] = await Promise.all([getPosts(), getSite()]);
+  const { featured, pages } = listingPages(posts, site.blog.listing.perPage);
+  return pages.map((items, index) => ({
+    params: { page: index === 0 ? undefined : `pagina/${index + 1}` },
+    props: {
+      featured: index === 0 ? featured : undefined,
+      items,
+      current: index + 1,
+      total: pages.length,
+    },
+  }));
+}
+
+interface Props {
+  featured: Post | undefined;
+  items: Post[];
+  current: number;
+  total: number;
+}
+
+const { featured, items, current, total } = Astro.props;
+const site = await getSite();
+const { listing, readMore, pagination } = site.blog;
+const title = current === 1 ? listing.title : fill(listing.pagedTitle, { n: current });
+---
+
+<Page {title} description={listing.description}>
+  <h1 class="sr-only">{listing.title}</h1>
+  {featured && (
+    <div class:list={[items.length === 0 && 'pb-20 lg:pb-30']}>
+      <BlogFeatured
+        heading={listing.featuredHeading}
+        post={toCard(featured)}
+        {readMore}
+        locale={site.locale}
+      />
+    </div>
+  )}
+  {items.length > 0 && (
+    <BlogGrid
+      heading={listing.gridHeading}
+      posts={items.map(toCard)}
+      {readMore}
+      belowFeatured={featured !== undefined}
+      pagination={{ current, total, href: listingHref, labels: pagination }}
+    />
+  )}
+</Page>

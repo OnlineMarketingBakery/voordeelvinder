@@ -1,0 +1,49 @@
+---
+// "Terug" / "Volgende" under a post (Figma 134:2643, 134:2638): the form's back and next
+// buttons. Their meaning is not designed (CONTENT-TODO 5.11); proposed: the neighbours in
+// listing order, "Terug" the newer post, "Volgende" the older one. A hidden hint names the post.
+import { fill } from '../../lib/copy';
+import Button from '../ui/Button.astro';
+
+interface Props {
+  newer?: { href: string; title: string } | undefined;
+  older?: { href: string; title: string } | undefined;
+  labels: { label: string; previous: string; next: string; previousHint: string; nextHint: string };
+}
+
+const { newer, older, labels } = Astro.props;
+const hint = (template: string, title: string) => ` ${fill(template, { title })}`;
+---
+
+{(newer || older) && (
+  <nav
+    aria-label={labels.label}
+    class:list={['mt-12 grid gap-3 md:flex lg:mt-16', newer && older && 'grid-cols-2']}
+  >
+    {newer && (
+      <Button
+        href={newer.href}
+        variant="form-secondary"
+        size="form"
+        icon="chevron-left"
+        iconPosition="start"
+        class="md:min-w-[9.25rem]"
+      >
+        {labels.previous}
+        <span class="sr-only">{hint(labels.previousHint, newer.title)}</span>
+      </Button>
+    )}
+    {older && (
+      <Button
+        href={older.href}
+        variant="form"
+        size="form"
+        icon="chevron-right"
+        class="md:min-w-[9.25rem]"
+      >
+        {labels.next}
+        <span class="sr-only">{hint(labels.nextHint, older.title)}</span>
+      </Button>
+    )}
+  </nav>
+)}

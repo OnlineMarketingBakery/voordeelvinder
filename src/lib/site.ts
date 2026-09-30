@@ -1,6 +1,8 @@
 // Site-wide content helpers (src/content/site.json).
 import { type CollectionEntry, getEntry } from 'astro:content';
 
+import { getPosts } from './blog';
+
 export type Site = CollectionEntry<'site'>['data'];
 export type NavLink = Site['header']['nav'][number];
 
@@ -41,7 +43,7 @@ export async function getSite(): Promise<Site> {
   return entry.data;
 }
 
-/** The blog arrives in Phase 3; until then there are no posts. */
+/** "Blogs" shows once a post is published (none ship yet: CONTENT-TODO 2.14). */
 export async function contentAvailability(): Promise<Availability> {
-  return { blogPosts: false };
+  return { blogPosts: (await getPosts()).length > 0 };
 }

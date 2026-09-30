@@ -1,0 +1,26 @@
+{
+  "seo": {
+    "title": "Pagina niet gevonden",
+    "noindex": true
+  },
+  "sections": [
+    {
+      "type": "notFound",
+      "eyebrow": "404",
+      "title": "Oeps, deze pagina bestaat niet (meer).",
+      "text": "Misschien is de link verouderd of zit er een typfout in het adres. Geen zorgen: vanaf hier vind je snel je weg.",
+      "primaryCta": {
+        "label": "Gratis beginnen",
+        "href": "/vergelijken"
+      },
+      "secondaryLink": {
+        "label": "Naar de homepage",
+        "href": "/"
+      },
+      "image": {
+        "src": "mascot/fox-waving",
+        "alt": ""
+      }
+    }
+  ]
+}

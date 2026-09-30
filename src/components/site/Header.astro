@@ -7,14 +7,25 @@ import Button from '../ui/Button.astro';
 import Container from '../ui/Container.astro';
 import Logo from '../ui/Logo.astro';
 
+interface Props {
+  /** Where the CTA goes, if not site.json's (a campaign variant's own product form). */
+  ctaHref?: string | undefined;
+}
+
 const site = await getSite();
 const available = await contentAvailability();
 const nav = site.header.nav.filter((link) => isLinkVisible(link, available));
 const { cta } = site.header;
-// Built pages have a trailing slash (/blog/); compare without it. Anchors never match.
+const ctaHref = Astro.props.ctaHref ?? cta.href;
+// Built pages have a trailing slash (/blog/); compare without it. Anchors never match. A
+// section link also marks the pages below it (Blogs on /blog/<post>).
 const strip = (path: string) => (path.length > 1 ? path.replace(/\/+$/, '') : path);
 const current = strip(Astro.url.pathname);
-const isCurrent = (href: string) => (strip(href) === current ? 'page' : undefined);
+const isCurrent = (href: string) => {
+  const target = strip(href);
+  if (target === current) return 'page';
+  return target !== '/' && current.startsWith(`${target}/`) ? 'true' : undefined;
+};
 ---
 
 <a
@@ -35,7 +46,7 @@ const isCurrent = (href: string) => (strip(href) === current ? 'page' : undefine
             <a
               href={link.href}
               aria-current={isCurrent(link.href)}
-              class="text-sm leading-9 text-ink-800 decoration-2 underline-offset-[6px] transition-colors duration-(--motion-duration-fast) hover:text-purple-500 hover:underline aria-[current=page]:text-purple-500"
+              class="text-sm leading-9 text-ink-800 decoration-2 underline-offset-[6px] transition-colors duration-(--motion-duration-fast) hover:text-purple-500 hover:underline aria-[current=page]:text-purple-500 aria-[current=true]:text-purple-500"
             >
               {link.label}
             </a>
@@ -45,7 +56,7 @@ const isCurrent = (href: string) => (strip(href) === current ? 'page' : undefine
     </nav>
 
     <div class="hidden justify-self-end lg:block">
-      <Button href={cta.href} size="sm" icon="arrow-up-right">
+      <Button href={ctaHref} size="sm" icon="arrow-up-right">
         {cta.label}
       </Button>
     </div>
@@ -80,14 +91,14 @@ const isCurrent = (href: string) => (strip(href) === current ? 'page' : undefine
           <a
             href={link.href}
             aria-current={isCurrent(link.href)}
-            class="flex min-h-12 items-center text-body-lg text-ink-800 aria-[current=page]:text-purple-500"
+            class="flex min-h-12 items-center text-body-lg text-ink-800 aria-[current=page]:text-purple-500 aria-[current=true]:text-purple-500"
           >
             {link.label}
           </a>
         </li>
       ))}
     </ul>
-    <Button href={cta.href} size="md" icon="arrow-up-right" fullWidth class="mt-4">
+    <Button href={ctaHref} size="md" icon="arrow-up-right" fullWidth class="mt-4">
       {cta.label}
     </Button>
   </nav>

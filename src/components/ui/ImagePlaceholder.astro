@@ -1,0 +1,23 @@
+---
+// The design's image slot without an image (Figma 134:2671 on 117:1922 and the blog cards): a
+// lavender box with a centred picture glyph. Decorative. The slot sets the aspect ratio.
+import Icon from './Icon.astro';
+
+interface Props {
+  /** Glyph 90 (cards) or 119 (featured post, post hero). */
+  glyph?: 'sm' | 'lg';
+  class?: string;
+}
+
+const { glyph = 'sm', class: className } = Astro.props;
+---
+
+<div
+  class:list={['grid place-items-center rounded-2xl bg-lavender-100', className]}
+  data-image-placeholder
+>
+  <Icon
+    name="image-placeholder"
+    class:list={['text-lavender-300', glyph === 'lg' ? 'size-[119px]' : 'size-[90px]']}
+  />
+</div>

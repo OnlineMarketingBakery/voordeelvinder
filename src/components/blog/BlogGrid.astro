@@ -1,0 +1,47 @@
+---
+// "Onze blogs en artikelen" (Figma 118:2008 and the 3 × 3 cards): the listing grid, 1/2/3
+// columns, with the page links under it.
+import type { CardPost } from '../../lib/blog';
+import Container from '../ui/Container.astro';
+import BlogCard from './BlogCard.astro';
+import Pagination from './Pagination.astro';
+
+interface Props {
+  heading: string;
+  posts: CardPost[];
+  readMore: string;
+  /** The featured post is above the grid (page 1): less space on top. */
+  belowFeatured: boolean;
+  pagination: {
+    current: number;
+    total: number;
+    href: (page: number) => string;
+    labels: { label: string; page: string; previous: string; next: string };
+  };
+}
+
+const { heading, posts, readMore, belowFeatured, pagination } = Astro.props;
+---
+
+<section
+  aria-labelledby="blog-grid-title"
+  class:list={['pb-20 lg:pb-30', belowFeatured ? 'mt-14 lg:mt-20' : 'pt-10 md:pt-16 lg:pt-29']}
+>
+  <Container>
+    <h2 id="blog-grid-title" class="text-h3 text-ink-800 md:text-h2">
+      {heading}
+    </h2>
+    <ul
+      role="list"
+      class="mt-8 grid gap-y-12 md:grid-cols-2 md:gap-x-6 lg:mt-9 lg:grid-cols-3 lg:gap-y-12.5"
+      data-reveal-stagger
+    >
+      {posts.map((post) => (
+        <li class="group flex">
+          <BlogCard {post} {readMore} />
+        </li>
+      ))}
+    </ul>
+    <Pagination {...pagination} />
+  </Container>
+</section>

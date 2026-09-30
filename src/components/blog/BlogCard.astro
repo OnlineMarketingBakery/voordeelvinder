@@ -1,0 +1,36 @@
+---
+// A post card (Figma 117:1920 + 118:1932–118:1937; related posts 134:2649…): cover, title,
+// excerpt and the "Lees meer" pill. The title is the card's only link, stretched over the card,
+// so the pill is decorative and every card has one link named by its post.
+import type { CardPost } from '../../lib/blog';
+import Button from '../ui/Button.astro';
+import PostCover from './PostCover.astro';
+
+interface Props {
+  post: CardPost;
+  readMore: string;
+  headingLevel?: 'h2' | 'h3';
+}
+
+const { post, readMore, headingLevel: Heading = 'h3' } = Astro.props;
+---
+
+<article class="lift relative flex w-full flex-col rounded-2xl outline-offset-4 outline-purple-500 has-[a:focus-visible]:outline-2">
+  <PostCover
+    cover={post.cover}
+    class="aspect-[376/246] w-full"
+    widths={[376, 752]}
+    sizes="(min-width: 1024px) 376px, (min-width: 768px) 50vw, 100vw"
+  />
+  <Heading class="mt-7 max-w-[20.25rem] text-title-lg leading-tight text-ink-800">
+    <a href={post.href} class="after:absolute after:inset-0 focus-visible:outline-none">
+      {post.title}
+    </a>
+  </Heading>
+  <p class="mt-3 text-body text-ink-600">{post.excerpt}</p>
+  <div class="mt-auto pt-4" aria-hidden="true">
+    <Button as="span" variant="purple" size="pill" icon="arrow-up-right" flat>
+      {readMore}
+    </Button>
+  </div>
+</article>

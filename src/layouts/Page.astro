@@ -8,16 +8,21 @@ interface Props {
   title: string;
   description?: string | undefined;
   noindex?: boolean;
+  canonical?: boolean;
   structuredData?: object[];
   /** A CTA band overlaps the top of the footer. */
   footerOverlap?: boolean;
+  ogImage?: { src: string; width: number; height: number; alt: string } | undefined;
+  ogType?: 'website' | 'article';
+  /** Where the header CTA goes (default site.json): a campaign variant's own product form. */
+  ctaHref?: string | undefined;
 }
 
-const { footerOverlap = false, ...base } = Astro.props;
+const { footerOverlap = false, ctaHref, ...base } = Astro.props;
 ---
 
 <Base {...base}>
-  <Header />
+  <Header {ctaHref} />
   <main id="main" tabindex="-1" class="focus:outline-none">
     <slot />
   </main>

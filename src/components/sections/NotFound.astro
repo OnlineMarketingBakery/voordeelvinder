@@ -1,0 +1,96 @@
+---
+// The 404 page (not designed; proposal, Phase 3 spec §12): a white section between the shared
+// header and footer (a purple hero would run into the purple footer on short screens). The
+// waving fox stands in a lavender circle with two hairline rings, its head breaking out of the
+// top. The fox fades and scales in once and waves twice (CSS only); the h1 is visible at first
+// paint.
+import Button from '../ui/Button.astro';
+import Container from '../ui/Container.astro';
+import Illustration from '../ui/Illustration.astro';
+import SectionPill from '../ui/SectionPill.astro';
+
+interface Props {
+  id?: string | undefined;
+  eyebrow: string;
+  title: string;
+  text: string;
+  primaryCta: { label: string; href: string };
+  secondaryLink: { label: string; href: string };
+  image: { src: string; alt: string };
+}
+
+const { id, eyebrow, title, text, primaryCta, secondaryLink, image } = Astro.props;
+const titleId = `${id ?? 'not-found'}-title`;
+
+// Circle 200 / 240 / 280 (phone / md / lg); rings +40 and +80 on phones, +60 and +120 from md.
+const rings = ['size-60 md:size-75 lg:size-85', 'size-70 md:size-90 lg:size-100'];
+const foxMotion =
+  'motion-safe:animate-[ring-in_var(--motion-duration-slow)_var(--ease-out)_both,fox-sway_1s_ease-in-out_400ms_2]';
+---
+
+<section id={id} aria-labelledby={titleId} class="overflow-x-clip py-16 md:py-24 lg:py-30">
+  <Container class="flex flex-col items-center text-center">
+    <div class="relative size-50 md:size-60 lg:size-70">
+      {rings.map((size) => (
+        <div
+          class:list={[
+            'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-lavender-300',
+            size,
+          ]}
+          aria-hidden="true"
+        />
+      ))}
+      <div class="absolute inset-0 rounded-full bg-lavender-100" aria-hidden="true"></div>
+      <div
+        class="absolute bottom-[24%] left-1/2 h-[6%] w-[52%] -translate-x-1/2 bg-[radial-gradient(closest-side,var(--color-ink-800),transparent)] opacity-20"
+        aria-hidden="true"
+      ></div>
+      {/* Fox 160 / 190 / 220 tall; its feet at 72% of the circle, so the head clears the top. */}
+      <div class="absolute bottom-[28%] left-1/2 aspect-[319/347] h-[79%] -translate-x-1/2">
+        <Illustration
+          src={image.src}
+          alt={image.alt}
+          widths={[220, 440]}
+          sizes="220px"
+          eager
+          class:list={['size-full origin-[50%_90%]', foxMotion]}
+        />
+      </div>
+    </div>
+
+    {/* Clears the outer ring (40 / 60 px below the circle). */}
+    <SectionPill label={eyebrow} class="mt-14 md:mt-20" />
+    <h1
+      id={titleId}
+      class="mt-5 max-w-[47.5rem] text-h3 text-balance text-ink-800 md:text-h2 lg:text-h1"
+    >
+      {title}
+    </h1>
+    <p class="mt-5 max-w-[35rem] text-body-lg text-pretty text-ink-600 md:text-body-xl">{text}</p>
+    <div class="mt-10 flex w-full flex-col items-center gap-4 md:w-auto md:flex-row md:gap-6">
+      <Button href={primaryCta.href} icon="arrow-up-right" class="max-md:w-full">
+        {primaryCta.label}
+      </Button>
+      <a
+        href={secondaryLink.href}
+        class="rounded-sm text-body-lg text-purple-500 underline underline-offset-4 transition-colors duration-(--motion-duration-fast) hover:text-purple-700"
+      >
+        {secondaryLink.label}
+      </a>
+    </div>
+  </Container>
+</section>
+
+<style>
+  /* A small whole-image sway for the fox (two cycles, no loop); the emoji "wave" is too wide. */
+  @keyframes fox-sway {
+    25%,
+    75% {
+      rotate: 4deg;
+    }
+
+    50% {
+      rotate: -3deg;
+    }
+  }
+</style>

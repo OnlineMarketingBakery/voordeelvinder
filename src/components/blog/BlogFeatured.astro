@@ -1,0 +1,58 @@
+---
+// "Recent bericht" (Figma 117:1922–118:1931): the featured post as a large card, cover left and
+// date, title, divider, excerpt and pill right from lg; stacked below. The title is the link.
+import type { CardPost } from '../../lib/blog';
+import { formatDate, isoDate } from '../../lib/dates';
+import Button from '../ui/Button.astro';
+import Container from '../ui/Container.astro';
+import PostCover from './PostCover.astro';
+
+interface Props {
+  heading: string;
+  post: CardPost;
+  readMore: string;
+  locale: string;
+}
+
+const { heading, post, readMore, locale } = Astro.props;
+---
+
+<section aria-labelledby="blog-featured-title" class="pt-10 md:pt-16 lg:pt-29">
+  <Container>
+    <h2 id="blog-featured-title" class="text-h3 text-ink-800 md:text-h2">
+      {heading}
+    </h2>
+    <div class="group mt-5">
+      <article class="lift relative flex flex-col gap-5 rounded-2xl outline-offset-4 outline-purple-500 has-[a:focus-visible]:outline-2 lg:grid lg:grid-cols-[673fr_473fr] lg:gap-6">
+        <PostCover
+          cover={post.cover}
+          glyph="lg"
+          class="aspect-[673/417] w-full"
+          widths={[673, 1346]}
+          sizes="(min-width: 1170px) 673px, (min-width: 1024px) 57vw, 100vw"
+          priority
+        />
+        <div class="flex flex-col">
+          <time
+            datetime={isoDate(post.date)}
+            class="text-body leading-tight text-purple-500 md:text-body-xl md:leading-tight"
+          >
+            {formatDate(post.date, locale)}
+          </time>
+          <h3 class="mt-4 max-w-[475px] text-h4 text-ink-800 md:text-h3 xl:text-h2">
+            <a href={post.href} class="after:absolute after:inset-0 focus-visible:outline-none">
+              {post.title}
+            </a>
+          </h3>
+          <div class="mt-5 border-t border-ink-600/43 lg:mt-8" aria-hidden="true"></div>
+          <p class="mt-4 max-w-[24.8rem] text-body text-ink-600 lg:mt-5">{post.excerpt}</p>
+          <div class="mt-6 lg:mt-auto lg:pt-11" aria-hidden="true">
+            <Button as="span" variant="lime" size="card" icon="arrow-up-right" flat>
+              {readMore}
+            </Button>
+          </div>
+        </div>
+      </article>
+    </div>
+  </Container>
+</section>

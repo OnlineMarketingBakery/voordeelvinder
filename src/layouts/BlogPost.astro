@@ -1,0 +1,96 @@
+---
+// A blog post from src/content/blog/<slug>.md (Figma 118:2067): header, the Markdown body, the
+// links to the neighbouring posts and related posts. BlogPosting JSON-LD from the frontmatter.
+import { getImage } from 'astro:assets';
+import { render } from 'astro:content';
+
+import PostHeader from '../components/blog/PostHeader.astro';
+import PostNav from '../components/blog/PostNav.astro';
+import RelatedPosts from '../components/blog/RelatedPosts.astro';
+import Container from '../components/ui/Container.astro';
+import Prose from '../components/ui/Prose.astro';
+import { image } from '../lib/assets';
+import { type Post, postHref, toCard } from '../lib/blog';
+import { isoDate } from '../lib/dates';
+import { blogPosting } from '../lib/seo/structured-data';
+import { getSite } from '../lib/site';
+import Page from './Page.astro';
+
+interface Props {
+  post: Post;
+  newer: Post | undefined;
+  older: Post | undefined;
+  related: Post[];
+}
+
+const { post, newer, older, related } = Astro.props;
+const { title, excerpt, date, updated, cover, author, seo } = post.data;
+const site = await getSite();
+const { Content } = await render(post);
+
+// Share image: seo.ogImage, else the cover, as a 1200 px JPEG (social sites don't take AVIF).
+const shareKey = seo?.ogImage ?? cover?.src;
+const shareSource = shareKey ? image(shareKey) : undefined;
+const share =
+  shareSource && shareSource.format !== 'svg'
+    ? await getImage({
+        src: shareSource,
+        width: Math.min(1200, shareSource.width),
+        format: 'jpg',
+      })
+    : undefined;
+const ogImage = share && {
+  src: share.src,
+  width: Number(share.attributes.width),
+  height: Number(share.attributes.height),
+  alt: cover?.alt ?? title,
+};
+
+const link = (other: Post | undefined) =>
+  other && { href: postHref(other.id), title: other.data.title };
+const structuredData = [
+  blogPosting({
+    headline: title,
+    description: seo?.description ?? excerpt,
+    url: new URL(postHref(post.id), Astro.site),
+    datePublished: isoDate(date),
+    dateModified: updated && isoDate(updated),
+    image: cover && new URL(image(cover.src).src, Astro.site),
+    author,
+    publisher: {
+      name: site.name,
+      url: new URL('/', Astro.site),
+      logo: new URL('/icon-512.png', Astro.site),
+    },
+    inLanguage: site.locale,
+  }),
+];
+---
+
+<Page
+  title={seo?.title ?? title}
+  description={seo?.description ?? excerpt}
+  noindex={seo?.noindex ?? false}
+  {structuredData}
+  {ogImage}
+  ogType="article"
+>
+  <article>
+    <PostHeader {title} {date} {cover} locale={site.locale} />
+    <Container>
+      <Prose variant="blog" class="mt-10 lg:mt-17">
+        <Content />
+      </Prose>
+    </Container>
+  </article>
+  <div class:list={[related.length === 0 && 'pb-20 lg:pb-38']}>
+    <Container>
+      <PostNav newer={link(newer)} older={link(older)} labels={site.blog.postNav} />
+    </Container>
+  </div>
+  <RelatedPosts
+    heading={site.blog.relatedHeading}
+    posts={related.map(toCard)}
+    readMore={site.blog.readMore}
+  />
+</Page>

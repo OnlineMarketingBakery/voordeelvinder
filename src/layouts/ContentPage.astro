@@ -2,6 +2,7 @@
 // A page built from src/content/pages/<id>.json: its SEO fields and section blocks, the
 // FAQPage JSON-LD of the questions it shows, and the footer overlap when it ends in a CTA band
 // that reaches into the footer. getPage() fails a production build on placeholders.
+// `seo.noindex` keeps a page (the 404) out of search results in every environment.
 import Sections from '../components/sections/Sections.astro';
 import { visibleFaqItems } from '../lib/faq';
 import { getPage, overlapsFooter } from '../lib/pages';
@@ -13,9 +14,11 @@ interface Props {
   id: string;
   /** Page-specific schema.org objects, before the FAQPage (the homepage's Organization, WebSite). */
   structuredData?: object[];
+  /** Off for the 404 (see Base.astro). */
+  canonical?: boolean;
 }
 
-const { id, structuredData = [] } = Astro.props;
+const { id, structuredData = [], canonical = true } = Astro.props;
 const page = await getPage(id);
 const faq = faqPage(visibleFaqItems(page.sections));
 ---
@@ -23,6 +26,8 @@ const faq = faqPage(visibleFaqItems(page.sections));
 <Page
   title={page.seo.title}
   description={page.seo.description}
+  noindex={page.seo.noindex ?? false}
+  {canonical}
   structuredData={[...structuredData, ...(faq ? [faq] : [])]}
   footerOverlap={overlapsFooter(page.sections)}
 >

@@ -1,0 +1,67 @@
+---
+// Table of contents of a legal page (Figma 140:3202, 140:3258/3259, items 140:3268 with the
+// triangle markers 140:3271…), built from the page's `##` headings, so it always matches them.
+// From lg: a card in the left column, sticky below the header (proposed). Below lg: above the
+// text, collapsed in a <details> whose summary is the purple bar (not designed; proposed).
+import Icon from '../ui/Icon.astro';
+
+interface Props {
+  label: string;
+  items: Array<{ id: string; text: string }>;
+}
+
+const { label, items } = Astro.props;
+
+const bar = 'flex items-center rounded-md bg-purple-600 px-[17px] text-title-sm text-white';
+const link =
+  'flex min-h-10 items-center gap-2 py-2 text-body leading-6 text-ink-600 transition-colors duration-(--motion-duration-fast) hover:text-purple-700 hover:underline';
+---
+
+{items.length > 0 && (
+  <>
+    <nav aria-labelledby="toc-title-compact" class="mb-10 lg:hidden">
+      <details class="group rounded-lg bg-lavender-100">
+        <summary
+          class:list={[
+            bar,
+            'h-[52px] cursor-pointer list-none justify-between [&::-webkit-details-marker]:hidden',
+          ]}
+        >
+          <span id="toc-title-compact">{label}</span>
+          <Icon
+            name="chevron-right"
+            class="size-6 transition-transform duration-(--motion-duration-fast) group-open:rotate-90 motion-reduce:transition-none"
+          />
+        </summary>
+        <ol role="list" class="pt-3 pr-4.5 pb-5 pl-[35px]">
+          {items.map((item) => (
+            <li>
+              <a href={`#${item.id}`} class={link}>
+                <Icon name="toc-marker" class="h-[11px] w-[9px] shrink-0 text-purple-500" />
+                <span>{item.text}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </details>
+    </nav>
+    <nav
+      aria-labelledby="toc-title"
+      class="sticky top-24 hidden max-h-[calc(100dvh-8rem)] self-start overflow-y-auto rounded-lg bg-lavender-100 px-4.5 pt-3.5 pb-7 lg:block"
+    >
+      <h2 id="toc-title" class:list={[bar, 'h-[53px]']}>
+        {label}
+      </h2>
+      <ol role="list" class="mt-4 pl-4.25">
+        {items.map((item) => (
+          <li>
+            <a href={`#${item.id}`} class={link}>
+              <Icon name="toc-marker" class="h-[11px] w-[9px] shrink-0 text-purple-500" />
+              <span>{item.text}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  </>
+)}

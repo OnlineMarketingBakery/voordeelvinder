@@ -2,6 +2,9 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
+import { blogCopy, postFrontmatter } from './schemas/blog';
+import { legalCopy, legalFrontmatter } from './schemas/legal';
+import { landing as landingSchema } from './schemas/landing';
 import { page } from './schemas/page';
 import { link, text, todo } from './schemas/primitives';
 
@@ -73,6 +76,8 @@ const site = defineCollection({
         todo,
       }),
     }),
+    blog: blogCopy,
+    legal: legalCopy,
   }),
 });
 
@@ -82,4 +87,25 @@ const pages = defineCollection({
   schema: page,
 });
 
-export const collections = { site, pages };
+// Legal pages (src/content/legal/<slug>.md, served at /<slug>): see src/schemas/legal.ts.
+const legal = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/legal' }),
+  schema: legalFrontmatter,
+});
+
+// Blog posts (src/content/blog/<slug>.md, served at /blog/<slug>): see src/schemas/blog.ts.
+// Empty until the first post (CONTENT-TODO 2.14): then no blog route is built.
+const blog = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/blog' }),
+  schema: postFrontmatter,
+});
+
+// Campaign landing variants (src/content/landing/<slug>.md → /l/<slug>): see src/schemas/landing.ts.
+// None ship until there is campaign copy; with no variants there are no /l/ routes. The folder's
+// README.md (the field reference) is not a variant.
+const landing = defineCollection({
+  loader: glob({ pattern: ['*.md', '!README.md'], base: './src/content/landing' }),
+  schema: landingSchema,
+});
+
+export const collections = { site, pages, legal, blog, landing };

@@ -1,0 +1,54 @@
+---
+// Long-form Markdown (legal pages and blog posts), styled from the outside because the Markdown
+// renders plain elements. Figma: legal 140:3204… (11), blog 134:2615… (6). Both variants share
+// the type scale; they differ in the rule under each h2 (legal: 2 px purple, blog: 4 px purple
+// and lime by turns), the spacing around it, and the legal lead paragraph.
+// Not designed (CONTENT-TODO 5.11), proposed from the legal template so no Markdown renders
+// unstyled: h3, lists, quotes, links, images.
+interface Props {
+  variant: 'legal' | 'blog';
+  class?: string;
+}
+
+const { variant, class: className } = Astro.props;
+
+const shared = [
+  'text-body leading-relaxed text-ink-600',
+  // Blocks inside a section; the h2 rules below override the gaps around headings.
+  '[&>*+*]:mt-3.5',
+  // h2 with its rule (a pseudo-element, so the Markdown stays plain).
+  '[&_h2]:text-title-lg [&_h2]:text-ink-800 md:[&_h2]:text-h4 lg:[&_h2]:text-h3',
+  '[&_h2]:after:block [&_h2]:after:w-30 md:[&_h2]:after:w-60 lg:[&_h2]:after:w-[22.75rem]',
+  // h3: the legal label ("Onze dienst omvat:").
+  '[&_h3]:text-title [&_h3]:font-medium [&_h3]:text-purple-500 md:[&_h3]:text-title-lg',
+  // Bullets: a 16 px ring with a 6 px dot (Figma 140:3229 + 140:3218), centred on the first line.
+  '[&_li+li]:mt-1.25 [&_ul>li]:relative [&_ul>li]:pl-[23px]',
+  '[&_ul>li]:before:absolute [&_ul>li]:before:top-[5px] [&_ul>li]:before:left-0 [&_ul>li]:before:size-4 [&_ul>li]:before:rounded-full [&_ul>li]:before:border-[0.5px] [&_ul>li]:before:border-purple-500',
+  '[&_ul>li]:before:bg-[radial-gradient(circle,var(--color-purple-500)_3px,transparent_3.5px)]',
+  '[&_ol]:list-decimal [&_ol]:pl-6 [&_ol>li]:pl-1 [&_ol>li]:marker:font-semibold [&_ol>li]:marker:text-purple-500',
+  // Always underlined: purple on the body colour is 2.07:1 (CONTENT-TODO 5.2).
+  '[&_a]:text-purple-500 [&_a]:underline [&_a]:underline-offset-2 [&_a:hover]:text-purple-700',
+  '[&_strong]:font-semibold [&_strong]:text-ink-900',
+  '[&_blockquote]:rounded-xl [&_blockquote]:border-l-4 [&_blockquote]:border-purple-500 [&_blockquote]:bg-lavender-50 [&_blockquote]:p-6 [&_blockquote]:text-body-lg [&_blockquote]:text-ink-800',
+  '[&_img]:h-auto [&_img]:w-full [&_img]:rounded-2xl',
+];
+
+const variants = {
+  legal: [
+    'max-w-[44.875rem]',
+    '[&_h2]:after:mt-2 [&_h2]:after:h-0.5 [&_h2]:after:bg-purple-500 lg:[&_h2]:after:mt-2.5',
+    '[&>h2+*]:mt-5 [&>*+h2]:mt-10 lg:[&>*+h2]:mt-10.5',
+    // The lead: the first paragraph of the first section (Figma 140:3205).
+    '[&>h2:first-of-type+p]:text-body-xl [&>h2:first-of-type+p]:leading-relaxed md:[&>h2:first-of-type+p]:text-lead md:[&>h2:first-of-type+p]:leading-relaxed lg:[&>h2:first-of-type+p]:leading-10',
+  ],
+  blog: [
+    '[&_h2]:after:mt-3 [&_h2]:after:h-1 lg:[&_h2]:after:mt-4',
+    '[&_h2:nth-of-type(odd)]:after:bg-purple-500 [&_h2:nth-of-type(even)]:after:bg-lime-400',
+    '[&>h2+*]:mt-6 [&>*+h2]:mt-10 lg:[&>*+h2]:mt-14 [&>*+h3]:mt-8',
+  ],
+} as const;
+---
+
+<div class:list={[shared, variants[variant], className]} data-prose={variant}>
+  <slot />
+</div>
