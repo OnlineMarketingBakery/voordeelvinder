@@ -4,8 +4,8 @@ import { type CollectionEntry, getEntry } from 'astro:content';
 export type PageData = CollectionEntry<'pages'>['data'];
 
 /**
- * Placeholder content that must never reach production (brief §2): the €52 hero raster
- * (CONTENT-TODO 1.9) and dummy testimonials (1.11). Hidden blocks are skipped.
+ * Placeholder content that must never reach production (brief §2): a hero image marked
+ * `todo` and dummy testimonials (CONTENT-TODO 1.11). Hidden blocks are skipped.
  */
 export function pagePlaceholderProblems(id: string, page: PageData): string[] {
   const problems: string[] = [];

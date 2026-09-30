@@ -84,29 +84,21 @@ describe('assets', () => {
 });
 
 describe('production gate', () => {
-  it('flags the €52 hero image as a placeholder', () => {
+  it("passes the homepage (the design's hero image is approved, CONTENT-TODO 1.9)", () => {
     const data = page.parse(home) as PageData;
-    expect(pagePlaceholderProblems('home', data)).toEqual([
-      'home: hero image "mascot/fox-thumbsup-with-price" is a placeholder',
-    ]);
+    expect(pagePlaceholderProblems('home', data)).toEqual([]);
   });
 
-  it('passes once the production-safe fox is used', () => {
+  it('flags a hero image marked todo', () => {
     const data = page.parse(home) as PageData;
     const hero = data.sections[0]!;
     if (hero.type !== 'hero') throw new Error('hero expected');
-    const safe = {
+    const pending = {
       ...data,
-      sections: [
-        {
-          ...hero,
-          art: {
-            ...hero.art,
-            mascot: { src: 'mascot/fox-waving', alt: '', mirror: true, todo: false },
-          },
-        },
-      ],
+      sections: [{ ...hero, art: { ...hero.art, mascot: { ...hero.art.mascot, todo: true } } }],
     } as PageData;
-    expect(pagePlaceholderProblems('home', safe)).toEqual([]);
+    expect(pagePlaceholderProblems('home', pending)).toEqual([
+      'home: hero image "mascot/fox-thumbsup-with-price" is a placeholder',
+    ]);
   });
 });
