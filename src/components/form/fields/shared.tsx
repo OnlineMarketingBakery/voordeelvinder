@@ -69,6 +69,21 @@ export function FieldMessage({
   );
 }
 
+/**
+ * The focus ring of an input or select (docs/MOTION.md "Inputs"): the site's 2 px purple ring 2 px
+ * outside the field, as a layer that fades in and grows to size (transform and opacity only)
+ * instead of the outline, which can't animate. Put it right after the control, which has the
+ * `peer` class and `focus-visible:outline-hidden` (kept for forced-colours mode).
+ */
+export function FocusRing() {
+  return (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute -inset-1 rounded-xl border-2 border-purple-500 opacity-0 transition-[opacity,scale] duration-(--motion-duration-base) ease-out peer-focus-visible:opacity-100 motion-safe:scale-[0.98] motion-safe:peer-focus-visible:scale-100"
+    />
+  );
+}
+
 /** The class of a question placed above its control (Figma 91:11419: 18px SemiBold). */
 export const labelClass = 'mb-2 block text-label text-ink-900';
 

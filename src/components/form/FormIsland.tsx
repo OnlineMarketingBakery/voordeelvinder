@@ -10,9 +10,16 @@
 //
 // Motion (brief §6.1, docs/MOTION.md; src/components/form/motion.tsx): the engine moves at once
 // and the animation is only visual. Focus, scrolling and the aria-live announcement never wait
-// for it. Auto-advance (a tap on a single-question choice step) is `settings.autoAdvance` in
-// _copy.json. The form card is named `form-card` for the page transitions from a product card
-// and into the thank-you card.
+// for it. The outgoing step slides out as a copy in a layer of the form card outside the <form>
+// (StepStage). Auto-advance (a tap that completes a step of only choice questions, src/lib/form/
+// navigation.ts) is `settings.autoAdvance` in _copy.json; on a phone a tap that leaves a question
+// of the step open brings that question into view instead. The form card is named `form-card`
+// for the page transitions from a product card and into the thank-you card.
+//
+// Going back and starting over (Tanjil 2026-09-30): the steps bar's completed steps, or a drag of
+// its pill, jump back (onJump, like "Terug" several times); the round button beside "Terug"
+// empties the form at once and "Ongedaan maken" puts everything back for a few seconds
+// (src/lib/form/reset.ts).
 //
 // Submit (brief §9.1, docs/FLOWS.md): "Verstuur" posts the lead to /api/lead (sendLead) with the
 // honeypot and a Turnstile token (the widget and its script exist on the last step only). On OK
@@ -23,6 +30,7 @@ import { prefetch } from 'astro:prefetch';
 import {
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type RefObject,
@@ -33,6 +41,7 @@ import {
   buildSubmission,
   getStep,
   nextStep,
+  pathSoFar,
   previousStep,
   progress,
   validateStep,
@@ -53,7 +62,13 @@ import {
 } from '../../lib/form/initial';
 import { choiceOptions, domId, UI_ICONS } from '../../lib/form/labels';
 import { LEAD_SAFE_KEY, serializeLeadSafe } from '../../lib/form/lead-safe';
-import { errorMessage, liveText, progressLabel, warningMessage } from '../../lib/form/messages';
+import {
+  errorMessage,
+  liveText,
+  progressJumpLabel,
+  progressLabel,
+  warningMessage,
+} from '../../lib/form/messages';
 import {
   AUTO_ADVANCE_DELAY_MS,
   pickVia,
@@ -63,8 +78,11 @@ import {
   type PointerPick,
   type Travel,
 } from '../../lib/form/motion';
+import { canJumpBack, pickOutcome } from '../../lib/form/navigation';
+import { canReset, freshStart, type FormIds, type FormSnapshot } from '../../lib/form/reset';
 import {
   clearAllSessions,
+  clearSession,
   flowFingerprint,
   flowFingerprints,
   newId,
@@ -92,6 +110,7 @@ import type {
 import { FormPanel } from './FormPanel';
 import { FadeInText, FormMotion, StepStage } from './motion';
 import { ProgressCard } from './ProgressCard';
+import { ResetButton, UndoNotice } from './ResetControls';
 import { StepView } from './StepView';
 import { FormButton } from './ui';
 import { useTurnstile } from './useTurnstile';
@@ -116,23 +135,23 @@ export type FormIslandProps = {
   turnstileSiteKey?: string | null;
 };
 
-type Ids = { leadId: string; eventId: string };
-
 type State = FormStart & {
   errors: Record<string, ErrorCode>;
   warnings: Record<string, WarningCode>;
   suggestions: Record<string, string>;
-  /** The aria-live announcement of the last step change or failed validation. */
+  /** The aria-live announcement of the last step change, failed validation or reset. */
   announcement: string;
   /** How the current step was reached: it slides in from that side (none after a restore). */
   travel: Travel;
   /** The last "Volgende" that found errors: those fields shake once (brief §6.1). */
   shake: { pulse: number; fields: string[] };
-  ids: Ids | null;
+  ids: FormIds | null;
   restored: boolean;
   submitting: boolean;
   /** Why the last "Verstuur" couldn't send the lead; cleared by an answer or a step change. */
   sendError: SendFailure | null;
+  /** The last reset while "Ongedaan maken" is offered: what it took away (`key` per reset). */
+  undo: { snapshot: FormSnapshot; key: number } | null;
 };
 
 /** A scheduled auto-advance: the step it was scheduled on and the picked field. */
@@ -179,8 +198,33 @@ function clearTimer(timer: RefObject<number | undefined>) {
   timer.current = undefined;
 }
 
+function clearFrame(frame: RefObject<number | undefined>) {
+  if (frame.current === undefined) return;
+  window.cancelAnimationFrame(frame.current);
+  frame.current = undefined;
+}
+
 function prefersReducedMotion(): boolean {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
+/** Below md the form is one column: a step's next question can be below the fold. */
+const NARROW = '(max-width: 47.99rem)';
+
+/**
+ * Scrolls the page just enough to show a field's whole question (its full height, also while
+ * it is still expanding), never under the sticky header; nothing when it is already in view.
+ * Focus stays where it is. True when it scrolled.
+ */
+function bringIntoView(cell: HTMLElement): boolean {
+  const header = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+  const top = cell.getBoundingClientRect().top;
+  const bottom = top + (cell.firstElementChild ?? cell).getBoundingClientRect().height;
+  const room = window.innerHeight;
+  if (top >= header && bottom <= room) return false;
+  const delta = top < header ? top - header : Math.min(bottom - room, top - header);
+  window.scrollBy({ top: delta, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+  return true;
 }
 
 export default function FormIsland({
@@ -208,8 +252,13 @@ export default function FormIsland({
     restored: false,
     submitting: false,
     sendError: null,
+    undo: null,
   }));
+  /** Answers picked so far (not typed): the panel mascot nods at each (FormPanel pickKey). */
+  const [picks, setPicks] = useState(0);
   const topRef = useRef<HTMLDivElement>(null);
+  /** The layer of the form card, outside the <form>, where the outgoing step slides out. */
+  const ghostLayer = useRef<HTMLDivElement>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const pendingFocus = useRef<PendingFocus>(null);
@@ -228,6 +277,8 @@ export default function FormIsland({
   const autoAdvancedAt = useRef<number | null>(null);
   const lastPointer = useRef<PointerPick | null>(null);
   const autoTimer = useRef<number | undefined>(undefined);
+  /** A pending scroll to the step's next open question (a frame after the pick rendered). */
+  const revealFrame = useRef<number | undefined>(undefined);
   /** The latest "Volgende" handler, for the auto-advance timer (set after every render). */
   const advance = useRef<((now: number, auto?: AutoAdvance) => void) | null>(null);
 
@@ -235,9 +286,17 @@ export default function FormIsland({
   const derived = engineDerived(state.flags, state.answers);
   const step = getStep(flow, state.step);
   const fields = visibleFields(flow, state.step, state.answers, derived);
+  // The visitor's path so far, the current step included: the progress bar's steps.
+  const path = pathSoFar(flow, state.answers, derived);
   const { step: stepNumber, total } = progress(flow, state.step, state.answers, derived);
   const isLast = nextStep(flow, state.step, state.answers, derived) === null;
   const panel = panels[state.product] ?? panels[pageProduct];
+  // Where a reset goes: this entry's first step with only the URL preselect (as served).
+  const fresh = useMemo(
+    () => freshStart({ flows, product: pageProduct, preselected, preselect }),
+    [flows, pageProduct, preselected, preselect],
+  );
+  const resettable = state.restored && canReset(fresh, state);
   // The last step is the contact step in every flow: the honeypot and Turnstile live there.
   const { container: turnstileBox, token: turnstileToken } = useTurnstile(
     isLast && state.restored,
@@ -296,8 +355,15 @@ export default function FormIsland({
     if (isLast) prefetch(thanksPath(state.product));
   }, [isLast, state.product]);
 
-  // A pending auto-advance belongs to its step: any step change (or unmounting) cancels it.
-  useEffect(() => () => clearTimer(autoTimer), [state.step]);
+  // A pending auto-advance (or scroll to the next question) belongs to its step: any step change
+  // (or unmounting) cancels it.
+  useEffect(
+    () => () => {
+      clearTimer(autoTimer);
+      clearFrame(revealFrame);
+    },
+    [state.step],
+  );
 
   // Focus and scroll after the render that showed the new step or the errors. Never waits for
   // an animation (brief §6.1).
@@ -323,6 +389,23 @@ export default function FormIsland({
   });
 
   const cancelAutoAdvance = () => clearTimer(autoTimer);
+
+  /**
+   * Stops what a pick set going (auto-advance, the scroll to the next question) and resets the
+   * double-tap guards: every move that isn't forward ("Terug", a jump back, a reset, an undo).
+   */
+  const holdStill = () => {
+    // The step changes under the pointer ("Terug", a jump, a reset, an undo): the second half
+    // of a double click or tap lands on the new step, so both guards start now. A pick there
+    // only selects its card, and "Volgende" (maybe now where the reset button was) is ignored.
+    // eslint-disable-next-line react-hooks/purity -- an event handler's helper, never called in render
+    const now = performance.now();
+    advancedAt.current = now;
+    autoAdvancedAt.current = now;
+    lastPointer.current = null;
+    cancelAutoAdvance();
+    clearFrame(revealFrame);
+  };
 
   const goTo = (stepId: string, answers: Answers, travel: Travel) => {
     cancelAutoAdvance();
@@ -388,6 +471,8 @@ export default function FormIsland({
       const ids = product === current.product ? current.ids : { leadId: newId(), eventId: newId() };
       return { ...current, answers, product, ids, errors, suggestions, warnings, sendError: null };
     });
+    // A pick (a card, chip, checkbox or list option), not a keystroke: the mascot nods.
+    if (!INPUT_TYPES.has(field.type)) setPicks((count) => count + 1);
   };
 
   // Text-like fields validate on blur once something is typed (brief §7.5); "required" waits
@@ -497,7 +582,8 @@ export default function FormIsland({
   /**
    * "Volgende": validate the step, then show the errors or go on (or submit on the last step).
    * The auto-advance timer calls it too, and then first checks that its step is still shown
-   * and still qualifies (a pick can reveal a second question).
+   * and still qualifies (every question still answered): if not, nothing happens, not even an
+   * error.
    */
   const onNext = (now: number, auto?: AutoAdvance) => {
     if (submitting.current) return;
@@ -506,19 +592,22 @@ export default function FormIsland({
     // The second half of a double click or tap lands on the new step: ignore it. This covers
     // auto-advance too: an auto-advance and a "Volgende" never both move on.
     if (isRepeatSubmit(advancedAt.current, now)) return;
+    const result = validateStep(flow, state.step, state.answers, derived);
     if (auto) {
       const qualifies = shouldAutoAdvance({
         enabled: copy.settings.autoAdvance,
         via: 'pointer',
         fieldId: auto.fieldId,
         fields,
+        complete: result.valid,
+        // Decided at the pick (a later pick cancels the timer): here only "still complete".
+        wasComplete: false,
         isLast,
         busy: submitting.current,
       });
       if (auto.stepId !== state.step || !qualifies) return;
     }
     cancelAutoAdvance();
-    const result = validateStep(flow, state.step, state.answers, derived);
     if (!result.valid) {
       showErrors(state.step, state.answers, result);
       return;
@@ -550,25 +639,56 @@ export default function FormIsland({
     lastPointer.current = { fieldId: field.id, code, at: performance.now() };
   };
 
+  /** On a phone, brings the step's next open question into view a frame after the pick shows. */
+  const revealQuestion = (fieldId: string) => {
+    if (!window.matchMedia?.(NARROW).matches) return;
+    revealFrame.current = window.requestAnimationFrame(() => {
+      revealFrame.current = undefined;
+      const cell = document.getElementById(`${domId.field(fieldId)}-vak`);
+      // The page moves under the finger: a second tap now lands on another card, which it
+      // may pick but never move the form on with (the auto-advance guard).
+      if (cell && bringIntoView(cell)) autoAdvancedAt.current = performance.now();
+    });
+  };
+
   const onPick = (field: Field, code: string) => {
     const now = performance.now();
     const via = pickVia(lastPointer.current, field.id, code, now);
     lastPointer.current = null;
     cancelAutoAdvance();
+    clearFrame(revealFrame);
     // Not before the stored session is restored: the form is inert until then.
     if (!state.restored) return;
     // The second half of a double click or tap on the step an auto-advance just showed: the
     // card is picked (onChange stores the answer, visibly), but the form doesn't move on again.
     if (withinAutoAdvanceGuard(autoAdvancedAt.current, now)) return;
+    // The step as it is with this pick, which onChange stores in the same event: a step of
+    // only choice questions moves on once they are all answered (a card of another product on
+    // step 1 continues in that product's flow).
+    const answers = withAnswer(state.answers, field.id, code);
+    const product = flowAfter(flows, state.product, state.flags.preselected, field, code);
+    const outcome = pickOutcome(
+      flowOf(flows, product),
+      state.step,
+      answers,
+      engineDerived(state.flags, answers),
+      field.id,
+    );
     const auto = shouldAutoAdvance({
       enabled: copy.settings.autoAdvance,
       via,
       fieldId: field.id,
-      fields,
-      isLast,
+      fields: outcome.fields,
+      complete: outcome.complete,
+      wasComplete: validateStep(flow, state.step, state.answers, derived).valid,
+      isLast: outcome.isLast,
       busy: submitting.current,
     });
-    if (!auto) return;
+    if (!auto) {
+      // A tap that leaves a question of the step open: on a phone, show that one next.
+      if (via === 'pointer' && outcome.nextOpen !== null) revealQuestion(outcome.nextOpen);
+      return;
+    }
     const stepId = state.step;
     autoTimer.current = window.setTimeout(() => {
       autoTimer.current = undefined;
@@ -576,11 +696,96 @@ export default function FormIsland({
     }, AUTO_ADVANCE_DELAY_MS);
   };
 
+  /**
+   * A completed step on the progress bar: back to it, answers kept, as if "Terug" was pressed
+   * until it showed (the step slides in from the left, its title takes focus and is announced).
+   * Only back along the visitor's path, never while sending.
+   */
+  const onJump = (stepId: string) => {
+    if (submitting.current || !state.restored) return;
+    if (!canJumpBack(path, state.step, stepId)) return;
+    holdStill();
+    goTo(stepId, state.answers, TRAVEL.back);
+  };
+
+  /**
+   * "Opnieuw beginnen": at once back to the entry's first step as a fresh visit shows it (the URL
+   * preselect stays), without answers, errors or stored session, and with new lead ids (a new
+   * lead). The title takes focus and "Formulier gewist" is announced; "Ongedaan maken" can put it
+   * all back for a few seconds. False when nothing was reset (while sending).
+   */
+  const onReset = (): boolean => {
+    if (submitting.current || !state.restored || !state.ids) return false;
+    holdStill();
+    const snapshot: FormSnapshot = {
+      product: state.product,
+      answers: state.answers,
+      step: state.step,
+      flags: state.flags,
+      ids: state.ids,
+    };
+    const ids = { leadId: newId(), eventId: newId() };
+    // Gone at once; the fresh session is stored again like any other change.
+    clearSession(sessionStore(), entry);
+    pendingFocus.current = { kind: 'step' };
+    setState((current) => ({
+      ...current,
+      ...fresh,
+      ids,
+      errors: {},
+      warnings: {},
+      suggestions: {},
+      announcement: liveText(current.announcement, copy.reset.done),
+      travel: TRAVEL.back,
+      shake: { pulse: current.shake.pulse, fields: [] },
+      sendError: null,
+      undo: { snapshot, key: (current.undo?.key ?? 0) + 1 },
+    }));
+    return true;
+  };
+
+  /** "Ongedaan maken": exactly what the reset took (step, answers, flow, lead ids) comes back. */
+  const onUndo = () => {
+    const undo = state.undo;
+    if (!undo || submitting.current) return;
+    holdStill();
+    const { snapshot } = undo;
+    const back = flowOf(flows, snapshot.product);
+    const title = getStep(back, snapshot.step).title;
+    const label = progressLabel(
+      copy,
+      progress(
+        back,
+        snapshot.step,
+        snapshot.answers,
+        engineDerived(snapshot.flags, snapshot.answers),
+      ),
+    );
+    pendingFocus.current = { kind: 'step' };
+    setState((current) => ({
+      ...current,
+      product: snapshot.product,
+      answers: snapshot.answers,
+      step: snapshot.step,
+      flags: snapshot.flags,
+      ids: snapshot.ids,
+      errors: {},
+      warnings: {},
+      suggestions: {},
+      announcement: liveText(current.announcement, `${title}. ${label}`),
+      travel: TRAVEL.forward,
+      shake: { pulse: current.shake.pulse, fields: [] },
+      sendError: null,
+      undo: null,
+    }));
+  };
+
+  const onUndoExpired = (key: number) =>
+    setState((current) => (current.undo?.key === key ? { ...current, undo: null } : current));
+
   const onBack = () => {
     if (submitting.current) return;
-    advancedAt.current = null;
-    autoAdvancedAt.current = null;
-    cancelAutoAdvance();
+    holdStill();
     const previous = previousStep(flow, state.step, state.answers, derived);
     if (previous !== null) {
       goTo(previous, state.answers, TRAVEL.back);
@@ -614,23 +819,34 @@ export default function FormIsland({
     }),
   );
 
+  const undo = state.undo;
+
   return (
     <FormMotion>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,372fr)_minmax(0,767fr)] lg:gap-6">
-        {panel && <FormPanel panel={panel} />}
+        {panel && <FormPanel panel={panel} stepKey={state.step} pickKey={picks} />}
         <div ref={topRef} className="flex min-w-0 flex-col gap-4 lg:gap-6">
-          <ProgressCard template={copy.progress} step={stepNumber} total={total} />
+          <ProgressCard
+            template={copy.progress}
+            steps={path.map((id) => ({ id, title: getStep(flow, id).title }))}
+            current={state.step}
+            step={stepNumber}
+            total={total}
+            onJump={onJump}
+            jumpLabel={(item) => progressJumpLabel(copy, item)}
+          />
           {/* The one element named form-card on this page: a product card's CTA morphs into it
-            and it morphs into the thank-you card (src/scripts/morph.ts, docs/MOTION.md). */}
+            and it morphs into the thank-you card (src/scripts/morph.ts, docs/MOTION.md). It
+            clips sideways: steps slide in and out under its edges, never past the page. */}
           <section
             data-morph="form-card"
             aria-labelledby="formulier-stap-titel"
-            className="flex flex-1 flex-col rounded-2xl border border-lavender-300 bg-white px-5 pt-6 pb-6 shadow-form [view-transition-name:form-card] md:px-12 md:pt-12 md:pb-[50px]"
+            className="relative flex flex-1 flex-col overflow-x-clip rounded-2xl border border-lavender-300 bg-white px-5 pt-6 pb-6 shadow-form [view-transition-name:form-card] md:px-12 md:pt-12 md:pb-[50px]"
           >
             <form noValidate onSubmit={onSubmit} className="flex flex-1 flex-col">
               {/* Keyed by the step id only: a product card on step 1 switches the flow but
                   stays on the same step, so its radios (and their focus) are kept. */}
-              <StepStage stepKey={state.step} travel={state.travel}>
+              <StepStage stepKey={state.step} travel={state.travel} ghostLayer={ghostLayer}>
                 <StepView
                   step={step}
                   fields={fields}
@@ -687,29 +903,55 @@ export default function FormIsland({
                     )}
                   </div>
                 )}
-                <div className="grid grid-cols-[auto_1fr] gap-3 border-t border-lavender-400 pt-6 md:flex md:justify-between md:pt-[52px]">
+                {undo && (
+                  <UndoNotice
+                    key={undo.key}
+                    message={copy.reset.done}
+                    action={copy.reset.undo}
+                    onUndo={onUndo}
+                    onExpire={() => onUndoExpired(undo.key)}
+                  />
+                )}
+                {/* One line, also on a phone with the reset button beside "Terug": below 390 px
+                    "Terug" shows only its arrow (compact); narrower than 332 px it wraps. */}
+                <div className="@container/actions flex flex-wrap gap-2 border-t border-lavender-400 pt-6 md:gap-3 md:pt-[52px]">
                   <FormButton
                     type="button"
                     variant="secondary"
                     icon={icons[UI_ICONS.back]}
                     iconPosition="start"
                     onClick={onBack}
+                    compact
                   >
                     {copy.buttons.back}
                   </FormButton>
-                  <FormButton
-                    type="submit"
-                    variant="primary"
-                    icon={icons[UI_ICONS.next]}
-                    iconPosition="end"
-                    busy={state.submitting}
-                    disabled={!state.restored}
-                  >
-                    {isLast ? copy.buttons.submit : copy.buttons.next}
-                  </FormButton>
+                  <ResetButton visible={resettable} label={copy.reset.button} onReset={onReset} />
+                  <div className="flex flex-1 md:ml-auto md:flex-none [&>button]:flex-1">
+                    <FormButton
+                      type="submit"
+                      variant="primary"
+                      icon={icons[UI_ICONS.next]}
+                      iconPosition="end"
+                      busy={state.submitting}
+                      disabled={!state.restored}
+                      // Arriving on the last step (not a restore): "Verstuur" pulses once.
+                      attention={isLast && state.travel !== TRAVEL.none}
+                    >
+                      {isLast ? copy.buttons.submit : copy.buttons.next}
+                    </FormButton>
+                  </div>
                 </div>
               </div>
             </form>
+            {/* The outgoing step during a step change: a visual copy only (StepStage), outside
+                the form, so no locator, screen reader or submission ever finds it. React
+                renders nothing inside it. */}
+            <div
+              ref={ghostLayer}
+              aria-hidden="true"
+              inert
+              className="pointer-events-none absolute inset-0"
+            />
           </section>
           <p className="sr-only" aria-live="polite" aria-atomic="true">
             {state.announcement}

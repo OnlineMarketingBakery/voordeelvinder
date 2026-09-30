@@ -36,8 +36,9 @@ async function open(page: Page, path: string) {
 }
 
 /**
- * Right after "Volgende" moved on, another "Volgende" without an answer in between counts as a
- * double click and is ignored for STEP_GUARD_MS: wait that out before pressing it on purpose.
+ * Right after a step change ("Volgende" or "Terug"), a "Volgende" without an answer in between
+ * counts as a double click and is ignored for STEP_GUARD_MS: wait that out before pressing it on
+ * purpose.
  */
 const settle = (page: Page) => page.waitForTimeout(STEP_GUARD_MS + 50);
 
@@ -354,6 +355,7 @@ test.describe('form: navigation and persistence', () => {
     await back(page).click();
     await expect(heading(page)).toHaveText('Wie is je huidige energieleverancier?');
     await expect(control(page, 'Wie is je huidige energieleverancier?')).toHaveValue('luminus');
+    await settle(page);
     await goNext(page, 'Wat voor meter heb je?');
     await expect(
       page.getByRole('radio', { name: 'Dag/nachtmeter (tweevoudig tarief)' }),
@@ -521,6 +523,7 @@ test.describe('form: double clicks', () => {
     await fillContact(page);
     await back(page).click();
     await expect(heading(page)).toHaveText('Heb je een warmtepomp?');
+    await settle(page);
     await next(page).dblclick();
     await expect(heading(page)).toHaveText('Jouw gegevens');
     await page.waitForTimeout(STEP_GUARD_MS + 250);

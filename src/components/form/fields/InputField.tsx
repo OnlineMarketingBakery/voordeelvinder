@@ -1,12 +1,20 @@
 // Text-like fields: text, number (unit inside the field, Figma 90:10935), postcode, phone (fixed
 // +32 chip, Figma 91:11440 without the picker chevron, brief §6) and email (with the "Bedoel je
 // …?" suggestion, which applies the address on click). The raw text is kept as typed and
-// validated on blur and on "Volgende" (brief §7.5: never reformatted while typing).
+// validated on blur and on "Volgende" (brief §7.5: never reformatted while typing). The focus
+// ring grows in (FocusRing, docs/MOTION.md "Inputs").
 import type { Field } from '../../../lib/flow/schema';
 import { domId, fieldLabel } from '../../../lib/form/labels';
 import { suggestionLabel } from '../../../lib/form/messages';
 import { cx } from '../ui';
-import { describedBy, FieldHint, FieldMessage, labelClass, type FieldProps } from './shared';
+import {
+  describedBy,
+  FieldHint,
+  FieldMessage,
+  FocusRing,
+  labelClass,
+  type FieldProps,
+} from './shared';
 
 type InputFieldType = Extract<Field, { type: 'text' | 'number' | 'postcode' | 'phone' | 'email' }>;
 
@@ -112,7 +120,7 @@ export function InputField({
           aria-invalid={error ? 'true' : undefined}
           aria-required={field.required ? 'true' : undefined}
           className={cx(
-            'w-full min-w-0 rounded-lg border bg-lavender-50 text-ink-900 placeholder:text-ink-placeholder',
+            'peer w-full min-w-0 rounded-lg border bg-lavender-50 text-ink-900 placeholder:text-ink-placeholder focus-visible:outline-hidden',
             'transition-[border-color] duration-(--motion-duration-fast) ease-out',
             error ? 'border-danger' : 'border-control-border',
             tall ? 'h-[74px] px-6 text-body-lg' : 'h-[60px] px-5 text-body',
@@ -120,6 +128,7 @@ export function InputField({
             unit && 'pr-20',
           )}
         />
+        <FocusRing />
         {unit && (
           <span
             aria-hidden="true"

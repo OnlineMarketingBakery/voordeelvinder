@@ -1,8 +1,12 @@
 // checkbox and consent (Figma 89:7977, 91:11443): a real checkbox in its label, a 34 px box
 // and a label row of at least 44 px (the tap area). A consent's `links` turn the first
 // occurrence of each text in the label into a link (docs/FLOWS.md step 7).
+//
+// The answer cards' selection in miniature (docs/MOTION.md): the purple fill sweeps into the
+// box from the left, the box pops and the check mark draws in; unticking retracts the fill.
 import type { Field } from '../../../lib/flow/schema';
 import { consentSegments, domId, fieldLabel } from '../../../lib/form/labels';
+import { Pop } from '../motion';
 import { cx } from '../ui';
 import { describedBy, FieldHint, FieldMessage, type FieldProps } from './shared';
 
@@ -22,7 +26,7 @@ export function CheckField({
 
   return (
     <div>
-      <label className="group flex min-h-11 cursor-pointer items-start gap-[11px] py-[5px] text-body-lg text-ink-600">
+      <label className="flex min-h-11 cursor-pointer items-start gap-[11px] py-[5px] text-body-lg text-ink-600">
         <input
           type="checkbox"
           id={domId.field(field.id)}
@@ -34,18 +38,29 @@ export function CheckField({
           aria-invalid={error ? 'true' : undefined}
           aria-required={field.required ? 'true' : undefined}
         />
-        <span
-          aria-hidden="true"
+        <Pop
+          selected={value === true}
           className={cx(
-            'grid size-[34px] shrink-0 place-items-center rounded-sm border bg-lavender-50',
-            'transition-[border-color,background-color] duration-(--motion-duration-fast) ease-out',
-            'group-hover:border-purple-600 group-has-checked:border-purple-600 group-has-checked:bg-purple-600',
-            'group-has-focus-visible:outline-2 group-has-focus-visible:outline-offset-2 group-has-focus-visible:outline-purple-500',
+            'relative grid size-[34px] shrink-0 place-items-center overflow-clip rounded-sm border bg-lavender-50',
+            'transition-[border-color] duration-(--motion-duration-fast) ease-out',
+            'pick-hover:border-purple-600 picked:border-purple-600',
+            'pick-focus:outline-2 pick-focus:outline-offset-2 pick-focus:outline-purple-500',
             error ? 'border-danger' : 'border-control-border',
           )}
         >
-          <span className="mb-1 h-3.5 w-2 rotate-45 border-r-2 border-b-2 border-white opacity-0 group-has-checked:opacity-100" />
-        </span>
+          <span className="sweep bg-purple-600" />
+          <svg viewBox="0 0 24 24" className="relative size-5 text-white" fill="none">
+            <path
+              d="M6 12.5l4 4 8-9"
+              pathLength={1}
+              stroke="currentColor"
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="[stroke-dasharray:1] [stroke-dashoffset:1] picked:[stroke-dashoffset:0] motion-safe:picked:transition-[stroke-dashoffset] motion-safe:picked:delay-(--motion-duration-fast) motion-safe:picked:duration-(--motion-duration-base) motion-safe:picked:ease-out"
+            />
+          </svg>
+        </Pop>
         <span className="min-w-0 pt-0.5">
           {segments.map((segment, index) =>
             segment.href ? (

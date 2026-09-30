@@ -1,10 +1,15 @@
 // The form motion (brief §6.1 "Form motion", docs/MOTION.md): the pure parts, without React or
 // Motion, so they can be unit-tested. The island (src/components/form) feeds these values to
-// Motion's `m` components. Every value comes from the motion tokens in src/lib/motion.ts.
+// Motion's `m` components and to Web Animations. Every value comes from the motion tokens in
+// src/lib/motion.ts.
+//
+// One language for the whole form: direction means travel (forward moves content to the left,
+// back to the right), everything that moves or grows runs on the one spring, fades use `base`
+// in and `fast` out, and a selection is a fill that sweeps in from the left.
 //
 // Reduced motion keeps only short fades: no slides, scales, shakes or rolls. Auto-advance stays.
 import type { FieldType } from '../flow/schema';
-import { distance, duration, ease, seconds, spring } from '../motion';
+import { cubicBezier, distance, duration, ease, seconds, spring } from '../motion';
 
 /** Direction of travel of a step change: forward (Volgende), back (Terug) or none (restore). */
 export type Travel = -1 | 0 | 1;
@@ -25,19 +30,106 @@ export function fade(reduced: boolean) {
 export const INSTANT = { duration: 0 } as const;
 
 // ---------------------------------------------------------------------------------------------
-// Step change: the new step slides in from the direction of travel (forward from the right,
-// Terug from the left) on the spring and fades in; reduced motion fades only.
+// Step change (Web Animations, src/components/form/motion.tsx StepStage): the current step
+// slides out of the form card while the next slides in from the other side, at the same time, in
+// the direction of travel (forward: out to the left, in from the right; back, a jump on the steps
+// bar and a reset: the other way), both on the spring. They travel the card's whole width (the
+// card clips them), so the two never overlap. The outgoing step is a visual copy outside the form
+// (see isGhostAttribute) that fades at `slow` as it leaves; the new step fades in at `fast`, and
+// its title and questions trail it with a short stagger. Reduced motion: the new step fades in at
+// `fast`, nothing slides.
 
-export function stepVariants(reduced: boolean) {
-  return {
-    enter: (travel: Travel) => ({ opacity: 0, x: reduced ? 0 : travel * distance[3] }),
-    center: {
-      opacity: 1,
-      x: 0,
-      transition: reduced ? fade(true) : { x: spring, opacity: fade(false) },
-    },
-  };
+/** How far a step slides when the card's width is unknown: twice distance[3]. */
+export const STEP_SLIDE_PX = distance[3] * 2;
+
+/**
+ * How far a step travels on a step change: the form card's width (`card`, px), so the outgoing
+ * step has left the card as the next arrives from the other side. STEP_SLIDE_PX without one.
+ */
+export function pushDistance(card: number | undefined): number {
+  return card !== undefined && card > 0 ? Math.round(card) : STEP_SLIDE_PX;
 }
+
+/** How far each item of a new step (title, question, card) trails the step: distance[1]. */
+export const ITEM_SLIDE_PX = distance[1];
+
+/** The time between two items of a new step (≤ 40 ms), and how many items get their own. */
+export const STAGGER_MS = 30;
+export const STAGGER_MAX = 6;
+
+/** The delay of the item at `index` of a new step (0 = the title): capped at STAGGER_MAX. */
+export function staggerDelay(index: number): number {
+  return Math.min(Math.max(0, Math.floor(index)), STAGGER_MAX) * STAGGER_MS;
+}
+
+/**
+ * The incoming step's slide over `push` px (pushDistance), or null when it doesn't slide
+ * (reduced motion, a restore).
+ */
+export function stepEnterFrames(
+  travel: Travel,
+  reduced: boolean,
+  push = STEP_SLIDE_PX,
+): Keyframe[] | null {
+  if (reduced || travel === 0) return null;
+  return [{ transform: `translateX(${travel * push}px)` }, { transform: 'none' }];
+}
+
+/**
+ * The outgoing step's slide, from where it is on screen (`from`: its computed transform, which
+ * is not `none` when it was still sliding in) to the side it leaves by, `push` px away.
+ */
+export function stepExitFrames(travel: Travel, from = 'none', push = STEP_SLIDE_PX): Keyframe[] {
+  return [{ transform: from }, { transform: `translateX(${-travel * push}px)` }];
+}
+
+/**
+ * Where the outgoing step's copy goes in the step area (px from its top left): the step's own
+ * place, without the slide still running on it (`slide`: the translation of its computed
+ * transform, DOMMatrix m41/m42; the step's box on screen includes it). The copy's slide out
+ * starts from that same transform (stepExitFrames), so it shows exactly where the step was.
+ */
+export function ghostOffset(
+  step: { left: number; top: number },
+  area: { left: number; top: number },
+  slide: { m41: number; m42: number } = { m41: 0, m42: 0 },
+): { left: number; top: number } {
+  return { left: step.left - area.left - slide.m41, top: step.top - area.top - slide.m42 };
+}
+
+/** Each item of a new step: fades in and trails the step by ITEM_SLIDE_PX. */
+export function itemEnterFrames(travel: Travel): Keyframe[] {
+  return [
+    { opacity: 0, transform: `translateX(${travel * ITEM_SLIDE_PX}px)` },
+    { opacity: 1, transform: 'none' },
+  ];
+}
+
+/**
+ * Attributes the copy of the outgoing step drops: ids and names (never doubled, never
+ * submitted), label and form links, ARIA, roles, tab stops, links and data hooks, so no
+ * locator, screen reader or form submission finds it.
+ */
+export function isGhostAttribute(name: string): boolean {
+  const attribute = name.toLowerCase();
+  return (
+    GHOST_ATTRIBUTES.has(attribute) ||
+    attribute.startsWith('aria-') ||
+    attribute.startsWith('data-')
+  );
+}
+
+const GHOST_ATTRIBUTES: ReadonlySet<string> = new Set([
+  'id',
+  'name',
+  'for',
+  'form',
+  'href',
+  'role',
+  'tabindex',
+  'autofocus',
+  'autocomplete',
+]);
 
 /**
  * Whether the card height animates for a step change (on the spring): only when the visitor
@@ -89,9 +181,10 @@ export function springEasing(
 
 // ---------------------------------------------------------------------------------------------
 // Auto-advance (brief §6.1: recommended, Tanjil approves on staging): a pointer tap or click on
-// an answer card of a single-question choice step moves on after about 300 ms, as if
-// "Volgende" was pressed. Never on keyboard input: arrow keys change a radio's value, so they
-// would jump through the steps.
+// an answer card moves on after about 300 ms, as if "Volgende" was pressed, when it completes a
+// step of only choice questions: a single-question step at the first tap, a step with two
+// questions (digital meter + solar) once both are answered (Tanjil 2026-09-30). Never on
+// keyboard input: arrow keys change a radio's value, so they would jump through the steps.
 
 export const AUTO_ADVANCE_DELAY_MS = 300;
 
@@ -145,8 +238,15 @@ export type AutoAdvanceInput = {
   via: PickVia;
   /** The field that was picked. */
   fieldId: string;
-  /** The step's visible fields. */
+  /** The step's visible fields with the pick stored (a pick can reveal or hide a question). */
   fields: readonly { id: string; type: FieldType }[];
+  /** The step validates with the pick stored (validateStep): every visible question answered. */
+  complete: boolean;
+  /**
+   * The step already validated before the pick: the visitor came back to change an answer (or
+   * tapped the picked card again).
+   */
+  wasComplete: boolean;
   /** The last step submits: never automatically. */
   isLast: boolean;
   /** Sending: nothing moves. */
@@ -154,27 +254,51 @@ export type AutoAdvanceInput = {
 };
 
 /**
- * Auto-advance only when the switch is on, the pick was a pointer tap or click, and the picked
- * field is the step's only visible field and a single-choice or yes/no question. Steps with
- * two questions (digital meter + solar) wait for "Volgende".
+ * Auto-advance only when the switch is on, the pick was a pointer tap or click, the step isn't
+ * the last, every visible field of the step is a single-choice or yes/no question (the picked
+ * one among them) and the pick leaves the step complete. So a single-question step moves on at
+ * the first tap and a step with two questions once both are answered; a step with any other
+ * field (text, number, postcode, select, checkbox, call moment) waits for "Volgende". On a step
+ * that was already complete, only a pick on its last question moves on: changing the first of
+ * two answers leaves time to change the second.
  */
 export function shouldAutoAdvance({
   enabled,
   via,
   fieldId,
   fields,
+  complete,
+  wasComplete,
   isLast,
   busy,
 }: AutoAdvanceInput): boolean {
-  if (!enabled || via !== 'pointer' || isLast || busy) return false;
-  if (fields.length !== 1) return false;
-  const [only] = fields;
-  return only !== undefined && only.id === fieldId && AUTO_ADVANCE_TYPES.has(only.type);
+  if (!enabled || via !== 'pointer' || isLast || busy || !complete) return false;
+  if (!fields.some((field) => field.id === fieldId)) return false;
+  if (wasComplete && fields.at(-1)?.id !== fieldId) return false;
+  return fields.every((field) => AUTO_ADVANCE_TYPES.has(field.type));
 }
 
 // ---------------------------------------------------------------------------------------------
-// Answer cards: the radio circle springs into the selected state and a check mark draws in.
-// (The press scale is a CSS :active scale: Motion's whileTap would make each label a tab stop.)
+// Answer cards: a hover lift (fine pointers), a press give, and the selection: a fill sweeps in
+// from the left on the spring (CSS, a scale of a clipped layer), the icon tile pops, the radio
+// circle springs into the selected state and its check mark draws in; deselecting retracts the
+// fill at `fast`. Chips and checkboxes use the same sweep in miniature. (The press scale is a
+// CSS :active scale: Motion's whileTap would make each label a tab stop.)
+
+/** The pop of an icon tile or a checkbox when it is picked (never when it renders picked). */
+export const POP_SCALE = 1.12;
+
+export function popVariants(reduced: boolean) {
+  return {
+    off: { scale: 1, transition: INSTANT },
+    on: reduced
+      ? { scale: 1, transition: INSTANT }
+      : {
+          scale: [1, POP_SCALE, 1],
+          transition: { duration: seconds(duration.slow), ease: ease.out, times: [0, 0.35, 1] },
+        },
+  };
+}
 
 export function indicatorVariants(reduced: boolean) {
   return {
@@ -219,21 +343,61 @@ export function revealVariants(reduced: boolean) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Progress: the bar fills on the spring (a translate, not a width), "Stap X van Y" rolls to the
-// new number. Reduced motion: the bar jumps and the numbers change in place.
+// The steps bar (src/components/form/ProgressCard.tsx): one segment per step of the estimate
+// ("Stap X van Y"), the steps behind the visitor filled with a tick, and a lime pill with the
+// current step's number riding on the bar (its move and every fill on the spring, CSS). The
+// pill drags back only, snapping to the steps behind; each of those is also a button. "Stap X
+// van Y" rolls to the new number. Reduced motion: the pill and the fills jump, numbers swap.
 
-/** The bar's fill in percent (one decimal). */
-export function progressPercent(step: number, total: number): number {
-  return total > 0 ? Math.min(100, Math.max(0, Math.round((step / total) * 1000) / 10)) : 0;
+export type SegmentState = 'done' | 'current' | 'todo';
+
+/** A segment of the bar: behind the current step (done: a button), the current one, or ahead. */
+export function segmentState(index: number, current: number): SegmentState {
+  return index < current ? 'done' : index === current ? 'current' : 'todo';
 }
 
-/** The fill as a translate of a full-width bar: 30 % filled is translateX(-70%). */
-export function progressOffset(step: number, total: number): string {
-  return `${progressPercent(step, total) - 100}%`;
+/**
+ * The centre of segment `index` of `count` equal segments with a fixed gap between them, as a
+ * percentage of the track plus a number of gaps: calc(<percent>% + <gaps> * gap). The pill
+ * rides there (a translate of a track-wide layer, so the percentage is the track's).
+ */
+export function segmentCentre(index: number, count: number): { percent: number; gaps: number } {
+  const n = Math.max(1, count);
+  const round = (value: number) => Math.round(value * 10000) / 10000;
+  return { percent: round(((index + 0.5) / n) * 100), gaps: round((index + 0.5 - n / 2) / n) };
 }
 
-export function progressTransition(reduced: boolean) {
-  return reduced ? INSTANT : spring;
+/** The segment under `x` (px from the track's left edge), clamped to the track. */
+export function segmentAt(x: number, width: number, count: number, gap: number): number {
+  const n = Math.max(1, count);
+  const segment = (width - (n - 1) * gap) / n;
+  if (!(segment > 0)) return 0;
+  return Math.min(n - 1, Math.max(0, Math.floor((x + gap / 2) / (segment + gap))));
+}
+
+/**
+ * How far the drag label shifts left, in percent of its own width: 0 over the first segment, 100
+ * over the last, in between proportionally. So it always stays over the track.
+ */
+export function labelShift(index: number, count: number): number {
+  return count > 1 ? Math.round((Math.min(Math.max(index, 0), count - 1) / (count - 1)) * 100) : 50;
+}
+
+/** A press on the pill becomes a drag after this much sideways movement (distance[1]). */
+export const DRAG_THRESHOLD_PX = distance[1];
+
+/**
+ * What a move of the pointer by (dx, dy) since the press means: `wait` (still inside the
+ * threshold), `drag` (sideways first) or `scroll` (up or down first: the page scrolls, no drag).
+ */
+export function dragIntent(dx: number, dy: number): 'wait' | 'drag' | 'scroll' {
+  if (Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return 'wait';
+  return Math.abs(dx) > Math.abs(dy) ? 'drag' : 'scroll';
+}
+
+/** The pill drags back only: to a step behind the current one, or back onto the current one. */
+export function dragTarget(index: number, current: number): number {
+  return Math.min(Math.max(index, 0), Math.max(current, 0));
 }
 
 export type ProgressPart = { text: string } | { value: 'step' | 'total' };
@@ -267,8 +431,10 @@ export function rollVariants() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Errors: the field shakes once (about 6 px) when "Volgende" finds an error; the message fades
-// in. Focus moves at once, never after the shake. Reduced motion: no shake, the fade stays.
+// Errors: the field shakes once (about 6 px) when "Volgende" finds an error; the message comes
+// in like every new line of the form: it drops in by half of distance[1] on the spring and
+// fades in at `base`. Focus moves at once, never after the shake. Reduced motion: no shake, the
+// message only fades in (at `fast`).
 
 export const SHAKE_PX = (distance[1] * 3) / 4;
 
@@ -289,6 +455,66 @@ export function isNewShake(pulse: number, played: number | undefined): boolean {
   return pulse !== 0 && pulse !== played;
 }
 
-export function messageTransition(reduced: boolean) {
-  return fade(reduced);
+export function messageVariants(reduced: boolean) {
+  return {
+    hidden: reduced ? { opacity: 0 } : { opacity: 0, y: -distance[1] / 2 },
+    shown: {
+      opacity: 1,
+      y: 0,
+      transition: reduced ? fade(true) : { opacity: fade(false), y: spring },
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
+// The mascot in the purple panel (whole-image transforms until a split mascot exists, CONTENT-TODO
+// 5.8): it hops once when the step changes and nods when an answer is picked, never on the first
+// render. Sizes are percentages of the image, so the 80 px mascot of the phone header moves less
+// than the 323 px one of the desktop panel. A move that comes while another still plays starts
+// where that one has the mascot (mascotFramesFrom), so nothing jumps. The ambient light rests
+// behind the mascot and glides to its next place when the step changes (CSS, FormPanel). Reduced
+// motion: both stay still.
+
+export const MASCOT_MS = duration.slow;
+
+/**
+ * How many resting places the ambient light has behind the mascot: it glides to the next one on
+ * each step change (FormPanel's `data-light`, 0 to AMBIENT_PLACES - 1; 0 is where it starts, and
+ * where it stays with reduced motion).
+ */
+export const AMBIENT_PLACES = 3;
+
+/** A crouch, a hop of 6 % of its height and a soft landing, from the bottom centre. */
+export function mascotHopFrames(): Keyframe[] {
+  const out = cubicBezier(ease.out);
+  const inOut = cubicBezier(ease.inOut);
+  return [
+    { transform: 'translateY(0) scale(1, 1)', easing: inOut },
+    { transform: 'translateY(0) scale(1.03, 0.96)', offset: 0.18, easing: out },
+    { transform: 'translateY(-6%) scale(0.98, 1.03)', offset: 0.5, easing: inOut },
+    { transform: 'translateY(0) scale(1.02, 0.98)', offset: 0.8, easing: out },
+    { transform: 'translateY(0) scale(1, 1)' },
+  ];
+}
+
+/** A small nod: forward, a little back, still. */
+export function mascotNodFrames(): Keyframe[] {
+  return [
+    { transform: 'rotate(0deg)' },
+    { transform: 'rotate(-4deg)', offset: 0.3 },
+    { transform: 'rotate(2deg)', offset: 0.65 },
+    { transform: 'rotate(0deg)' },
+  ];
+}
+
+/**
+ * A mascot move that starts where the mascot is: `from` is its computed transform, read while
+ * the move it replaces still plays ('none' when nothing does). Only the first keyframe's
+ * transform changes (its easing stays), so a hop after a nod, a nod after a hop, and a move after
+ * one of its own kind all go on from there instead of jumping back upright first.
+ */
+export function mascotFramesFrom(frames: Keyframe[], from: string): Keyframe[] {
+  const [first, ...rest] = frames;
+  if (!first || from === 'none') return frames;
+  return [{ ...first, transform: from }, ...rest];
 }

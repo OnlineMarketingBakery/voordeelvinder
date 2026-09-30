@@ -318,8 +318,18 @@ export const flowCopyFile = z.strictObject({
     thuisbatterij: formPageSeo,
   }),
   buttons: z.strictObject({ back: text, next: text, submit: text }),
+  /**
+   * The round reset button beside "Terug" (src/lib/form/reset.ts): its name and tooltip, the
+   * message shown (and announced) once it emptied the form, and the button that undoes it.
+   */
+  reset: z.strictObject({ button: text, done: text, undo: text }),
   /** "Stap {step} van {total}" (brief §7.6; engine progress()). */
   progress: template('step', 'total'),
+  /**
+   * The accessible name of a finished step on the steps bar, a button back to it, e.g. "Ga
+   * terug naar stap {step}: {title}" ({step} its number, {title} the step's title).
+   */
+  progressJump: template('step', 'title'),
   /** Card labels of yes_no fields without their own `labels`. */
   yesNo: z.strictObject({ yes: text, no: text }),
   /** One message per error code. */
@@ -346,8 +356,9 @@ export const flowCopyFile = z.strictObject({
   /** How the form behaves (not copy, but switched per locale like it; docs/MOTION.md). */
   settings: z.strictObject({
     /**
-     * Auto-advance (brief §6.1, Tanjil approves on staging): a tap or click on an answer card of
-     * a single-question choice step moves on after about 300 ms. Never on keyboard input.
+     * Auto-advance (brief §6.1, Tanjil approves on staging): a tap or click on an answer card
+     * that leaves a step of only choice questions answered moves on after about 300 ms (one
+     * question at the first tap, two once both are). Never on keyboard input.
      */
     autoAdvance: z.boolean(),
   }),

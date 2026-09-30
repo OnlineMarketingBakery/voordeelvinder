@@ -1,7 +1,9 @@
 // One step: its title (h2, focused on every step change), optional subtitle and hint, and its
 // visible fields. A field's type picks its component; short inputs pair up from md (the contact
 // step's 2×2 grid). Fields with visibleIf expand and collapse, and a field shakes once when
-// "Volgende" finds an error in it (FieldCell, brief §6.1).
+// "Volgende" finds an error in it (FieldCell, brief §6.1). `data-stagger` marks what comes in
+// one after the other when the step appears: the title, subtitle and hint, then each field (or
+// each answer card, ChoiceField) (StepStage, docs/MOTION.md).
 import { useState, type Ref } from 'react';
 
 import type { Field, Step } from '../../lib/flow/schema';
@@ -121,12 +123,21 @@ export function StepView({
         id={STEP_TITLE_ID}
         ref={headingRef}
         tabIndex={-1}
+        data-stagger=""
         className="text-title-lg text-ink-900 focus:outline-none md:text-h3"
       >
         {step.title}
       </h2>
-      {step.subtitle && <p className="mt-2 text-body-lg text-ink-600">{step.subtitle}</p>}
-      {step.hint && <p className="mt-2 text-body text-ink-600">{step.hint}</p>}
+      {step.subtitle && (
+        <p data-stagger="" className="mt-2 text-body-lg text-ink-600">
+          {step.subtitle}
+        </p>
+      )}
+      {step.hint && (
+        <p data-stagger="" className="mt-2 text-body text-ink-600">
+          {step.hint}
+        </p>
+      )}
       {/* The rows' gap is each cell's bottom padding (FieldCell), taken back by -mb-6. */}
       <FieldList className="mt-6 -mb-6 grid md:grid-cols-2 md:gap-x-5">
         {fields.map((field) => (

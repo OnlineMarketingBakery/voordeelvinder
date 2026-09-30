@@ -14,7 +14,7 @@ lead sheet and the Meta forms (AGENTS.md rule 4: never change a code once live).
 | `nl/energie.json`       | The energy flow (brief §7.3)                                                                                                                                                                                                                                               |
 | `nl/zonnepanelen.json`  | The solar panel flow (§7.4 DRAFT; n8n: `pending`, ADR 0009)                                                                                                                                                                                                                |
 | `nl/thuisbatterij.json` | The home battery flow (§7.4 DRAFT; n8n: `pending`, ADR 0009)                                                                                                                                                                                                               |
-| `nl/_copy.json`         | The form's interface copy: buttons, progress, yes/no labels, error messages, e-mail suggestion, send errors (`submitErrors`), `phonePrefix`, the side `panel` per product and the form pages' SEO (`pages`); `settings.autoAdvance` switches auto-advance (docs/MOTION.md) |
+| `nl/_copy.json`         | The form's interface copy: buttons, reset + undo (`reset`), progress + step labels (`progressJump`), yes/no labels, error messages, e-mail suggestion, send errors (`submitErrors`), `phonePrefix`, `panel` per product, SEO (`pages`); `settings.autoAdvance` (MOTION.md) |
 
 ## How the form island reads them
 
@@ -40,7 +40,9 @@ lead sheet and the Meta forms (AGENTS.md rule 4: never change a code once live).
    `copy.requiredByType[field.type]` for `required` when given, else `copy.errors[code]`, with
    `{min}`, `{max}`, `{unit}` and `{maxLength}` filled in from the field. The e-mail suggestion is
    `copy.emailSuggestion` with `{suggestion}`. Progress is `copy.progress` with `{step}` and
-   `{total}` from `progress()`.
+   `{total}` from `progress()`. On the steps bar (docs/MOTION.md), each finished step is a button
+   back to it named `copy.progressJump` with `{step}` (its number) and `{title}` (its title), from
+   `pathSoFar()`.
 7. A `consent` field's `links` turn the first occurrence of each `text` in the label into a link
    to `href`.
 
@@ -88,8 +90,9 @@ with `client:load`. Both are indexable (brief §11: only the thank-you pages and
   first such step (`firstInvalidStep`). That catches content tightened without a version bump.
 - **Lead ids:** `leadId` and `eventId` are made once per form session (`crypto.randomUUID`) and
   kept until the submit. A step-1 card that switches the flow (on `/vergelijken`) makes new
-  ones: a new product is a new lead. A successful submit clears every form page's record (every
-  `voordeelvinder:form:` key), not only its own.
+  ones: a new product is a new lead. So does "Opnieuw beginnen" (its undo brings the old ones
+  back). A successful submit clears every form page's record (every `voordeelvinder:form:` key),
+  not only its own.
 - **Duplicated tabs (known limitation):** browsers copy `sessionStorage` into a duplicated tab,
   so the copy continues with the same `leadId`/`eventId`. When both tabs submit the same
   product, the second lead looks like a double submit to `/api/lead` (idempotent on `lead_id`)
@@ -100,9 +103,12 @@ with `client:load`. Both are indexable (brief §11: only the thank-you pages and
   the group and on each radio, since focus lands on a radio), focuses the first, scrolls it into
   view and announces its message in the `aria-live` region (again on a repeat: `liveText`). A
   valid step focuses the next step's title (h2) and announces "title. Stap X van Y" there.
-- **Double click:** a "Volgende" within `STEP_GUARD_MS` (350 ms) of the previous one moving
-  forward, with nothing answered in between, is ignored (`isRepeatSubmit`): a double click or
-  double tap moves one step, and never validates or submits the next step unseen.
+- **Double click:** a "Volgende" within `STEP_GUARD_MS` (350 ms) of the last step change
+  (forward, or back: "Terug", a jump, a reset, an undo), with nothing answered in between, is
+  ignored (`isRepeatSubmit`): a double click or double tap moves one step, and never validates or
+  submits the next step unseen (nor the fresh one, where "Volgende" takes the reset button's
+  place). A card picked within 500 ms of a step change other than "Volgende" is selected but
+  never moves the form on (`withinAutoAdvanceGuard`): the second half landed on the new step.
 - **Submit:** "Verstuur" validates, builds the submission (`buildSubmission`), locks the button
   and the answers (text inputs read-only, keeping focus; every change is ignored until a failure
   unlocks them, so nothing typed during the send is lost without a word) and posts it to
@@ -140,12 +146,36 @@ with `client:load`. Both are indexable (brief §11: only the thank-you pages and
   submission's `meta.test` is the URL's `?test=` or else that flag.
 - **Motion (PR 17, docs/MOTION.md):** step slides, answer-card feedback, revealed questions,
   progress, error shake and the submit spinner; only visual, nothing waits for it. **Auto-advance**
-  (`settings.autoAdvance`, on): a tap or click on a card of a step whose only visible field is a
-  single-choice or yes/no question acts as "Volgende" after 300 ms; never on keyboard input and
-  never before the session is restored. The double-click guard covers it too: an auto-advance
-  and a "Volgende" within `STEP_GUARD_MS` of each other move one step, not two.
+  (`settings.autoAdvance`, on; Tanjil 2026-09-30): a tap or click on a card acts as "Volgende"
+  after 300 ms when every visible field of the step is a single-choice or yes/no question and the
+  tap leaves them all answered: a one-question step moves on at the first tap, a step with two
+  (digital meter + solar, social tariff + budget meter, roof type + orientation, heat pump +
+  electric car) once both are answered; back on a complete step, only a new answer to its last
+  question moves on (the first can change without leaving the step). A step with any
+  other field (postcode, checkbox, select, number, contact) keeps "Volgende". Never on keyboard
+  input, never on the last step and never before the session is restored
+  (`src/lib/form/navigation.ts` `pickOutcome`, `shouldAutoAdvance`). The double-click guard
+  covers it too: an auto-advance and a "Volgende" within `STEP_GUARD_MS` of each other move one
+  step, not two. On a phone (below `md`) a tap that leaves a question of the step open scrolls
+  that question into view (smoothly, at once with reduced motion); focus stays where it is. A
+  tap within 500 ms of that scroll only selects the card that moved under the finger.
 - **"Terug"** keeps the answers; on the first shown step it goes to the product page (`/` for
   energy) when preselected, else back in history (same site) or to `/`.
+- **Going back from the progress bar:** the steps before the current one on the visitor's path
+  (`pathSoFar`) are buttons named "Ga terug naar stap {step}: {title}" (`progressJump`).
+  `onJump` goes back to one as if "Terug" was pressed until it showed: answers kept, the step
+  slides in from the left, its title takes focus and is announced. Never forward (not even to an
+  answered step after going back) and never while sending (`canJumpBack`).
+- **"Opnieuw beginnen"** (`src/lib/form/reset.ts`): a round button beside "Terug", shown when
+  there is something to reset (a step past the first, or an answer of the visitor's own on it;
+  the URL preselect doesn't count). It empties the form at once, without asking: back to the
+  entry's first step with the URL preselect (`freshStart`: the server render's start), errors
+  cleared, the stored session removed, new `leadId`/`eventId`; the title takes focus and
+  "Formulier gewist" is announced. "Ongedaan maken" puts back exactly what was taken (step,
+  answers, flow, ids; the session is stored again) for 8 s (`UNDO_MS`), paused while the pointer
+  is on it or focus is in it. The message sits above the buttons from `md`; on a phone it is a
+  bar at the bottom of the screen, since the reset takes the page up to the first step and a long
+  one (the product cards) would push it out of view. Not while sending.
 
 ## Preselect without an energy type
 
@@ -257,6 +287,9 @@ Not in the brief or the design, written for the form (informal, neutral, no clai
 - Call moment: slot labels "09:00–10:00" … "15:00–16:00"; group labels "Dag" and "Tijdstip".
 - Household sizes (CONTENT-TODO 2.5): "1 persoon", "2 personen", "3 personen", "4 personen",
   "5 of meer".
+- Reset and progress bar (`reset`, `progressJump`, CONTENT-TODO 2.31): the reset button's name
+  and tooltip "Opnieuw beginnen"; after it, "Formulier gewist" with the button "Ongedaan maken";
+  a completed step on the progress bar "Ga terug naar stap {step}: {title}".
 
 Form pages and panel (CONTENT-TODO 2.4, 2.27): page titles "Wat wil je vergelijken?"
 (`/vergelijken`), "Vergelijk je energiecontract", "Vergelijk zonnepanelen", "Vergelijk
