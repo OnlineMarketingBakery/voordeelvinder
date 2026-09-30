@@ -10,7 +10,10 @@ import wordmark from '../../assets/brand/logo-wordmark.svg';
 interface Props {
   /** Accessible name of the link (the images themselves are decorative). */
   label: string;
-  /** header: 54px lockup on ink wordmark; footer: 87px lockup with a white wordmark. */
+  /**
+   * header: ink wordmark; footer: white wordmark. The badge SVG (53x58) includes ~4 units of
+   * shadow padding below the circle, so it is sized 7% taller than the Figma lockup (54 / 87).
+   */
   variant?: 'header' | 'footer';
 }
 
@@ -23,14 +26,14 @@ const isFooter = variant === 'footer';
   aria-label={label}
   class:list={[
     'inline-flex shrink-0 items-end rounded-md',
-    isFooter ? 'gap-[5px]' : 'gap-[3px] self-start lg:mt-1',
+    isFooter ? 'gap-[5px]' : 'gap-[3px] lg:mt-1 lg:self-start',
   ]}
 >
   <Image
     src={badge}
     alt=""
     loading="eager"
-    class:list={isFooter ? 'h-[66px] w-auto lg:h-[87px]' : 'h-[46px] w-auto lg:h-[54px]'}
+    class:list={isFooter ? 'h-[71px] w-auto lg:h-[94px]' : 'h-[49px] w-auto lg:h-[58px]'}
   />
   <Image
     src={isFooter ? wordmarkWhite : wordmark}
@@ -38,8 +41,8 @@ const isFooter = variant === 'footer';
     loading="eager"
     class:list={
       isFooter
-        ? 'mb-[14px] h-5 w-auto lg:mb-[18px] lg:h-[27px]'
-        : 'mb-[9px] h-[14px] w-auto lg:mb-[11px] lg:h-[17px]'
+        ? 'mb-[18px] h-5 w-auto lg:mb-[25px] lg:h-[27px]'
+        : 'mb-[15px] h-[14px] w-auto lg:mb-[18px] lg:h-[17px]'
     }
   />
 </a>

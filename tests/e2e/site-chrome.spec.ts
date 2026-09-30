@@ -43,6 +43,23 @@ test.describe('header', () => {
     await expect(button).toBeFocused();
   });
 
+  test('mobile: tabbing out of the open menu closes it', async ({
+    page,
+    isMobile,
+    browserName,
+  }) => {
+    test.skip(!isMobile || browserName === 'webkit', 'mobile layout; WebKit does not Tab to links');
+    await page.goto('/');
+    const button = page.getByRole('button', { name: site.header.menuLabel });
+    await button.click();
+    const menu = page.locator('#mobile-menu');
+    await expect(menu).toBeVisible();
+    await menu.getByRole('link', { name: site.header.cta.label }).focus();
+    await page.keyboard.press('Tab');
+    await expect(menu).toBeHidden();
+    await expect(button).toHaveAttribute('aria-expanded', 'false');
+  });
+
   test('stays on screen while scrolling and keeps its view-transition name', async ({ page }) => {
     await page.goto('/styleguide');
     await page.evaluate(() => window.scrollTo(0, 2000));

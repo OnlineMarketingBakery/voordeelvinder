@@ -2,14 +2,14 @@
 import { type CollectionEntry, getEntry } from 'astro:content';
 
 export type Site = CollectionEntry<'site'>['data'];
-export type Link = Site['header']['nav'][number];
+export type NavLink = Site['header']['nav'][number];
 
 /** Which optional content exists; links with `requires` only show when it does. */
 export interface Availability {
   blogPosts: boolean;
 }
 
-export function isLinkVisible(link: Link, available: Availability): boolean {
+export function isLinkVisible(link: NavLink, available: Availability): boolean {
   return link.requires === undefined || available[link.requires];
 }
 

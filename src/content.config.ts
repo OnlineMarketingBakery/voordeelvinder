@@ -10,12 +10,10 @@ const internalHref = z
   .regex(/^\/[^/]/, 'must be a site path such as /vergelijken')
   .or(z.literal('/'));
 
-const link = z.strictObject({
-  label: text,
-  href: internalHref,
-  /** Only show the link when this content exists (e.g. "Blogs" once there is a post). */
-  requires: z.enum(['blogPosts']).optional(),
-});
+const link = z.strictObject({ label: text, href: internalHref });
+
+/** Header navigation can depend on content existing (e.g. "Blogs" once there is a post). */
+const navLink = link.extend({ requires: z.enum(['blogPosts']).optional() });
 
 /** A value that is still a placeholder: shown on staging, fails a production build. */
 const todo = z.boolean().default(false);
@@ -31,7 +29,7 @@ const site = defineCollection({
       logoLabel: text,
       navLabel: text,
       menuLabel: text,
-      nav: z.array(link).min(1),
+      nav: z.array(navLink).min(1),
       cta: link,
     }),
     footer: z.strictObject({

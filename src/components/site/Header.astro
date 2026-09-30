@@ -11,7 +11,10 @@ const site = await getSite();
 const available = await contentAvailability();
 const nav = site.header.nav.filter((link) => isLinkVisible(link, available));
 const { cta } = site.header;
-const current = Astro.url.pathname;
+// Built pages have a trailing slash (/blog/); compare without it. Anchors never match.
+const strip = (path: string) => (path.length > 1 ? path.replace(/\/+$/, '') : path);
+const current = strip(Astro.url.pathname);
+const isCurrent = (href: string) => (strip(href) === current ? 'page' : undefined);
 ---
 
 <a
@@ -31,7 +34,7 @@ const current = Astro.url.pathname;
           <li>
             <a
               href={link.href}
-              aria-current={link.href === current ? 'page' : undefined}
+              aria-current={isCurrent(link.href)}
               class="text-sm leading-9 text-ink-800 decoration-2 underline-offset-[6px] transition-colors duration-(--motion-duration-fast) hover:text-purple-500 hover:underline aria-[current=page]:text-purple-500"
             >
               {link.label}
@@ -57,9 +60,9 @@ const current = Astro.url.pathname;
     >
       <span class="sr-only">{site.header.menuLabel}</span>
       <span class="relative block h-4 w-6" aria-hidden="true">
-        <span class="absolute inset-x-0 top-0 h-0.5 rounded-full bg-current transition-transform duration-(--motion-duration-fast) group-aria-expanded:translate-y-[7px] group-aria-expanded:rotate-45"></span>
-        <span class="absolute inset-x-0 top-[7px] h-0.5 rounded-full bg-current transition-opacity duration-(--motion-duration-fast) group-aria-expanded:opacity-0"></span>
-        <span class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-current transition-transform duration-(--motion-duration-fast) group-aria-expanded:-translate-y-[7px] group-aria-expanded:-rotate-45"></span>
+        <span class="absolute inset-x-0 top-0 h-0.5 rounded-full bg-current transition-transform duration-(--motion-duration-fast) motion-reduce:transition-none group-aria-expanded:translate-y-[7px] group-aria-expanded:rotate-45"></span>
+        <span class="absolute inset-x-0 top-[7px] h-0.5 rounded-full bg-current transition-opacity duration-(--motion-duration-fast) motion-reduce:transition-none group-aria-expanded:opacity-0"></span>
+        <span class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-current transition-transform duration-(--motion-duration-fast) motion-reduce:transition-none group-aria-expanded:-translate-y-[7px] group-aria-expanded:-rotate-45"></span>
       </span>
     </button>
   </Container>
@@ -76,7 +79,7 @@ const current = Astro.url.pathname;
         <li class="border-b border-lavender-400">
           <a
             href={link.href}
-            aria-current={link.href === current ? 'page' : undefined}
+            aria-current={isCurrent(link.href)}
             class="flex min-h-12 items-center text-body-lg text-ink-800 aria-[current=page]:text-purple-500"
           >
             {link.label}
@@ -119,7 +122,18 @@ const current = Astro.url.pathname;
       if ((event.target as Element).closest('a')) setOpen(false);
     });
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && !menu.hidden) setOpen(false, true);
+      if (event.key !== 'Escape' || menu.hidden) return;
+      // Return focus to the button unless the visitor already moved it elsewhere. (Safari doesn't
+      // focus a clicked button, so focus may still be on the body.)
+      const active = document.activeElement;
+      const restore =
+        !active || active === document.body || active === button || menu.contains(active);
+      setOpen(false, restore);
+    });
+    // Tabbing out of the open menu closes it, so it can't cover the next focused element.
+    button.closest('header')?.addEventListener('focusout', (event) => {
+      const next = event.relatedTarget as Node | null;
+      if (!menu.hidden && next && !menu.contains(next) && !button.contains(next)) setOpen(false);
     });
     document.addEventListener('click', (event) => {
       const target = event.target as Node;

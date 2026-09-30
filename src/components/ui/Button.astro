@@ -4,7 +4,7 @@
 import ArrowUpRight from '../../assets/icons/arrow-up-right.svg';
 
 export type ButtonVariant = 'lime' | 'purple' | 'white' | 'form' | 'form-secondary' | 'newsletter';
-export type ButtonSize = 'sm' | 'md' | 'lg' | 'form';
+export type ButtonSize = 'sm' | 'md' | 'lg' | 'form' | 'newsletter';
 
 interface Props {
   href?: string;
@@ -49,6 +49,7 @@ const sizes: Record<ButtonSize, string> = {
   md: 'h-[54px] px-6 text-button', // hero CTA
   lg: 'h-[62px] px-8 text-button-lg', // CTA band / final CTA
   form: 'h-[52px] px-5 text-body-lg', // form buttons, 18px Regular
+  newsletter: 'h-12 px-[21px] text-button sm:h-[46px]', // Abonneren: stacked below sm, in the pill from sm
 };
 
 const classes = [
@@ -66,7 +67,12 @@ const iconSize = size === 'sm' ? 'size-[22px]' : 'size-6';
 ---
 
 {href ? (
-  <a href={href} class:list={classes} aria-disabled={disabled ? 'true' : undefined}>
+  <a
+    href={disabled ? undefined : href}
+    role={disabled ? 'link' : undefined}
+    class:list={classes}
+    aria-disabled={disabled ? 'true' : undefined}
+  >
     <slot />
     {icon === 'arrow-up-right' && <ArrowUpRight class={iconSize} aria-hidden="true" />}
   </a>
