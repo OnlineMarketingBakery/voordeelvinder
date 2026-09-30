@@ -2,6 +2,8 @@
 // server, astro.config.ts and the cron scripts in scripts/ all use it.
 import { z } from 'zod';
 
+import { isTurnstileTestSiteKey } from '../lib/turnstile';
+
 export const SITE_ENVS = ['local', 'ci', 'staging', 'production'] as const;
 export type SiteEnv = (typeof SITE_ENVS)[number];
 
@@ -45,6 +47,9 @@ const schema = z
     N8N_WEBHOOK_SECRET: optional(z.string().min(16)),
     // Cloudflare Turnstile. Required on production; elsewhere the always-passing test secret.
     TURNSTILE_SECRET_KEY: optional(z.string().min(1)),
+    // Its site key: public (the pages render the widget with it) and fixed at build time
+    // (src/lib/turnstile.ts). Required on production; elsewhere the always-passing test key.
+    PUBLIC_TURNSTILE_SITE_KEY: optional(z.string().trim().min(1)),
     // Local and CI only: a stand-in for Cloudflare's siteverify (the e2e mock server).
     TURNSTILE_VERIFY_URL: optional(z.url()),
   })
@@ -78,6 +83,11 @@ const schema = z
       issue('TURNSTILE_SECRET_KEY', 'is required on production');
     } else if (TURNSTILE_TEST_SECRETS.has(env.TURNSTILE_SECRET_KEY)) {
       issue('TURNSTILE_SECRET_KEY', 'must not be a Cloudflare test key on production');
+    }
+    if (!env.PUBLIC_TURNSTILE_SITE_KEY) {
+      issue('PUBLIC_TURNSTILE_SITE_KEY', 'is required on production');
+    } else if (isTurnstileTestSiteKey(env.PUBLIC_TURNSTILE_SITE_KEY)) {
+      issue('PUBLIC_TURNSTILE_SITE_KEY', 'must not be a Cloudflare test key on production');
     }
   });
 

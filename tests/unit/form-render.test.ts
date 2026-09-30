@@ -123,6 +123,48 @@ describe('form island: server render', () => {
   });
 });
 
+describe('form island: while the lead is being sent', () => {
+  it('the text inputs are read-only, not disabled: focus stays where it is', () => {
+    const step = flows.thuisbatterij.steps.find((candidate) => candidate.id === 'contact')!;
+    const render = (readOnly?: boolean) =>
+      renderToStaticMarkup(
+        createElement(StepView, {
+          step,
+          fields: step.fields,
+          answers: {},
+          errors: {},
+          warnings: {},
+          suggestions: {},
+          onChange: () => {},
+          onBlur: () => {},
+          onApplySuggestion: () => {},
+          icons,
+          flag: { src: '/be.png', width: 96, height: 66 },
+          copy,
+          headingRef: null,
+          ...(readOnly === undefined ? {} : { readOnly }),
+        }),
+      );
+    const textInputs = (html: string) => html.match(/<input id="veld-[^"]+"[^>]*>/g) ?? [];
+    const sending = textInputs(render(true));
+    expect(sending.map((input) => /id="([^"]+)"/.exec(input)?.[1])).toEqual([
+      'veld-first_name',
+      'veld-last_name',
+      'veld-phone',
+      'veld-email',
+    ]);
+    // (React writes readOnly=""; attribute names are case-insensitive in HTML.)
+    for (const input of sending) {
+      expect(input).toMatch(/\sreadonly=""/i);
+      expect(input).not.toMatch(/\sdisabled/i);
+    }
+    // Cards, chips and checkboxes: the island ignores their changes instead.
+    expect(render(true).match(/\sreadonly=""/gi)).toHaveLength(4);
+    expect(render(false)).not.toMatch(/readonly/i);
+    expect(render()).not.toMatch(/readonly/i);
+  });
+});
+
 const sample: Answers = {
   product_choice: 'both',
   energy_type: 'both',

@@ -1,6 +1,7 @@
 // The form island's framework-free helpers (src/lib/form): session storage, the start state
-// from the URL and the stored session, messages, labels and the submit stub. Run against the
-// real flows and copy (src/content/flows/nl).
+// from the URL and the stored session, messages, labels and the submit context (sendLead and
+// Turnstile: tests/unit/form-submit.test.ts). Run against the real flows and copy
+// (src/content/flows/nl).
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -28,7 +29,6 @@ import {
 } from '../../src/lib/form/answers';
 import {
   firstInvalidStep,
-  isTestVisit,
   restoreStart,
   serverStart,
   startFlags,
@@ -71,7 +71,6 @@ import {
   firstStepBack,
   isRepeatSubmit,
   productPagePath,
-  sendLead,
   STEP_GUARD_MS,
   submissionContext,
   thanksPath,
@@ -543,12 +542,6 @@ describe('form start state', () => {
     const start = restore({ ...input, flows: { ...all, energie: noGas } });
     expect(start.step).toBe('product');
   });
-
-  it('reads ?test=1', () => {
-    expect(isTestVisit('?test=1')).toBe(true);
-    expect(isTestVisit('?test=0')).toBe(false);
-    expect(isTestVisit('')).toBe(false);
-  });
 });
 
 describe('form answers', () => {
@@ -840,13 +833,6 @@ describe('form submit', () => {
     expect(liveText('', 'Kies een antwoord.')).toBe('Kies een antwoord.');
     expect(liveText('Kies een antwoord.', 'Kies een antwoord.')).toBe('Kies een antwoord.\u00a0');
     expect(liveText('Kies een antwoord.\u00a0', 'Kies een antwoord.')).toBe('Kies een antwoord.');
-  });
-
-  it('sends nothing in Phase 4', async () => {
-    const fetchSpy = vi.fn();
-    vi.stubGlobal('fetch', fetchSpy);
-    await expect(sendLead({} as never)).resolves.toBeUndefined();
-    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('"Terug" on the first step: product page, previous page or home', () => {

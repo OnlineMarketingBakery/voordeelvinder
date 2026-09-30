@@ -7,7 +7,7 @@ import { blogCopy, postFrontmatter } from './schemas/blog';
 import { legalCopy, legalFrontmatter } from './schemas/legal';
 import { landing as landingSchema } from './schemas/landing';
 import { page } from './schemas/page';
-import { link, text, todo } from './schemas/primitives';
+import { internalHref, link, text, todo } from './schemas/primitives';
 
 /** Header navigation can depend on content existing (e.g. "Blogs" once there is a post). */
 const navLink = link.extend({ requires: z.enum(['blogPosts']).optional() });
@@ -19,6 +19,8 @@ const site = defineCollection({
     name: text,
     locale: z.literal('nl-BE'),
     skipLink: text,
+    /** The badge on every page while test mode (?test=1) is on (brief §9.4, src/lib/test-mode.ts). */
+    testMode: z.strictObject({ badge: text }),
     seo: z.strictObject({
       /** `{title}` is replaced with the page title; the homepage uses the site name alone. */
       titleTemplate: text.includes('{title}'),
@@ -37,11 +39,52 @@ const site = defineCollection({
       logoLabel: text,
       tagline: text,
       newsletter: z.strictObject({
-        /** Off until POST /api/newsletter exists (Phase 5): the form renders disabled. */
+        /** Off: the form renders disabled and sends nothing. */
         enabled: z.boolean(),
         label: text,
         placeholder: text,
         button: text,
+        /** The required consent checkbox under the field (brief §7.5, §11 GDPR). */
+        consent: z
+          .strictObject({
+            label: text,
+            /** Words of the label rendered as links (the first occurrence), like a form consent. */
+            links: z.array(z.strictObject({ text, href: internalHref })).default([]),
+          })
+          .superRefine((consent, ctx) => {
+            for (const [index, link] of consent.links.entries()) {
+              if (!consent.label.includes(link.text)) {
+                ctx.addIssue({
+                  code: 'custom',
+                  path: ['links', index, 'text'],
+                  message: `"${link.text}" does not occur in the label`,
+                });
+              }
+            }
+          }),
+        /** Status messages (src/lib/newsletter.ts). `{suggestion}` is the corrected address. */
+        messages: z.strictObject({
+          sending: text,
+          success: text,
+          suggestion: text.includes('{suggestion}'),
+        }),
+        /** One message per error kind (NewsletterError in src/lib/newsletter.ts). */
+        errors: z.strictObject({
+          email_required: text,
+          email_invalid: text,
+          consent_required: text,
+          invalid_request: text,
+          verification_failed: text,
+          rate_limited: text,
+          unavailable: text,
+          network: text,
+        }),
+        /**
+         * When the form's script can't load although the visitor is online, so only a reload
+         * helps (src/lib/newsletter-loader.ts): the message, and the button that reloads the
+         * page. Offline, `errors.network` shows instead.
+         */
+        reload: z.strictObject({ message: text, button: text }),
       }),
       links: z.strictObject({ heading: text, items: z.array(link).min(1) }),
       legal: z.strictObject({ heading: text, items: z.array(link).min(1) }),

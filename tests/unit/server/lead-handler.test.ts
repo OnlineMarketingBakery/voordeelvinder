@@ -141,6 +141,7 @@ describe('POST /api/lead (handler)', () => {
       LEAD_BACKUP_DIR: dir,
       N8N_LEAD_WEBHOOK_URL: 'https://n8n.example.test/webhook/lead',
       TURNSTILE_SECRET_KEY: 'fake-production-secret',
+      PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAAfakesitekey',
       TURNSTILE_VERIFY_URL: '',
     };
     const seen: unknown[] = [];

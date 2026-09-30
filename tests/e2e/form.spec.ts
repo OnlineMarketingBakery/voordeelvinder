@@ -1,11 +1,20 @@
-// The form island (brief §7.6, §12): /vergelijken and /vergelijken/<product>. Phase 4: the submit
-// builds the lead but sends nothing, and goes to the thank-you page /bedankt/<product>.
+// The form island (brief §7.6, §12): /vergelijken and /vergelijken/<product>. "Verstuur" posts
+// the lead to /api/lead and goes to the thank-you page /bedankt/<product>. Here the endpoint and
+// Turnstile are stand-ins (tests/support/form-submit.ts); what the form does with each answer
+// of the endpoint is in form-submit.spec.ts, the endpoint itself in lead.spec.ts.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Route } from '@playwright/test';
 
 import copy from '../../src/content/flows/nl/_copy.json' with { type: 'json' };
 import thanks from '../../src/content/pages/bedankt.json' with { type: 'json' };
 import { STEP_GUARD_MS } from '../../src/lib/form/submit';
+import { stubLead, stubTurnstile } from '../support/form-submit';
+
+// Every test: a fake /api/lead that answers OK, and the Turnstile stub instead of Cloudflare.
+test.beforeEach(async ({ page }) => {
+  await stubTurnstile(page);
+  await stubLead(page);
+});
 
 const { buttons, errors, requiredByType } = copy;
 const progress = (step: number, total: number) =>
@@ -385,7 +394,11 @@ test.describe('form: navigation and persistence', () => {
 });
 
 test.describe('form: submit', () => {
-  test('"Verstuur" goes to the thank-you page and sends nothing', async ({ page, baseURL }) => {
+  test('"Verstuur" sends the lead once and goes to the thank-you page', async ({
+    page,
+    baseURL,
+  }) => {
+    const bodies = await stubLead(page);
     await toContact(page);
     await fillContact(page);
     // Contact details typed on another form page in this tab must not outlive the lead.
@@ -396,6 +409,11 @@ test.describe('form: submit', () => {
     const unexpected: string[] = [];
     page.on('request', (request) => {
       const url = new URL(request.url());
+      // The one POST is the lead; the only other origin is the Turnstile script.
+      if (request.method() === 'POST' && url.origin === origin && url.pathname === '/api/lead') {
+        return;
+      }
+      if (url.origin === 'https://challenges.cloudflare.com' && request.method() === 'GET') return;
       if (url.origin !== origin || request.method() !== 'GET') {
         unexpected.push(`${request.method()} ${request.url()}`);
       }
@@ -410,6 +428,12 @@ test.describe('form: submit', () => {
     expect((await response).status()).toBe(200);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(thanks.sections[0]!.title);
     expect(unexpected).toEqual([]);
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]).toMatchObject({
+      product: 'energie',
+      contact: { first_name: 'Jan', last_name: 'Peeters', email: 'jan.peeters@example.be' },
+      website: '',
+    });
     expect(
       await page.evaluate(() =>
         Object.keys(sessionStorage).filter((key) => key.startsWith('voordeelvinder:form:')),
@@ -464,6 +488,7 @@ test.describe('form: submit', () => {
   });
 
   test('a double click submits once', async ({ page }) => {
+    const bodies = await stubLead(page);
     await toContact(page);
     await fillContact(page);
     const thankYou: string[] = [];
@@ -476,6 +501,7 @@ test.describe('form: submit', () => {
     await page.waitForURL('**/bedankt/energie');
     await page.waitForLoadState('networkidle');
     expect(thankYou).toHaveLength(1);
+    expect(bodies).toHaveLength(1);
   });
 });
 

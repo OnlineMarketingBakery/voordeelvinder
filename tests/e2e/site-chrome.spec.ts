@@ -95,8 +95,9 @@ test.describe('footer', () => {
     ]) {
       await expect(footer.getByRole('heading', { name: heading })).toBeVisible();
     }
+    // exact: the newsletter's consent line links "privacybeleid" too.
     for (const link of site.footer.legal.items) {
-      await expect(footer.getByRole('link', { name: link.label })).toHaveAttribute(
+      await expect(footer.getByRole('link', { name: link.label, exact: true })).toHaveAttribute(
         'href',
         link.href,
       );
@@ -114,12 +115,24 @@ test.describe('footer', () => {
     await expect(footer).toContainText(String(new Date().getFullYear()));
   });
 
-  test('newsletter is visible but disabled until the endpoint exists', async ({ page }) => {
+  test('newsletter: field, button and the consent with its privacy link', async ({ page }) => {
     await page.goto('/');
-    const input = page.getByLabel(site.footer.newsletter.label);
-    await expect(input).toHaveAttribute('placeholder', site.footer.newsletter.placeholder);
-    await expect(input).toBeDisabled();
-    await expect(page.getByRole('button', { name: site.footer.newsletter.button })).toBeDisabled();
+    const footer = page.locator('footer');
+    const { newsletter } = site.footer;
+    const input = footer.getByLabel(newsletter.label);
+    await expect(input).toHaveAttribute('placeholder', newsletter.placeholder);
+    await expect(input).toBeEnabled();
+    await expect(footer.getByRole('button', { name: newsletter.button })).toBeEnabled();
+    const consent = footer.getByRole('checkbox', { name: newsletter.consent.label });
+    await expect(consent).toBeVisible();
+    await expect(consent).not.toBeChecked();
+    for (const link of newsletter.consent.links) {
+      await expect(footer.locator('label').getByRole('link', { name: link.text })).toHaveAttribute(
+        'href',
+        link.href,
+      );
+    }
+    // More in tests/e2e/newsletter.spec.ts.
   });
 });
 

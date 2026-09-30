@@ -15,6 +15,8 @@ type Props = FieldProps<InputFieldType> & {
   suggestion: string | undefined;
   onApplySuggestion: (value: string) => void;
   flag: { src: string; width: number; height: number } | undefined;
+  /** While the lead is being sent (read-only, not disabled: focus stays in the field). */
+  readOnly?: boolean;
 };
 
 /** Mobile keyboards and autofill per type (brief §7.5); the form validates, not the browser. */
@@ -54,6 +56,7 @@ export function InputField({
   suggestion,
   onApplySuggestion,
   flag,
+  readOnly = false,
 }: Props) {
   const label = fieldLabel(step, field);
   const id = domId.field(field.id);
@@ -95,6 +98,7 @@ export function InputField({
           {...inputAttributes(field)}
           value={typeof value === 'string' || typeof value === 'number' ? String(value) : ''}
           placeholder={field.placeholder}
+          readOnly={readOnly}
           onChange={(event) => onChange(event.target.value === '' ? undefined : event.target.value)}
           onBlur={onBlur}
           aria-labelledby={label.byTitle ? titleId : undefined}

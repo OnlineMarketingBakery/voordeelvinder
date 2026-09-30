@@ -2,6 +2,9 @@
   "name": "VoordeelVinder",
   "locale": "nl-BE",
   "skipLink": "Naar de inhoud",
+  "testMode": {
+    "badge": "TESTMODUS"
+  },
   "seo": {
     "titleTemplate": "{title} | VoordeelVinder",
     "defaultDescription": "De eenvoudige energievergelijker voor Belgische gezinnen en alleenstaanden.",
@@ -39,10 +42,38 @@
     "logoLabel": "VoordeelVinder – naar de homepage",
     "tagline": "De eenvoudige energievergelijker voor Belgische gezinnen en alleenstaanden.",
     "newsletter": {
-      "enabled": false,
+      "enabled": true,
       "label": "E-mailadres",
       "placeholder": "Voer je e-mailadres in",
-      "button": "Abonneren"
+      "button": "Abonneren",
+      "consent": {
+        "label": "Ik wil tips en aanbiedingen via e-mail ontvangen. Je kunt je altijd uitschrijven. Lees meer in ons privacybeleid.",
+        "links": [
+          {
+            "text": "privacybeleid",
+            "href": "/privacybeleid"
+          }
+        ]
+      },
+      "messages": {
+        "sending": "We schrijven je in…",
+        "success": "Bijna klaar! Bevestig je inschrijving via de e-mail die we je stuurden.",
+        "suggestion": "Bedoel je {suggestion}?"
+      },
+      "errors": {
+        "email_required": "Vul je e-mailadres in.",
+        "email_invalid": "Geef een geldig e-mailadres in.",
+        "consent_required": "Vink het vakje aan om je in te schrijven.",
+        "invalid_request": "Dat lukte niet. Kijk je e-mailadres na en probeer het opnieuw.",
+        "verification_failed": "We konden je inschrijving niet controleren. Probeer het opnieuw.",
+        "rate_limited": "Je hebt het al een paar keer geprobeerd. Probeer het later opnieuw.",
+        "unavailable": "Inschrijven lukt nu even niet. Probeer het later opnieuw.",
+        "network": "Geen verbinding. Kijk je internetverbinding na en probeer het opnieuw."
+      },
+      "reload": {
+        "message": "Er ging iets mis. Vernieuw de pagina en probeer het opnieuw.",
+        "button": "Pagina vernieuwen"
+      }
     },
     "links": {
       "heading": "Snelle links",

@@ -3,8 +3,9 @@
 // test lead here (SITE_ENV is never production in e2e).
 //
 // The API tests run once (Chromium desktop): they need no browser. The form test runs in every
-// project and needs the form to post to /api/lead (sendLead in src/lib/form/submit.ts): it is
-// marked fixme until that wiring lands (the next PR).
+// project: the real form posts to the real /api/lead (sendLead in src/lib/form/submit.ts); only
+// Cloudflare's Turnstile script is the local stub (its token passes the siteverify stand-in).
+// The other form specs stub /api/lead with page.route instead, so they never reach this server.
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -17,6 +18,7 @@ import {
   MOCK_N8N_URL,
 } from '../support/e2e-env';
 import { energyLeadBody } from '../support/energy-lead';
+import { FAKE_TURNSTILE_TOKEN, stubTurnstile } from '../support/form-submit';
 import type { ReceivedRequest } from '../support/mock-n8n';
 
 /**
@@ -261,9 +263,6 @@ test.describe('POST /api/newsletter', () => {
 });
 
 test.describe('the energy form sends its lead', () => {
-  // "Verstuur" doesn't post to /api/lead yet (sendLead is still a stub): the next PR wires it.
-  test.fixme();
-
   async function fillEnergyForm(page: Page) {
     const main = page.getByRole('main');
     const heading = main.getByRole('heading', { level: 2 });
@@ -320,6 +319,7 @@ test.describe('the energy form sends its lead', () => {
     page,
     request,
   }) => {
+    await stubTurnstile(page);
     await fillEnergyForm(page);
     const posts: string[] = [];
     page.on('request', (sent) => {
@@ -334,9 +334,39 @@ test.describe('the energy form sends its lead', () => {
     await expect(page).toHaveURL(/\/bedankt\/energie\/?$/);
     expect(posts).toHaveLength(1);
 
-    const { lead_id: leadId } = JSON.parse(posts[0]!) as { lead_id: string };
+    const sent = JSON.parse(posts[0]!) as { lead_id: string; turnstile_token?: string };
+    const leadId = sent.lead_id;
+    expect(sent.turnstile_token).toMatch(new RegExp(`^${FAKE_TURNSTILE_TOKEN}-\\d+$`));
+
+    // The lead reaches the mock n8n as a test lead (SITE_ENV is never production here)…
     const webhook = await webhookFor(request, leadId);
-    expect(webhook.body).toMatchObject({ lead_id: leadId, is_test: true, product: 'energie' });
-    expect((await backupLines()).some((line) => line.id === leadId)).toBe(true);
+    expect(webhook.body).toMatchObject({
+      lead_id: leadId,
+      is_test: true,
+      product: 'energie',
+      answers: { energy_type: 'both', supplier: 'luminus' },
+      derived: { postcode: '9000', region: 'flanders' },
+      meta: { page: '/vergelijken/energie' },
+    });
+    expect(Object.keys(webhook.body as object).sort()).toEqual(PAYLOAD_KEYS);
+    expect(webhook.headers['x-vv-secret']).toBe(E2E_WEBHOOK_SECRET);
+
+    // …is backed up before the forward, and marked forwarded after it…
+    await expect
+      .poll(async () =>
+        (await backupLines()).filter((line) => line.id === leadId).map((line) => line.status),
+      )
+      .toEqual(['pending_forward', 'forwarded']);
+    expect((await backupLines()).find((line) => line.id === leadId)).toMatchObject({
+      kind: 'lead',
+      payload: { lead_id: leadId, is_test: true },
+    });
+
+    // …and the thank-you page cheers, once: the form left the one-time lead-safe flag.
+    const celebration = page.locator('[data-celebration]');
+    await expect(celebration).toHaveAttribute('data-celebrate', '');
+    expect(
+      await page.evaluate(() => sessionStorage.getItem('voordeelvinder:lead-safe')),
+    ).toBeNull();
   });
 });

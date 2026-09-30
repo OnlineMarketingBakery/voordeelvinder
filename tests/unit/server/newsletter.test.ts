@@ -127,6 +127,7 @@ describe('POST /api/newsletter (handler)', () => {
         N8N_LEAD_WEBHOOK_URL: 'https://n8n.example.test/webhook/lead',
         N8N_NEWSLETTER_WEBHOOK_URL: '',
         TURNSTILE_SECRET_KEY: 'fake-production-secret',
+        PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAAfakesitekey',
         TURNSTILE_VERIFY_URL: '',
       },
       {

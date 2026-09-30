@@ -195,10 +195,8 @@
  * Page transitions (brief §6.1): browser-native cross-document view transitions, so every
  * navigation stays a real page load (no client router). Browsers without support navigate
  * normally. Elements that should morph get a view-transition-name on the clicked element only.
+ * The opt-in itself (`@view-transition { navigation: auto }`) is inline in Base.astro's <head>.
  */
-@view-transition {
-  navigation: auto;
-}
 
 ::view-transition-old(root),
 ::view-transition-new(root) {

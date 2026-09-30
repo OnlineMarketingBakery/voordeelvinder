@@ -1,6 +1,7 @@
 // The thank-you pages (brief §5, §11): /bedankt/<product>, one copy, three URLs, noindex and out
-// of the sitemap. They render for a direct visit too (tracking), with nothing personal on them.
-// Landing here from the form's "Verstuur" is covered in form.spec.ts.
+// of the sitemap. They render for a direct visit too (tracking), with nothing personal on them,
+// and without the celebration. Landing here from the form's "Verstuur" is covered in
+// form.spec.ts and form-submit.spec.ts.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
@@ -88,8 +89,10 @@ for (const product of PRODUCTS) {
       'none',
     );
     expect(await namedFormCard(page)).toBe(0);
-    // Phase 4: every visit celebrates (src/scripts/celebrate.ts); Phase 5 gates it on the lead.
-    await expect(page.locator('[data-celebration]')).toHaveAttribute('data-celebrate', '');
+    // A direct visit never celebrates: only a lead the endpoint accepted does
+    // (src/scripts/celebrate.ts; form-submit.spec.ts).
+    await page.waitForLoadState('load');
+    await expect(page.locator('[data-celebration]')).not.toHaveAttribute('data-celebrate');
   });
 }
 

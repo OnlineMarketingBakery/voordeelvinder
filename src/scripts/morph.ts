@@ -42,7 +42,8 @@ window.addEventListener('pageswap', (event) => {
 window.addEventListener('pagereveal', (event) => {
   if (named.size === 0) return;
   const transition = event.viewTransition;
-  if (transition) void transition.finished.finally(clearNames);
+  // then(f, f), not finally: Chromium rejects `finished` when it aborts the transition.
+  if (transition) void transition.finished.then(clearNames, clearNames);
   else clearNames();
 });
 window.addEventListener('pageshow', (event) => {

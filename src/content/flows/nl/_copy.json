@@ -67,5 +67,13 @@
     "day_slot": "Kies een dag en een tijdstip."
   },
   "emailSuggestion": "Bedoel je {suggestion}?",
+  "submitErrors": {
+    "network": "Het versturen lukte niet. Controleer je internetverbinding en probeer het opnieuw.",
+    "unavailable": "Het versturen lukte niet. Probeer het over een paar minuten opnieuw.",
+    "turnstile": "We konden niet bevestigen dat je geen robot bent. Probeer het opnieuw.",
+    "rate_limit": "Je hebt al een paar keer verstuurd. Probeer het over een uur opnieuw.",
+    "invalid": "Er ging iets mis met je gegevens. Vernieuw de pagina en probeer het opnieuw.",
+    "reload": "Pagina vernieuwen"
+  },
   "settings": { "autoAdvance": true }
 }

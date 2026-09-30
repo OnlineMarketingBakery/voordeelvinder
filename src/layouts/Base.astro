@@ -5,6 +5,7 @@ import defaultOgImage from '../assets/og/default.png';
 import { getSite } from '../lib/site';
 import { isIndexable } from '../lib/seo/indexing';
 import { jsonLd, pageTitle } from '../lib/seo/structured-data';
+import { testModeScript } from '../lib/test-mode';
 import '../styles/global.css';
 
 interface Props {
@@ -63,6 +64,19 @@ const robots = noindex || !isIndexable(__SITE_ENV__) ? 'noindex, nofollow' : und
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    {/*
+      The cross-document view-transition opt-in (brief §6.1, docs/MOTION.md), inline and first so
+      it holds from the very first style update. In the external stylesheet only, Chromium can
+      evaluate the opt-in before that file has arrived (a page served from the prefetch cache),
+      find none and abort the transition with "ViewTransition opt-in disabled".
+    */}
+    <style is:inline>
+      @view-transition {
+        navigation: auto;
+      }
+    </style>
+    {/* Test mode (brief §9.4): ?test=1 is kept for the session and shows the badge below. */}
+    <script is:inline set:html={testModeScript} />
     <title>{fullTitle}</title>
     <meta name="description" content={metaDescription} />
     {robots && <meta name="robots" content={robots} />}
@@ -94,5 +108,17 @@ const robots = noindex || !isIndexable(__SITE_ENV__) ? 'noindex, nofollow' : und
   </head>
   <body class="font-sans">
     <slot />
+    {/*
+      Shown only while test mode is on (data-test-mode on <html>, set by the script above before
+      the first paint); display:none otherwise, so screen readers skip it too. Not focusable.
+      A vertical tab on the left edge, 16px wide: it fits the page gutter at 390px, so it never
+      covers a button or text (a corner badge sat on the form's "Terug" on mobile).
+    */}
+    <p
+      data-test-badge
+      class="pointer-events-none fixed bottom-3 left-0 z-50 hidden w-4 rotate-180 rounded-l-sm bg-ink-900 py-2 text-center text-[10px] leading-4 font-bold tracking-wide text-white [writing-mode:vertical-rl] in-data-test-mode:block"
+    >
+      {site.testMode.badge}
+    </p>
   </body>
 </html>

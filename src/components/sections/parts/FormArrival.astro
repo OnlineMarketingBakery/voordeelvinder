@@ -38,7 +38,9 @@
     window.addEventListener(
       'pagereveal',
       function (event) {
-        if (event.viewTransition) event.viewTransition.finished.finally(clear);
+        // then(clear, clear): an aborted transition may reject `finished`; clear either way and
+        // leave no unhandled rejection behind.
+        if (event.viewTransition) event.viewTransition.finished.then(clear, clear);
         else clear();
       },
       { once: true },
