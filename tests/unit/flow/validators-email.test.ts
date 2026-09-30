@@ -103,12 +103,14 @@ describe('validateEmail: typo suggestions', () => {
     ['jan@teleent.be', 'jan@telenet.be'],
     ['jan@skynet.com', 'jan@skynet.be'],
     ['jan@skyne.be', 'jan@skynet.be'],
-    ['jan@proximus.com', 'jan@proximus.be'],
     ['jan@proximis.be', 'jan@proximus.be'],
     ['jan@icloud.be', 'jan@icloud.com'],
     ['jan@iclould.com', 'jan@icloud.com'],
     ['jan@liv.be', 'jan@live.be'],
     ['jan@pandora.nl', 'jan@pandora.be'],
+    // Short provider names: only a TLD typo is suggested.
+    ['jan@me.co', 'jan@me.com'],
+    ['jan@msn.cm', 'jan@msn.com'],
   ])('suggests a correction for %j', (input, suggestion) => {
     expect(validateEmail(input, field)).toEqual({
       ok: true,
@@ -135,6 +137,21 @@ describe('validateEmail: typo suggestions', () => {
     'jan@kpn.nl',
     'jan@bedrijf.be',
     'jan@ugent.be',
+    // Short names are too close to me.com / msn.com for one edit to mean a typo.
+    'jan@msc.com',
+    'jan@ms.com',
+    'jan@ge.com',
+    'jan@mi.com',
+    // Real Microsoft country domains one letter from the .be ones.
+    'jan@live.se',
+    'jan@live.ie',
+    'jan@hotmail.se',
+    'jan@outlook.ie',
+    // A real domain missing a provider's first letter is another word, not a typo.
+    'jan@cloud.be',
+    // Providers with a real domain under another TLD.
+    'jan@proximus.com',
+    'jan@scarlet.nl',
   ])('makes no suggestion for %j', (input) => {
     expect(validateEmail(input, field)).toEqual({ ok: true, value: input });
   });
@@ -147,6 +164,10 @@ describe('validateEmail: typo suggestions', () => {
     ['jan@bedrijf,be', 'jan@bedrijf.be'],
     ['jan@telenet.b e', 'jan@telenet.be'],
     ['jan@telenet', 'jan@telenet.be'],
+    // Without a TLD, a provider with a real domain elsewhere is still completed.
+    ['jan@scarlet', 'jan@scarlet.be'],
+    ['jan@proximus', 'jan@proximus.be'],
+    ['jan@proximis', 'jan@proximus.be'],
   ])('suggests a fix for the invalid %j', (input, suggestion) => {
     expect(validateEmail(input, field)).toEqual({ ok: false, code: 'email_invalid', suggestion });
   });

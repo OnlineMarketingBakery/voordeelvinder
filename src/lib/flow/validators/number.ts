@@ -1,13 +1,15 @@
 // Whole numbers such as kWh per year (brief §7.3, §7.5): integers only. Belgian thousands
 // separators are accepted: "3500", "3.500", "3 500", "1.000.000" (dots or spaces, groups of
-// three). A decimal is rejected, never rounded: "3,5", "3.50", "3500,00". Units or other text
+// three, the first without a leading zero). A decimal is rejected, never rounded: "3,5", "3.50",
+// "3500,00", "0.500". Units or other text
 // ("3500 kWh") are not numbers. `min`/`max` are hard limits; outside `softMin`/`softMax` the
 // value is valid with the warning `outside_typical`.
 import { empty, fail, isEmpty, ok } from './shared';
 import type { FieldConfig, ValidationResult } from './types';
 
 const PLAIN = /^-?\d+$/;
-const GROUPED = /^-?\d{1,3}(?:[.\s]\d{3})+$/;
+/** Thousands groups; the first group has no leading zero ("0.500" is a decimal, not 500). */
+const GROUPED = /^-?[1-9]\d{0,2}(?:[.\s]\d{3})+$/;
 const DECIMAL = /^-?\d[\d.\s]*[.,]\d+$/;
 
 export type ParsedNumber =

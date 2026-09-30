@@ -54,9 +54,13 @@ describe('parsePhone: Belgian mobiles', () => {
     expect(parsePhone(input)).toEqual({ ok: true, value: { e164, display, kind: 'mobile' } });
   });
 
-  it('reads a mobile one digit short as a (Liège) landline, never as a padded mobile', () => {
-    for (const input of ['047512345', '+3247512345', '47512345']) {
-      expect(parsePhone(input)).toEqual({ ok: false, code: 'phone_landline' });
+  it('rejects a mobile one digit short: 045x–049x is never a (Liège) landline', () => {
+    for (const input of ['047512345', '+3247512345', '47512345', '0470 12 34 5', '0450 12 34 5']) {
+      expect(parsePhone(input)).toEqual({ ok: false, code: 'phone_invalid' });
+      expect(parsePhone(input, { allowLandlines: true })).toEqual({
+        ok: false,
+        code: 'phone_invalid',
+      });
     }
   });
 
@@ -111,6 +115,7 @@ describe('parsePhone: landlines', () => {
     ['02/123.45.67', '+3221234567', '+32 2 123 45 67'],
     ['03 234 56 78', '+3232345678', '+32 3 234 56 78'],
     ['04 123 45 67', '+3241234567', '+32 4 123 45 67'],
+    ['04 444 55 66', '+3244445566', '+32 4 444 55 66'],
     ['09 222 33 44', '+3292223344', '+32 9 222 33 44'],
     ['050 12 34 56', '+3250123456', '+32 50 12 34 56'],
     ['011 22 33 44', '+3211223344', '+32 11 22 33 44'],
