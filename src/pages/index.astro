@@ -1,23 +1,14 @@
 ---
-import Sections from '../components/sections/Sections.astro';
-import Page from '../layouts/Page.astro';
-import { visibleFaqItems } from '../lib/faq';
-import { getPage } from '../lib/pages';
-import { faqPage, organization, website } from '../lib/seo/structured-data';
+import ContentPage from '../layouts/ContentPage.astro';
+import { organization, website } from '../lib/seo/structured-data';
 import { getSite } from '../lib/site';
-
-const page = await getPage('home');
 
 const site = await getSite();
 const siteUrl = new URL('/', Astro.site);
-const faq = faqPage(visibleFaqItems(page.sections));
 const structuredData = [
   organization({ name: site.name, url: siteUrl, logo: new URL('/icon-512.png', Astro.site) }),
   website({ name: site.name, url: siteUrl, inLanguage: site.locale }),
-  ...(faq ? [faq] : []),
 ];
 ---
 
-<Page title={page.seo.title} description={page.seo.description} {structuredData}>
-  <Sections sections={page.sections} />
-</Page>
+<ContentPage id="home" {structuredData} />

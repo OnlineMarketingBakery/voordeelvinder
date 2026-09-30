@@ -44,6 +44,14 @@ export const heroBlock = z
         }
       }
     }
+    // The art preset carries the variant's layout: home art on home, solar/battery on product.
+    if ((hero.variant === 'home') !== (hero.art.preset === 'home')) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['art', 'preset'],
+        message: `preset "${hero.art.preset}" does not fit the ${hero.variant} hero`,
+      });
+    }
     if ((hero.usps ?? []).filter((u) => u.highlight).length > 1) {
       ctx.addIssue({ code: 'custom', path: ['usps'], message: 'at most one highlighted USP' });
     }

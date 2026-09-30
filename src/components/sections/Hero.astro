@@ -47,6 +47,27 @@ const enter = {
 };
 const rise =
   'motion-safe:animate-[hero-rise_var(--motion-duration-slow)_var(--ease-out)_80ms_both]';
+
+// Figma per variant (desktop). Home: the eyebrow and the USP bar set the rhythm. Product pages
+// (solar 69:1252–69:1256, battery 80:3141–80:3144): body 24 below the h1, divider 36 below the
+// body, CTA 30 below the divider; the battery h1 has three lines, so its hero starts higher.
+// The art box is 555 wide on solar (overhanging the container by 34) and 523 on battery.
+const preset = {
+  solar: {
+    padding: 'xl:pt-[140px] xl:pb-[121px]',
+    // The art (468 tall) reaches into the padding (Figma y184–652 in a 615 band), so it must not
+    // set the row height: negative block margins keep the band text-driven.
+    art: 'lg:w-[clamp(28rem,38vw,34.6875rem)] xl:-my-14 xl:-mr-[34px]',
+  },
+  battery: {
+    padding: 'xl:pt-[116px] xl:pb-[91px]',
+    art: 'lg:w-[clamp(26rem,36vw,32.6875rem)]',
+  },
+  home: { padding: '', art: '' },
+}[art.preset];
+const spacing = isHome
+  ? { body: 'mt-4', divider: 'mt-6 lg:mt-7', button: 'lg:mt-9.5' }
+  : { body: 'mt-4 lg:mt-6', divider: 'mt-6 lg:mt-9', button: 'lg:mt-[30px]' };
 ---
 
 <section id={id} aria-labelledby="hero-title" class="surface-dark relative overflow-x-clip">
@@ -56,10 +77,10 @@ const rise =
         'grid pt-10 md:pt-14 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:pt-24',
         isHome
           ? 'pb-10 md:pb-12 lg:pb-10 xl:items-start xl:pt-[134px]'
-          : 'pb-14 lg:pb-24 xl:pt-[140px] xl:pb-[121px]',
+          : ['pb-14 lg:pb-24', preset.padding],
       ]}
     >
-      <div class:list={['max-w-[574px]', isHome && 'xl:pt-[13px]']}>
+      <div class:list={[isHome ? 'max-w-[574px] xl:pt-[13px]' : 'max-w-[580px]']}>
         {eyebrow && (
           <p class:list={['text-body-lg md:text-lead', enter[0]]}>
             {eyebrow.emoji && (
@@ -76,24 +97,36 @@ const rise =
         <h1
           id="hero-title"
           class:list={[
-            'text-h3 text-balance md:text-h2 lg:text-h1',
+            'text-h3 md:text-h2 lg:text-h1',
+            // Home balances its two lines; product titles break as designed (battery 80:3141),
+            // only avoiding a single-word last line on phones.
+            isHome ? 'text-balance' : 'text-pretty',
             eyebrow && 'mt-3 md:mt-4 lg:mt-4.5',
-            isHome ? 'max-w-[29rem]' : 'max-w-[545px]',
+            // Product: the h1 may use the column (battery 80:3141 is 573 wide: "Gebruik het wanneer").
+            isHome ? 'max-w-[29rem]' : 'max-w-[574px]',
           ]}
         >
-          {title}
+          {/* "\n" in the title is a designed line break (battery 80:3141). */}
+          {title.split('\n').map((line, index) => (
+            <span class="block">{`${index > 0 ? ' ' : ''}${line}`}</span>
+          ))}
         </h1>
         <CopyText
           copy={body}
-          class:list={['mt-4 text-body md:max-w-[36rem] lg:max-w-[32rem] lg:leading-[1.625]', rise]}
+          class:list={[
+            'text-body md:max-w-[36rem] lg:leading-[1.625]',
+            isHome ? 'lg:max-w-[32rem]' : 'lg:max-w-none',
+            spacing.body,
+            rise,
+          ]}
         />
-        <div class:list={['mt-6 lg:mt-7', enter[160]]}>
+        <div class:list={[spacing.divider, enter[160]]}>
           <hr class="border-t border-white/40" />
           <Button
             href={cta.href}
             glow="purple"
             icon="arrow-up-right"
-            class="mt-6 max-md:w-full md:mt-8 lg:mt-9.5"
+            class:list={['mt-6 max-md:w-full md:mt-8', spacing.button]}
           >
             {cta.label}
           </Button>
@@ -103,9 +136,11 @@ const rise =
       <div
         class:list={[
           'mx-auto mt-8 w-full max-w-[358px] md:mt-10 lg:mt-0 lg:max-w-none',
+          // The battery rings reach 41 px above the art box: keep them off the full-width CTA.
+          art.preset === 'battery' && 'max-md:mt-12',
           isHome
             ? 'md:max-w-[34rem] lg:-ml-10 lg:w-[clamp(34rem,52vw,48.625rem)] xl:-mr-[min(111px,calc(50vw-585px))] xl:-ml-17 xl:w-[48.625rem]'
-            : 'md:max-w-[30rem] lg:ml-10 lg:w-[clamp(28rem,38vw,34.6875rem)]',
+            : ['md:max-w-[30rem] lg:ml-10', preset.art],
         ]}
       >
         <HeroArt preset={art.preset} product={art.product} mascot={art.mascot} />

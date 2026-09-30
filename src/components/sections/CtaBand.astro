@@ -11,7 +11,7 @@ import CopyText from '../ui/CopyText.astro';
 
 type Props = CtaBandBlock;
 
-const { id, tone, title, body, cta } = Astro.props;
+const { id, tone, title, body, cta, overlapFooter = false } = Astro.props;
 const headingId = `${id ?? 'cta-band'}-title`;
 
 const tones = {
@@ -33,7 +33,17 @@ const tones = {
 }[tone];
 ---
 
-<section {id} aria-labelledby={headingId} class="relative z-10 pt-16 md:pt-24 lg:pt-32">
+<section
+  {id}
+  aria-labelledby={headingId}
+  class:list={[
+    // z-10: above the FAQ panel that starts behind it (home) and above the footer it reaches
+    // into (product pages: 81 px at 1440, Figma 81:3582/81:3830). The page gives that footer
+    // its overlap padding (Footer `overlap`), so the logo still sits 101 px below the band.
+    'relative z-10 pt-16 md:pt-24 lg:pt-32',
+    overlapFooter && '-mb-12 lg:-mb-[81px]',
+  ]}
+>
   <Container>
     <div
       class:list={[

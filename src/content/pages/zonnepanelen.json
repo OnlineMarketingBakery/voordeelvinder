@@ -1,0 +1,182 @@
+{
+  "seo": {
+    "title": "Zonnepanelen vergelijken",
+    "description": "Zonnepanelen zijn een slimme investering — maar de prijzen en installateurs variëren sterk. VoordeelVinder vergelijkt de beste opties voor jouw dak en verbruik."
+  },
+  "sections": [
+    {
+      "type": "hero",
+      "variant": "product",
+      "title": "Betaal minder. Produceer zelf.",
+      "body": "Zonnepanelen zijn een slimme investering — maar de prijzen en installateurs variëren sterk. VoordeelVinder vergelijkt de beste opties voor jouw dak en verbruik. In een paar minuten weet je wat het kost en wat je bespaart.",
+      "cta": {
+        "label": "Bereken je besparing",
+        "href": "/vergelijken/zonnepanelen"
+      },
+      "art": {
+        "preset": "solar",
+        "product": {
+          "src": "illustrations/hero-solar-panel",
+          "alt": ""
+        },
+        "mascot": {
+          "src": "mascot/fox-waving",
+          "alt": "",
+          "mirror": true
+        }
+      }
+    },
+    {
+      "type": "features",
+      "title": "Waarom nu overstappen op zonne-energie?",
+      "intro": [
+        "Energieprijzen blijven stijgen.",
+        {
+          "text": "Subsidies zijn beschikbaar.",
+          "hidden": true,
+          "claim": "1.8"
+        },
+        "En met de juiste panelen verdien je je investering sneller terug dan je denkt."
+      ],
+      "cardStyle": "solid",
+      "items": [
+        {
+          "icon": "money",
+          "title": "Lagere energierekening",
+          "body": "Produceer je eigen stroom en betaal structureel minder aan je energieleverancier. Elke kilowattuur die je zelf opwekt, is er één die je niet aankoopt.",
+          "tone": "purple"
+        },
+        {
+          "icon": "time",
+          "title": "Snel terugverdiend",
+          "body": "Een gemiddeld gezin verdient de investering in zonnepanelen terug binnen €[X] jaar. Wij berekenen jouw persoonlijke terugverdientijd op basis van je verbruik en dak.",
+          "hidden": true,
+          "tone": "lime",
+          "claim": "1.7"
+        },
+        {
+          "icon": "home",
+          "title": "Meerwaarde voor je woning",
+          "body": "Zonnepanelen verhogen de waarde en het EPC-label van je huis. Een slimme investering die je nu én later beloont.",
+          "tone": "purple"
+        }
+      ]
+    },
+    {
+      "type": "steps",
+      "id": "hoe-het-werkt",
+      "align": "center",
+      "title": "Zo werkt het",
+      "intro": "Van je eerste klik tot een helder resultaat: een paar minuten. Niet meer.",
+      "items": [
+        {
+          "label": "Stap 01",
+          "icon": "contract",
+          "title": "Vertel ons over je dak",
+          "body": "Daktype, oriëntatie en een schatting van je jaarverbruik. Je hebt geen technische kennis nodig om te starten.",
+          "tone": "purple"
+        },
+        {
+          "label": "Stap 02",
+          "icon": "compare",
+          "title": "Wij vergelijken installateurs",
+          "body": "We zoeken de beste installateurs en formules voor jouw situatie. Transparant, zonder verborgen voorkeur voor één partij.",
+          "tone": "lime"
+        },
+        {
+          "label": "Stap 03",
+          "icon": "decision-making",
+          "title": "Jij kiest, wij regelen",
+          "body": "Je ontvangt een helder overzicht met kosten en besparing. Beslis zelf wanneer je de stap zet — wij begeleiden je van A tot Z.",
+          "tone": "purple"
+        }
+      ]
+    },
+    {
+      "type": "benefits",
+      "layout": "list",
+      "background": "clouds",
+      "title": "Wat je van ons mag verwachten",
+      "intro": [
+        "Energieprijzen blijven stijgen.",
+        {
+          "text": "Subsidies zijn beschikbaar.",
+          "hidden": true,
+          "claim": "1.8"
+        },
+        "En met de juiste panelen verdien je je investering sneller terug dan je denkt."
+      ],
+      "image": {
+        "src": "mascot/fox-cheering",
+        "alt": ""
+      },
+      "items": [
+        {
+          "icon": "advice",
+          "title": "Onafhankelijk advies",
+          "body": "Wij werken niet voor één installateur. Je krijgt een eerlijk overzicht van wat op jouw situatie past.",
+          "tone": "purple"
+        },
+        {
+          "icon": "label",
+          "title": "Transparante kostprijs",
+          "body": "Geen verborgen kosten of verrassingen achteraf. Wat je ziet, is wat je betaalt.",
+          "tone": "lime"
+        },
+        {
+          "icon": "book",
+          "title": "Begeleiding van A tot Z",
+          "body": "Van offerte tot plaatsing begeleiden wij je. Geen losse eindjes, geen onverwachte extra's.",
+          "tone": "purple"
+        },
+        {
+          "icon": "check",
+          "title": "Gratis en vrijblijvend",
+          "body": "Vergelijken kost je niets. Je beslist pas op het einde of je verder wil gaan.",
+          "tone": "lime"
+        }
+      ]
+    },
+    {
+      "type": "faq",
+      "id": "veelgestelde-vragen",
+      "tone": "white",
+      "eyebrow": "Veelgestelde vragen",
+      "title": "Veelgestelde vraag",
+      "items": [
+        {
+          "question": "Hoeveel zonnepanelen heb ik nodig?",
+          "answer": null
+        },
+        {
+          "question": "Wat als mijn dak niet ideaal georiënteerd is?",
+          "answer": "Een zuidgericht dak is het meest efficiënt, maar ook oost-west oriëntaties leveren goed resultaat. Wij houden rekening met jouw specifieke situatie.",
+          "open": true
+        },
+        {
+          "question": "Zijn er subsidies of premies beschikbaar?",
+          "answer": null
+        },
+        {
+          "question": "Hoe lang duurt de installatie?",
+          "answer": null
+        },
+        {
+          "question": "Kan ik zonnepanelen plaatsen als ik huur?",
+          "answer": null
+        }
+      ]
+    },
+    {
+      "type": "ctaBand",
+      "tone": "lime",
+      "title": "Klaar om te berekenen wat zonnepanelen jou opleveren?",
+      "body": "In een paar minuten zie je wat het kost, wat je bespaart en wanneer de panelen zichzelf terugverdienen. Geen verplichtingen, geen verrassingen.",
+      "cta": {
+        "label": "Start je berekening",
+        "href": "/vergelijken/zonnepanelen"
+      },
+      "overlapFooter": true
+    }
+  ]
+}

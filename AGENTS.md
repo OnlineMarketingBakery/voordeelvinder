@@ -16,7 +16,7 @@ deviate from it are recorded in `docs/decisions/`.
 | `src/components/sections/`             | One Astro component per section block type; `Sections.astro` maps type → component             |
 | `src/components/site/`, `ui/`          | Header/Footer (copy from `site.json`); Button, SectionPill, Logo, Container                    |
 | `src/layouts/Page.astro`               | Standard page: header, `<main id="main">`, footer                                              |
-| `src/layouts/`                         | Page layouts (`Base.astro`: `<head>`, robots, canonical)                                       |
+| `src/layouts/`                         | Layouts: `Base.astro` (`<head>`, robots, canonical), `ContentPage.astro` (pages/*.json route)  |
 | `src/pages/`                           | Routes; `api/*` are on-demand (`export const prerender = false`)                               |
 | `src/server/env.ts`                    | Typed, validated server environment. The only reader of `process.env`                          |
 | `src/server/rules/`                    | Qualification rules — server-only, never shipped to the browser (Phase 5)                      |
@@ -67,13 +67,13 @@ referenced by key (`mascot/fox-waving`, `money`): files in `src/assets/images` a
 
 | Type               | Component                                            | Purpose                                                                                                                                                                                                                    |
 | ------------------ | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `hero`             | `Hero.astro` (+ `parts/HeroArt`, `parts/UspBar`)     | Page intro with the only `h1`; `variant` home (eyebrow, USP bar) or product; `art.preset` home/solar/battery                                                                                                               |
+| `hero`             | `Hero.astro` (+ `parts/HeroArt`, `parts/UspBar`)     | Page intro with the only `h1` (`\n` in `title` = line break); `variant` home (eyebrow, USP bar) or product; `art.preset` home/solar/battery                                                                                |
 | `features`         | `Features.astro`                                     | Centred header and 1–4 value cards on plates; `cardStyle` translucent (home) or solid (product pages); cards can be hidden                                                                                                 |
 | `steps`            | `Steps.astro` (+ `parts/StepPill`)                   | "Hoe het werkt": 2–4 numbered steps (`<ol>`, pills on a timeline) on a purple panel; `align` start (home: optional `mascot` above the panel, `highlight` chip) or center (product pages)                                   |
 | `comparisonTable`  | `ComparisonTable.astro` (+ `parts/CloudsBackground`) | Other comparison sites vs VoordeelVinder as a real `<table>` (hidden caption, row headers); 1–8 `rows`, stacked below md; `background` clouds (default) or none                                                            |
 | `productSpotlight` | `ProductSpotlight.astro`                             | Home product card: pill + CTA row, h2, body, 1–4 feature cards on accent plates, corner illustration; `product` zonnepanelen/thuisbatterij (pill icon; CTA must lead to `/vergelijken/<product>`), `tone` lime or lavender |
 | `benefits`         | `Benefits.astro` (+ `parts/CloudsBackground`)        | "Why us" cards beside a mascot; `layout` grid (home: pill, h2 + `cta`, 2×2 cards) or list (product pages: stacked cards, `tone` tile per item); 2–6 visible; `background` clouds                                           |
-| `ctaBand`          | `CtaBand.astro`                                      | Centred h2, optional `body` and one `cta` button on a rounded band with rings behind it; `tone` purple (home: white text, lime button) or lime (product pages: dark text, white button)                                    |
+| `ctaBand`          | `CtaBand.astro`                                      | Centred h2, optional `body`, one `cta` button on a rounded band with rings; `tone` purple (home: white text, lime button) or lime (product pages); `overlapFooter` (lime, last block) reaches into the footer              |
 | `faq`              | `Faq.astro` (+ `parts/AccordionItem`, `ContactCard`) | Native `<details>` questions (not headings) beside a contact card (`site.json faq`); only answered items render and feed FAQPage JSON-LD; `tone` lavender (home) or white                                                  |
 | `testimonials`     | `Testimonials.astro` (+ `ui/Rating`)                 | Reviews in a swipe track (`li > figure > blockquote`), prev/next buttons from md; `labels` for a11y; a visible `placeholder` item or "[X]" fails a production build                                                        |
 | `ctaMascot`        | `CtaMascot.astro`                                    | Final CTA (home, last block): mascot in a white/lime ring beside a multi-line `h2` (`\n` = new line); `highlight` must equal one line (tilted lime chip + sparkle); `body`, purple `cta` button                            |
@@ -87,7 +87,8 @@ referenced by key (`mascot/fox-waving`, `money`): files in `src/assets/images` a
 - **Add a flow step** (Phase 4): add the step to `src/content/flows/nl/<product>.json`, wire it
   into `next` of the previous step, give every option a new, unique `code`, then run
   `npm run validate:flows` and add e2e coverage for the new path.
-- **Add a product** (Phase 4/5): a flow file, a page JSON, a `/vergelijken/<product>` and
+- **Add a product** (Phase 4/5): a flow file, a page JSON (its route `src/pages/<product>.astro`
+  renders `<ContentPage id="<product>" />`), a `/vergelijken/<product>` and
   `/bedankt/<product>` route, and either a rules file in `src/server/rules/` or nothing (the
   outcome is then `pending`).
 - **Add a campaign landing variant** (Phase 3): a Markdown file in `src/content/landing/`;
