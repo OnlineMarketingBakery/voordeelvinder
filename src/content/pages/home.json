@@ -5,7 +5,49 @@
   "sections": [
     {
       "type": "hero",
-      "title": "Betaal jij te veel voor energie?"
+      "variant": "home",
+      "eyebrow": {
+        "emoji": "👋",
+        "text": "Welkom bij VoordeelVinder"
+      },
+      "title": "Betaal jij te veel voor energie?",
+      "body": "In een paar minuten weet je het zeker. Vul je gegevens in, wij vergelijken Luminus, Mega en TotalEnergies — en je ziet meteen welk contract het voordeligst is voor jouw situatie.",
+      "cta": {
+        "label": "Vergelijk nu gratis",
+        "href": "/vergelijken"
+      },
+      "art": {
+        "preset": "home",
+        "product": {
+          "src": "illustrations/hero-solar-battery",
+          "alt": ""
+        },
+        "mascot": {
+          "src": "mascot/fox-thumbsup-with-price",
+          "alt": "",
+          "todo": true
+        }
+      },
+      "socialProof": {
+        "hidden": true,
+        "text": "Trusted by over 300+ customers.",
+        "rating": 5
+      },
+      "usps": [
+        {
+          "icon": "no-call",
+          "label": ["Geen", "verkoopgesprekken."]
+        },
+        {
+          "icon": "eye-off",
+          "label": ["Geen kleine", "lettertjes"],
+          "highlight": true
+        },
+        {
+          "icon": "file-check",
+          "label": ["Geen", "gedoe."]
+        }
+      ]
     }
   ]
 }

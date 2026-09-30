@@ -1,0 +1,27 @@
+---
+// An icon from src/assets/icons by key. SVGs are inlined in currentColor; the raster icons
+// (icons/raster/*.png, until the designer supplies SVGs) render as a CSS mask so they take
+// currentColor too. Always decorative.
+import { icon } from '../../lib/assets';
+
+interface Props {
+  name: string;
+  class?: string;
+}
+
+const { name, class: className } = Astro.props;
+const resolved = icon(name);
+---
+
+{resolved.kind === 'svg' ? (
+  <resolved.Component class={className} aria-hidden="true" />
+) : (
+  <span
+    class:list={[
+      'inline-block bg-current [mask-position:center] [mask-repeat:no-repeat] [mask-size:contain]',
+      className,
+    ]}
+    style={`mask-image:url(${resolved.src})`}
+    aria-hidden="true"
+  />
+)}

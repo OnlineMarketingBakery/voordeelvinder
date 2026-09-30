@@ -8,6 +8,7 @@ import type { AstroIntegration } from 'astro';
 import { defineConfig, fontProviders } from 'astro/config';
 import { loadEnv } from 'vite';
 
+import { pruneUnusedImagesIntegration } from './src/integrations/prune-unused-images';
 import { parseServerEnv, type SiteEnv } from './src/server/env';
 
 /** Internal token/component overview at /styleguide. Never part of a production build. */
@@ -56,6 +57,7 @@ export default defineConfig({
     react(),
     sitemap({ filter: (page) => !new URL(page).pathname.startsWith('/styleguide') }),
     styleguide(env.SITE_ENV),
+    pruneUnusedImagesIntegration(),
   ],
   // Bricolage Grotesque (SIL OFL 1.1), self-hosted from the installed Fontsource package; no
   // network at build time. The wght-only file matches Figma, which pins opsz at its default 14.

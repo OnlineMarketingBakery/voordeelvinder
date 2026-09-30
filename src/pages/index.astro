@@ -1,13 +1,11 @@
 ---
-import { getEntry } from 'astro:content';
-
 import Sections from '../components/sections/Sections.astro';
 import Page from '../layouts/Page.astro';
+import { getPage } from '../lib/pages';
 import { organization, website } from '../lib/seo/structured-data';
 import { getSite } from '../lib/site';
 
-const page = await getEntry('pages', 'home');
-if (!page) throw new Error('src/content/pages/home.json is missing');
+const page = await getPage('home');
 
 const site = await getSite();
 const siteUrl = new URL('/', Astro.site);
@@ -17,6 +15,6 @@ const structuredData = [
 ];
 ---
 
-<Page title={page.data.seo.title} description={page.data.seo.description} {structuredData}>
-  <Sections sections={page.data.sections} />
+<Page title={page.seo.title} description={page.seo.description} {structuredData}>
+  <Sections sections={page.sections} />
 </Page>

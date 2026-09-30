@@ -1,15 +1,116 @@
 ---
+// Page hero (Figma 60:2 home, 69:931 solar, 80:2867 battery): purple band with the page's only
+// h1, body copy, CTA and the illustration; the home variant adds the eyebrow and the USP bar.
+// Entrance is CSS-only from first paint. The LCP candidates never start hidden: the h1, the body
+// copy (the largest text block on phones) and the mascot; the body only rises, without a fade.
+import type { Copy } from '../../lib/copy';
+import Button from '../ui/Button.astro';
 import Container from '../ui/Container.astro';
+import CopyText from '../ui/CopyText.astro';
+import HeroArt from './parts/HeroArt.astro';
+import UspBar from './parts/UspBar.astro';
 
-interface Props {
-  title: string;
+interface ImageRef {
+  src: string;
+  alt: string;
 }
 
-const { title } = Astro.props;
+interface Props {
+  id?: string | undefined;
+  variant: 'home' | 'product';
+  eyebrow?: { emoji?: string | undefined; text: string } | undefined;
+  title: string;
+  body: Copy;
+  cta: { label: string; href: string };
+  art: {
+    preset: 'home' | 'solar' | 'battery';
+    product: ImageRef;
+    mascot: ImageRef & { mirror?: boolean | undefined };
+  };
+  usps?:
+    | Array<{
+        icon: 'no-call' | 'eye-off' | 'file-check';
+        label: [string] | [string, string];
+        highlight?: boolean | undefined;
+      }>
+    | undefined;
+}
+
+const { id, variant, eyebrow, title, body, cta, art, usps } = Astro.props;
+const isHome = variant === 'home';
+
+// Supporting elements rise in after first paint; delays in ms.
+const enter = {
+  0: 'motion-safe:animate-[hero-in_var(--motion-duration-slow)_var(--ease-out)_both]',
+  80: 'motion-safe:animate-[hero-in_var(--motion-duration-slow)_var(--ease-out)_80ms_both]',
+  160: 'motion-safe:animate-[hero-in_var(--motion-duration-slow)_var(--ease-out)_160ms_both]',
+};
+const rise =
+  'motion-safe:animate-[hero-rise_var(--motion-duration-slow)_var(--ease-out)_80ms_both]';
 ---
 
-<section class="py-16">
-  <Container>
-    <h1 class="text-h3 text-ink-900 md:text-h1">{title}</h1>
-  </Container>
+<section id={id} aria-labelledby="hero-title" class="surface-dark relative overflow-x-clip">
+  <div class="bg-purple-600 text-white">
+    <Container
+      class:list={[
+        'grid pt-10 md:pt-14 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:pt-24',
+        isHome
+          ? 'pb-10 md:pb-12 lg:pb-10 xl:items-start xl:pt-[134px]'
+          : 'pb-14 lg:pb-24 xl:pt-[140px] xl:pb-[121px]',
+      ]}
+    >
+      <div class:list={['max-w-[574px]', isHome && 'xl:pt-[13px]']}>
+        {eyebrow && (
+          <p class:list={['text-body-lg md:text-lead', enter[0]]}>
+            {eyebrow.emoji && (
+              <span
+                class="inline-block origin-[70%_70%] leading-none text-[1.1667em] motion-safe:animate-[wave_1s_ease-in-out_300ms_1]"
+                aria-hidden="true"
+              >
+                {eyebrow.emoji}
+              </span>
+            )}
+            {` ${eyebrow.text}`}
+          </p>
+        )}
+        <h1
+          id="hero-title"
+          class:list={[
+            'text-h3 text-balance md:text-h2 lg:text-h1',
+            eyebrow && 'mt-3 md:mt-4 lg:mt-4.5',
+            isHome ? 'max-w-[29rem]' : 'max-w-[545px]',
+          ]}
+        >
+          {title}
+        </h1>
+        <CopyText
+          copy={body}
+          class:list={['mt-4 text-body md:max-w-[36rem] lg:max-w-[32rem] lg:leading-[1.625]', rise]}
+        />
+        <div class:list={['mt-6 lg:mt-7', enter[160]]}>
+          <hr class="border-t border-white/40" />
+          <Button
+            href={cta.href}
+            glow="purple"
+            icon="arrow-up-right"
+            class="mt-6 max-md:w-full md:mt-8 lg:mt-9.5"
+          >
+            {cta.label}
+          </Button>
+        </div>
+      </div>
+
+      <div
+        class:list={[
+          'mx-auto mt-8 w-full max-w-[358px] md:mt-10 lg:mt-0 lg:max-w-none',
+          isHome
+            ? 'md:max-w-[34rem] lg:-ml-10 lg:w-[clamp(34rem,52vw,48.625rem)] xl:-mr-[min(111px,calc(50vw-585px))] xl:-ml-17 xl:w-[48.625rem]'
+            : 'md:max-w-[30rem] lg:ml-10 lg:w-[clamp(28rem,38vw,34.6875rem)]',
+        ]}
+      >
+        <HeroArt preset={art.preset} product={art.product} mascot={art.mascot} />
+      </div>
+    </Container>
+  </div>
+  {usps && <UspBar items={usps} />}
 </section>

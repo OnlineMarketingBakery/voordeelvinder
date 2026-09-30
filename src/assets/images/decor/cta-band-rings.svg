@@ -1,0 +1,24 @@
+<svg aria-hidden="true" width="930" height="366" viewBox="0 0 930 366" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#cta-band-rings-clip0-cta-rings)">
+<circle opacity="0.48" cx="465" cy="193" r="449.5" stroke="url(#cta-band-rings-paint0-linear-cta-rings)" stroke-opacity="0.15" stroke-width="31"/>
+<circle opacity="0.48" cx="465" cy="193" r="347.5" stroke="url(#cta-band-rings-paint1-linear-cta-rings)" stroke-opacity="0.15" stroke-width="31"/>
+<circle opacity="0.48" cx="465" cy="193" r="241.5" stroke="url(#cta-band-rings-paint2-linear-cta-rings)" stroke-opacity="0.15" stroke-width="31"/>
+</g>
+<defs>
+<linearGradient id="cta-band-rings-paint0-linear-cta-rings" x1="465" y1="-272" x2="465" y2="658" gradientUnits="userSpaceOnUse">
+<stop stop-color="currentColor"/>
+<stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="cta-band-rings-paint1-linear-cta-rings" x1="465" y1="-170" x2="465" y2="374" gradientUnits="userSpaceOnUse">
+<stop stop-color="currentColor"/>
+<stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="cta-band-rings-paint2-linear-cta-rings" x1="465" y1="-64" x2="465" y2="450" gradientUnits="userSpaceOnUse">
+<stop stop-color="currentColor"/>
+<stop offset="0.701923" stop-color="currentColor" stop-opacity="0"/>
+</linearGradient>
+<clipPath id="cta-band-rings-clip0-cta-rings">
+<rect width="930" height="366" fill="white"/>
+</clipPath>
+</defs>
+</svg>

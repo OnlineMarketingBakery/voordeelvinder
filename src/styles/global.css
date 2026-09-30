@@ -225,6 +225,65 @@
   }
 }
 
+/* Hero entrance (CSS only, from first paint). LCP candidates (the h1, the hero body copy, the
+   mascot) never animate opacity: the body copy uses hero-rise. */
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    translate: 0 var(--motion-distance-2);
+  }
+}
+
+@keyframes hero-rise {
+  from {
+    translate: 0 var(--motion-distance-2);
+  }
+}
+
+@keyframes ring-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+  }
+}
+
+/* One-shot wave for the eyebrow emoji (no loop). */
+@keyframes wave {
+  20%,
+  60% {
+    rotate: 14deg;
+  }
+
+  40% {
+    rotate: -8deg;
+  }
+}
+
+/* Scroll reveals (src/scripts/reveal.ts). Only elements the script prepared are hidden. */
+[data-reveal-ready] {
+  transition:
+    opacity var(--motion-duration-slow) var(--ease-out) var(--reveal-delay, 0ms),
+    translate var(--motion-duration-slow) var(--ease-out) var(--reveal-delay, 0ms);
+}
+
+[data-reveal-ready]:not(.is-revealed) {
+  opacity: 0;
+  translate: 0 var(--motion-distance-2);
+}
+
+/* Cards lift on hover (desktop pointers only), buttons respond to a press (Button.astro). */
+@utility lift {
+  transition:
+    translate var(--motion-duration-base) var(--ease-out),
+    box-shadow var(--motion-duration-base) var(--ease-out);
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    &:hover {
+      translate: 0 calc(-1 * var(--motion-distance-1) / 2);
+    }
+  }
+}
+
 /* Reduced motion: only short fades remain. No morphs, slides or loops. */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*) {

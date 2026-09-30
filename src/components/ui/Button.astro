@@ -5,6 +5,7 @@ import ArrowUpRight from '../../assets/icons/arrow-up-right.svg';
 
 export type ButtonVariant = 'lime' | 'purple' | 'white' | 'form' | 'form-secondary' | 'newsletter';
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'form' | 'newsletter';
+export type ButtonGlow = 'default' | 'purple' | 'none';
 
 interface Props {
   href?: string;
@@ -12,6 +13,7 @@ interface Props {
   variant?: ButtonVariant;
   size?: ButtonSize;
   icon?: 'arrow-up-right';
+  glow?: ButtonGlow;
   fullWidth?: boolean;
   disabled?: boolean;
   class?: string;
@@ -23,17 +25,18 @@ const {
   variant = 'lime',
   size = 'md',
   icon,
+  glow = 'default',
   fullWidth = false,
   disabled = false,
   class: className,
 } = Astro.props;
 
+// Colour per variant; the glow (drop shadow + inset gloss) is chosen separately.
 const variants: Record<ButtonVariant, string> = {
-  // Header, hero, product blocks, CTA band, FAQ (Figma #c9e260, 1px white, lime glow + gloss)
-  lime: 'rounded-full border border-white bg-lime-300 text-ink-800 shadow-glow-lime inset-shadow-gloss-strong',
+  // Header, hero, product blocks, CTA band, FAQ (Figma #c9e260, 1px white)
+  lime: 'rounded-full border border-white bg-lime-300',
   // Final CTA and battery block (white label on purple)
-  purple:
-    'rounded-full border border-white bg-purple-600 text-white shadow-glow-purple-sm inset-shadow-gloss-strong',
+  purple: 'rounded-full border border-white bg-purple-600 text-white',
   // Button on the lime CTA band
   white: 'rounded-full bg-white text-ink-900',
   // Form "Volgende" / submit (Figma #b7e137, radius 12)
@@ -42,6 +45,21 @@ const variants: Record<ButtonVariant, string> = {
   'form-secondary': 'rounded-md border border-control-border bg-white font-normal text-ink-900',
   // Footer "Abonneren" inside the white newsletter pill
   newsletter: 'rounded-full bg-lime-400 text-ink-900 inset-shadow-gloss-strong',
+};
+
+// Glows from Figma: default = header/CTA band (lime) or final CTA (purple); `purple` = the hero
+// and "Waarom kiezen" CTAs; `none` = spotlight and FAQ buttons (gloss only, no drop shadow).
+const glows: Partial<Record<ButtonVariant, Record<ButtonGlow, string>>> = {
+  lime: {
+    default: 'text-ink-800 shadow-glow-lime inset-shadow-gloss-strong',
+    purple: 'text-ink-900 shadow-glow-purple inset-shadow-gloss',
+    none: 'text-ink-900 inset-shadow-gloss',
+  },
+  purple: {
+    default: 'shadow-glow-purple-sm inset-shadow-gloss-strong',
+    purple: 'shadow-glow-purple inset-shadow-gloss',
+    none: 'inset-shadow-gloss',
+  },
 };
 
 const sizes: Record<ButtonSize, string> = {
@@ -58,12 +76,14 @@ const classes = [
   'motion-safe:hover:-translate-y-px motion-safe:active:scale-[0.97]',
   'aria-disabled:pointer-events-none aria-disabled:opacity-60 disabled:pointer-events-none disabled:opacity-60',
   variants[variant],
+  glows[variant]?.[glow],
   sizes[size],
   fullWidth && 'w-full',
   className,
 ];
 
-const iconSize = size === 'sm' ? 'size-[22px]' : 'size-6';
+// Arrow sizes from Figma: 22 (header), 28 (md), 32 (lg).
+const iconSize = size === 'sm' ? 'size-[22px]' : size === 'lg' ? 'size-8' : 'size-7';
 ---
 
 {href ? (

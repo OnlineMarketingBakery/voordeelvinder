@@ -60,11 +60,14 @@ Run all of them before opening a PR; CI runs the same set.
 ## Section block types
 
 Each type has one component in `src/components/sections/` and one schema in
-`src/content.config.ts`.
+`src/schemas/blocks/` (registered in the union in `src/schemas/page.ts`). Images and icons are
+referenced by key (`mascot/fox-waving`, `money`): files in `src/assets/images` and
+`src/assets/icons`; an unknown key fails the build. Copy fields can hide single sentences
+(claims waiting for sign-off) with `{ "text", "hidden": true, "claim": "1.8" }`.
 
-| Type   | Component    | Purpose                  |
-| ------ | ------------ | ------------------------ |
-| `hero` | `Hero.astro` | Page intro with the `h1` |
+| Type   | Component                                        | Purpose                                                                                                      |
+| ------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `hero` | `Hero.astro` (+ `parts/HeroArt`, `parts/UspBar`) | Page intro with the only `h1`; `variant` home (eyebrow, USP bar) or product; `art.preset` home/solar/battery |
 
 ## How to…
 

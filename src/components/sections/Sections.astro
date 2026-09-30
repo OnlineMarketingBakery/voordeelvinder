@@ -1,21 +1,19 @@
 ---
-import type { CollectionEntry } from 'astro:content';
-
+import type { Section } from '../../schemas/page';
 import Hero from './Hero.astro';
-
-type Section = CollectionEntry<'pages'>['data']['sections'][number];
 
 interface Props {
   sections: Section[];
 }
 
-const { sections } = Astro.props;
+// Hidden blocks stay in the content file but are not rendered.
+const sections = Astro.props.sections.filter((section) => !section.hidden);
 ---
 
 {sections.map((section) => {
   switch (section.type) {
     case 'hero':
-      return <Hero title={section.title} />;
+      return <Hero {...section} />;
     default: {
       // A schema type without a component fails astro check here instead of rendering nothing.
       const unhandled: never = section.type;

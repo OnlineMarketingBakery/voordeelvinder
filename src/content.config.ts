@@ -2,21 +2,11 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
-const text = z.string().min(1);
-
-/** Internal paths or in-page anchors only; external links don't belong in navigation. */
-const internalHref = z
-  .string()
-  .regex(/^\/[^/]/, 'must be a site path such as /vergelijken')
-  .or(z.literal('/'));
-
-const link = z.strictObject({ label: text, href: internalHref });
+import { page } from './schemas/page';
+import { link, text, todo } from './schemas/primitives';
 
 /** Header navigation can depend on content existing (e.g. "Blogs" once there is a post). */
 const navLink = link.extend({ requires: z.enum(['blogPosts']).optional() });
-
-/** A value that is still a placeholder: shown on staging, fails a production build. */
-const todo = z.boolean().default(false);
 
 // Site-wide copy and settings (a single entry: src/content/site.json).
 const site = defineCollection({
@@ -73,27 +63,10 @@ const site = defineCollection({
   }),
 });
 
-// Schemas are strict: an unknown or misspelled key fails the build instead of being dropped.
-
-// Section blocks. Each block type has one component in src/components/sections
-// and one schema here. Add new types to the union below.
-const heroSection = z.strictObject({
-  type: z.literal('hero'),
-  title: z.string().min(1),
-});
-
-const section = z.discriminatedUnion('type', [heroSection]);
-
-// Structured page copy (src/content/pages/*.json): an ordered list of section blocks.
+// Structured page copy (src/content/pages/*.json): see src/schemas/page.ts.
 const pages = defineCollection({
   loader: glob({ pattern: '*.json', base: './src/content/pages' }),
-  schema: z.strictObject({
-    seo: z.strictObject({
-      title: z.string().min(1),
-      description: z.string().min(1).optional(),
-    }),
-    sections: z.array(section).min(1),
-  }),
+  schema: page,
 });
 
 export const collections = { site, pages };

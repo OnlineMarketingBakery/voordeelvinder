@@ -15,6 +15,8 @@ export default defineConfig(
     'playwright-report/',
     'test-results/',
     'docs/design/',
+    // Agent worktrees (Claude Code): separate checkouts with their own tsconfig.
+    '.claude/worktrees/',
   ]),
   js.configs.recommended,
   tseslint.configs.recommended,
