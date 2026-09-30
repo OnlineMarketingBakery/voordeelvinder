@@ -71,6 +71,7 @@ import {
   isRepeatSubmit,
   sendLead,
   submissionContext,
+  MORPH_MARKER,
   thanksPath,
 } from '../../lib/form/submit';
 import type {
@@ -441,6 +442,11 @@ export default function FormIsland({
     clearAllSessions(sessionStore());
     // TODO(Phase 5): once /api/lead answered OK, set the "lead is safe" flag the thank-you page
     // reads before it celebrates (src/scripts/celebrate.ts).
+    try {
+      sessionStore()?.setItem(MORPH_MARKER, 'form-card');
+    } catch {
+      // No storage: the thank-you page falls back to the referrer.
+    }
     window.location.assign(thanksPath(state.product));
   };
 

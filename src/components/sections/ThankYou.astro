@@ -123,15 +123,26 @@ const confetti = [
   <script is:inline>
     (function () {
       const card = document.currentScript.previousElementSibling;
+      // The form's one-time marker (src/lib/form/submit.ts MORPH_MARKER), read and removed.
+      let marked = false;
+      try {
+        marked = window.sessionStorage.getItem('voordeelvinder:morph') === 'form-card';
+        window.sessionStorage.removeItem('voordeelvinder:morph');
+      } catch {
+        // No storage: only the referrer can tell.
+      }
       const from = window.navigation?.activation?.from?.url || document.referrer;
       let url;
       try {
         url = new URL(from);
       } catch {
-        return;
+        url = null;
       }
       const fromForm =
-        url.origin === window.location.origin && /^\/vergelijken(\/[^/]+)?\/?$/.test(url.pathname);
+        marked ||
+        (url !== null &&
+          url.origin === window.location.origin &&
+          /^\/vergelijken(\/[^/]+)?\/?$/.test(url.pathname));
       if (!card || !fromForm) return;
       card.style.setProperty('view-transition-name', 'form-card');
       function clear() {

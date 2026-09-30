@@ -6,6 +6,13 @@ import type { Derived, Product } from '../flow/types';
 import { isTestVisit } from './initial';
 
 /** The thank-you page per product (brief §5; src/pages/bedankt/[product].astro). */
+/**
+ * A one-time marker the form leaves just before it goes to the thank-you page, so that page
+ * names its card for the form-card morph (ThankYou.astro reads and removes it). More reliable
+ * than the referrer, which privacy settings and some browsers drop.
+ */
+export const MORPH_MARKER = 'voordeelvinder:morph';
+
 export function thanksPath(product: Product): string {
   return `/bedankt/${product}`;
 }

@@ -120,8 +120,12 @@ test.describe('the form card morph runs one way: from the form into the thank-yo
     await recordCardNames(page);
     await page.goto('/vergelijken/energie');
     await expect(page.locator('main form button[type="submit"]')).toBeEnabled();
-    // How the form's "Verstuur" navigates (window.location.assign, FormIsland.tsx).
-    await page.evaluate(() => window.location.assign('/bedankt/energie'));
+    // How the form's "Verstuur" navigates (FormIsland.tsx): the one-time marker, then
+    // window.location.assign.
+    await page.evaluate(() => {
+      sessionStorage.setItem('voordeelvinder:morph', 'form-card');
+      window.location.assign('/bedankt/energie');
+    });
     await page.waitForURL('**/bedankt/energie');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(block.title);
     const card = page.locator('[data-morph="form-card"]');

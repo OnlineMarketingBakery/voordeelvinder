@@ -92,7 +92,11 @@ describe('thankYou block', () => {
     type Listener = (event: { viewTransition?: { finished: Promise<void> } }) => void;
 
     /** Runs the card's inline script against a stub page, as if the visit came from `from`. */
-    async function arrive(from: { activation?: string | null; referrer?: string }) {
+    async function arrive(from: {
+      activation?: string | null;
+      referrer?: string;
+      marker?: string;
+    }) {
       const html = await render();
       const script = /<script>([\s\S]*?)<\/script>/.exec(
         html.slice(html.indexOf('data-morph="form-card"')),
@@ -107,8 +111,15 @@ describe('thankYou block', () => {
       };
       const listeners: Record<string, Listener[]> = {};
       const origin = 'https://voordeelvinder.test';
+      const stored = new Map<string, string>(
+        from.marker === undefined ? [] : [['voordeelvinder:morph', from.marker]],
+      );
       const window = {
         location: { origin },
+        sessionStorage: {
+          getItem: (key: string) => stored.get(key) ?? null,
+          removeItem: (key: string) => stored.delete(key),
+        },
         navigation:
           from.activation === undefined
             ? undefined
@@ -125,7 +136,7 @@ describe('thankYou block', () => {
       const name = () => names.get('view-transition-name') ?? 'none';
       const fire = (type: string, event: Parameters<Listener>[0] = {}) =>
         (listeners[type] ?? []).forEach((listener) => listener(event));
-      return { name, fire, origin };
+      return { name, fire, origin, stored };
     }
 
     it('from /vergelijken/<product> or /vergelijken, until the page is shown', async () => {
@@ -153,6 +164,13 @@ describe('thankYou block', () => {
       const page = await arrive({ activation: 'https://voordeelvinder.test/vergelijken' });
       page.fire('pagereveal');
       expect(page.name()).toBe('none');
+    });
+
+    it("uses the form's one-time marker when the browser gives no source, and removes it", async () => {
+      const page = await arrive({ marker: 'form-card' });
+      expect(page.name()).toBe('form-card');
+      expect(page.stored.has('voordeelvinder:morph')).toBe(false);
+      expect((await arrive({ marker: 'something-else' })).name()).toBe('none');
     });
 
     it('falls back to the referrer without the Navigation API', async () => {
