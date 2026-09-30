@@ -65,15 +65,19 @@ referenced by key (`mascot/fox-waving`, `money`): files in `src/assets/images` a
 `src/assets/icons`; an unknown key fails the build. Copy fields can hide single sentences
 (claims waiting for sign-off) with `{ "text", "hidden": true, "claim": "1.8" }`.
 
-| Type   | Component                                        | Purpose                                                                                                      |
-| ------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `hero` | `Hero.astro` (+ `parts/HeroArt`, `parts/UspBar`) | Page intro with the only `h1`; `variant` home (eyebrow, USP bar) or product; `art.preset` home/solar/battery |
+| Type              | Component                                            | Purpose                                                                                                                                                                                  |
+| ----------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hero`            | `Hero.astro` (+ `parts/HeroArt`, `parts/UspBar`)     | Page intro with the only `h1`; `variant` home (eyebrow, USP bar) or product; `art.preset` home/solar/battery                                                                             |
+| `features`        | `Features.astro`                                     | Centred header and 1–4 value cards on plates; `cardStyle` translucent (home) or solid (product pages); cards can be hidden                                                               |
+| `steps`           | `Steps.astro` (+ `parts/StepPill`)                   | "Hoe het werkt": 2–4 numbered steps (`<ol>`, pills on a timeline) on a purple panel; `align` start (home: optional `mascot` above the panel, `highlight` chip) or center (product pages) |
+| `comparisonTable` | `ComparisonTable.astro` (+ `parts/CloudsBackground`) | Other comparison sites vs VoordeelVinder as a real `<table>` (hidden caption, row headers); 1–8 `rows`, stacked below md; `background` clouds (default) or none                          |
 
 ## How to…
 
-- **Add a section type:** add a Zod object with `type: z.literal('<name>')` to the `section`
-  union in `src/content.config.ts`, create `src/components/sections/<Name>.astro`, add the case to
-  `Sections.astro`, and add a row to the table above.
+- **Add a section type:** add a schema with `type: z.literal('<name>')` and `...blockBase` in
+  `src/schemas/blocks/<name>.ts`, register it in the `section` union in `src/schemas/page.ts`,
+  create `src/components/sections/<Name>.astro`, add the case to `Sections.astro`, and add a
+  row to the table above.
 - **Add a flow step** (Phase 4): add the step to `src/content/flows/nl/<product>.json`, wire it
   into `next` of the previous step, give every option a new, unique `code`, then run
   `npm run validate:flows` and add e2e coverage for the new path.

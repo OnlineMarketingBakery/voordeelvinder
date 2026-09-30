@@ -1,0 +1,121 @@
+---
+// Comparison table (Figma 60:373–60:477, home "Niet zomaar een vergelijker"): other comparison
+// sites against VoordeelVinder, row by row. A real <table> (hidden caption, column and row
+// headers), laid out with CSS grid so rows can stack on phones and rise in on scroll. Changing
+// `display` on table elements drops their semantics in some browsers, hence the explicit roles.
+import type { Copy } from '../../lib/copy';
+import Container from '../ui/Container.astro';
+import Illustration from '../ui/Illustration.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+import CloudsBackground from './parts/CloudsBackground.astro';
+
+interface Props {
+  id?: string | undefined;
+  eyebrow: string;
+  title: string;
+  intro?: Copy | undefined;
+  caption: string;
+  columns: { feature: string; others: string; us: string };
+  rows: Array<{ label: string; others: string; us: string }>;
+  background?: 'clouds' | 'none' | undefined;
+}
+
+const { id, eyebrow, title, intro, caption, columns, rows, background = 'clouds' } = Astro.props;
+
+const base = id ?? 'comparison';
+const headingId = `${base}-title`;
+const captionId = `${base}-caption`;
+
+// One column template for the header row and every body row, so the columns line up. Below md
+// a row stacks: the label cell spans both columns and the two values sit side by side under it.
+const grid =
+  'grid grid-cols-2 gap-x-2 md:grid-cols-[minmax(0,1fr)_10rem_10rem] lg:grid-cols-[minmax(0,1fr)_13.5625rem_13.5625rem]';
+const value =
+  'flex min-h-11 items-center justify-center rounded-xl px-2 py-2 text-center text-body font-semibold md:min-h-[66px] md:text-body-lg lg:text-body-xl';
+---
+
+<section
+  {id}
+  aria-labelledby={headingId}
+  class="relative isolate pt-16 pb-16 md:pt-24 md:pb-20 lg:pt-32 lg:pb-[107px]"
+>
+  {background === 'clouds' && <CloudsBackground />}
+  <Container>
+    <SectionHeading
+      id={headingId}
+      {eyebrow}
+      {title}
+      {intro}
+      introClass="max-w-[49.25rem] max-md:text-body"
+    />
+
+    <table
+      role="table"
+      aria-labelledby={captionId}
+      class="mt-8 grid gap-y-4 md:mt-10 md:gap-y-6 lg:mt-12 lg:gap-y-[29px]"
+    >
+      <caption id={captionId} class="sr-only">
+        {caption}
+      </caption>
+      <thead role="rowgroup" class="grid">
+        <tr role="row" class:list={[grid, 'rounded-xl bg-purple-600 text-white']} data-reveal>
+          <th role="columnheader" scope="col" class="max-md:sr-only">
+            <span class="sr-only">{columns.feature}</span>
+          </th>
+          {[columns.others, columns.us].map((label) => (
+            <th
+              role="columnheader"
+              scope="col"
+              class="flex min-h-11 items-center justify-center px-2 py-2.5 text-center text-sm leading-tight font-normal md:min-h-[66px] md:text-body-lg lg:text-body-xl"
+            >
+              {label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody role="rowgroup" class="grid gap-y-4 lg:gap-y-[19px]" data-reveal-stagger>
+        {rows.map((row) => (
+          <tr role="row" class:list={[grid, 'gap-y-2']}>
+            <th
+              role="rowheader"
+              scope="row"
+              class="col-span-2 flex min-h-14 items-center gap-3 rounded-xl border border-purple-500/23 bg-white py-3 ps-3 pe-4 text-start text-body font-normal text-ink-600 shadow-row md:col-span-1 md:me-3 md:min-h-[66px] md:gap-[11px] md:ps-3.5 md:text-body-lg lg:me-[23px] lg:text-body-xl"
+            >
+              <Illustration
+                src="decor/comparison-row-badge"
+                alt=""
+                widths={[38]}
+                sizes="38px"
+                class="size-8 shrink-0 md:size-[38px]"
+              />
+              <span>{row.label}</span>
+            </th>
+            <td role="cell" class:list={[value, 'bg-lime-400 text-ink-600']}>
+              {row.others}
+            </td>
+            <td role="cell" class:list={[value, 'bg-purple-600 text-white']} data-tick>
+              {row.us}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </Container>
+</section>
+
+<style>
+  /* The VoordeelVinder value ticks into place once its row has risen in (src/scripts/reveal.ts
+     only prepares rows that start off screen, and does nothing with reduced motion). */
+  @media (prefers-reduced-motion: no-preference) {
+    .is-revealed > [data-tick] {
+      animation: comparison-tick var(--motion-duration-fast) var(--ease-out)
+        calc(var(--reveal-delay, 0ms) + var(--motion-duration-slow)) both;
+    }
+  }
+
+  @keyframes comparison-tick {
+    from {
+      scale: 0.96;
+    }
+  }
+</style>

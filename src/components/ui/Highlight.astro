@@ -1,0 +1,22 @@
+---
+// The lime chip behind a word in a heading (Figma 60:10/60:11, 60:499/60:501). A plain span,
+// so screen readers don't announce "highlighted".
+interface Props {
+  text: string;
+  /** Final CTA: slightly tilted chip. */
+  tilt?: boolean;
+  class?: string;
+}
+
+const { text, tilt = false, class: className } = Astro.props;
+---
+
+<span
+  class:list={[
+    'rounded-md bg-lime-300 px-3 text-ink-900 box-decoration-clone',
+    tilt && 'inline-block -rotate-[1.35deg]',
+    className,
+  ]}
+>
+  {text}
+</span>

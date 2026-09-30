@@ -48,6 +48,114 @@
           "label": ["Geen", "gedoe."]
         }
       ]
+    },
+    {
+      "type": "features",
+      "id": "over-ons",
+      "eyebrow": "Over ons",
+      "title": "Waarom VoordeelVinder bestaat",
+      "intro": "De meeste Belgen betalen te veel voor energie. Niet omdat ze het niet willen weten — maar omdat vergelijken traag, saai en verwarrend is.",
+      "cardStyle": "translucent",
+      "items": [
+        {
+          "icon": "money",
+          "tone": "purple",
+          "title": "De meeste Belgen betalen te veel voor energie.",
+          "body": "Niet omdat ze het niet willen weten — maar omdat vergelijken traag, saai en verwarrend is."
+        },
+        {
+          "icon": "send",
+          "tone": "lime",
+          "title": "Bestaande vergelijkers sturen je door naar een verkoper.\nWij niet.",
+          "body": "Bij VoordeelVinder vergelijk je zelf, wanneer het jou past. Zonder afspraak. Zonder wachtrij. Zonder druk."
+        },
+        {
+          "icon": "wallet",
+          "tone": "purple",
+          "title": "Jij vult in. Wij vergelijken.\nJij bespaart.",
+          "body": "Alles wat we doen, is erop gericht om dat zo makkelijk en eerlijk mogelijk te maken."
+        }
+      ]
+    },
+    {
+      "type": "steps",
+      "id": "hoe-het-werkt",
+      "align": "start",
+      "title": "Zo werkt het vergelijken van je energiecontract",
+      "highlight": "energiecontract",
+      "intro": "In drie eenvoudige stappen ontdek je welke energieleverancier het voordeligst is voor jouw situatie.",
+      "mascot": {
+        "src": "mascot/fox-magnifier",
+        "alt": ""
+      },
+      "items": [
+        {
+          "label": "Stap 01",
+          "tone": "purple",
+          "icon": "contract",
+          "title": "Vul je situatie in",
+          "body": "Een schatting van je verbruik volstaat. Je hebt je factuur niet nodig om te starten."
+        },
+        {
+          "label": "Stap 02",
+          "tone": "lime",
+          "icon": "compare",
+          "title": "Wij vergelijken",
+          "body": "We checken Luminus, Mega en TotalEnergies op basis van jouw gegevens. Transparant, zonder verborgen voorkeur."
+        },
+        {
+          "label": "Stap 03",
+          "tone": "purple",
+          "icon": "decision-making",
+          "title": "Jij beslist",
+          "body": "Je ziet meteen wie het voordeligst is voor jou. Kies zelf of je overschakelt — wij regelen dan de rest. Je zit nooit zonder stroom."
+        }
+      ]
+    },
+    {
+      "type": "comparisonTable",
+      "eyebrow": "VoordeelVinder versus anderen",
+      "title": "Niet zomaar een vergelijker",
+      "intro": "Er zijn veel vergelijkingssites. De meeste sturen je door naar een verkoper, tonen niet alle opties, of bellen je daarna op. Dat doen wij niet.",
+      "caption": "Vergelijking tussen andere vergelijkers en VoordeelVinder",
+      "columns": {
+        "feature": "Kenmerk",
+        "others": "Andere vergelijkers",
+        "us": "VoordeelVinder"
+      },
+      "rows": [
+        {
+          "label": "Doorgestuurd naar een verkoper",
+          "others": "Vaak",
+          "us": "Nooit"
+        },
+        {
+          "label": "Jij bepaalt of en wanneer we bellen",
+          "others": "Zelden",
+          "us": "Altijd"
+        },
+        {
+          "label": "Open over welke leveranciers we vergelijken",
+          "others": "Niet altijd",
+          "us": "Ja"
+        },
+        {
+          "label": "Eerlijk resultaat, ook als overstappen weinig oplevert",
+          "others": "Zelden",
+          "us": "Altijd"
+        },
+        {
+          "label": "Gratis en volledig vrijblijvend",
+          "others": "Niet altijd",
+          "us": "Ja"
+        },
+        {
+          "label": "Direct resultaat, geen wachttijd",
+          "others": "Nee",
+          "us": "Ja"
+        }
+      ],
+      "background": "clouds"
     }
   ]
 }
