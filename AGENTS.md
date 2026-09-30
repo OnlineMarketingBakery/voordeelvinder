@@ -20,7 +20,7 @@ deviate from it are recorded in `docs/decisions/`.
 | `src/lib/form/`                        | The island's framework-free helpers: session storage, start state (URL preselect, restore), messages, labels, submit stub                          |
 | `src/layouts/Page.astro`               | Standard page: header, `<main id="main">`, footer                                                                                                  |
 | `src/layouts/`                         | Layouts: `Base.astro` (`<head>`, robots, canonical), `ContentPage.astro` (pages/*.json route), `LegalPage.astro`, `BlogPost.astro`                 |
-| `src/pages/`                           | Routes; `api/*` are on-demand (`export const prerender = false`)                                                                                   |
+| `src/pages/`                           | Routes; `api/*` and `vergelijken/[product]` are on-demand (`export const prerender = false`)                                                       |
 | `src/server/env.ts`                    | Typed, validated server environment. The only reader of `process.env`                                                                              |
 | `src/server/rules/`                    | Qualification rules — server-only, never shipped to the browser (Phase 5)                                                                          |
 | `src/server/lead/`                     | Lead pipeline: validate, derive, classify, backup, forward, rate limit (Phase 5)                                                                   |
