@@ -27,6 +27,7 @@ import {
 import {
   animateHeight,
   checkVariants,
+  ghostOffset,
   indicatorVariants,
   isGhostAttribute,
   isNewShake,
@@ -135,16 +136,20 @@ type Ghost = { frame: HTMLDivElement; copy: HTMLElement; transform: string; opac
 /**
  * A copy of the step that is about to be replaced, for its slide out: visual only. Built while
  * the step is still on screen (getSnapshotBeforeUpdate), so its place, its selected options and
- * a slide-in still under way are what the visitor sees. Every id, name, label link, ARIA
- * attribute and data hook is removed (isGhostAttribute) and each <label> becomes a <div> (no
- * input of the copy is labelled by anything), it is inert and aria-hidden, and it goes into a
- * layer outside the <form>: no locator, screen reader or form submission ever finds it.
+ * a slide-in still under way are what the visitor sees: the copy sits at the step's own place
+ * (ghostOffset, without that slide) and starts from the slide's transform. Every id, name, label
+ * link, ARIA attribute and data hook is removed (isGhostAttribute) and each <label> becomes a
+ * <div> (no input of the copy is labelled by anything), it is inert and aria-hidden, and it goes
+ * into a layer outside the <form>: no locator, screen reader or form submission ever finds it.
  */
 function captureGhost(step: HTMLElement, box: HTMLElement, layer: HTMLElement): Ghost {
   const boxRect = box.getBoundingClientRect();
   const stepRect = step.getBoundingClientRect();
   const layerRect = layer.getBoundingClientRect();
   const style = getComputedStyle(step);
+  // The step's box on screen includes a slide still running on it; the copy's place doesn't.
+  const slide = style.transform === 'none' ? undefined : new DOMMatrixReadOnly(style.transform);
+  const place = ghostOffset(stepRect, boxRect, slide);
   const copy = step.cloneNode(true) as HTMLElement;
 
   // Cloning keeps what was typed and what is checked, not the choice of a <select>.
@@ -178,8 +183,8 @@ function captureGhost(step: HTMLElement, box: HTMLElement, layer: HTMLElement): 
   copy.inert = true;
   Object.assign(copy.style, {
     position: 'absolute',
-    left: `${stepRect.left - boxRect.left}px`,
-    top: `${stepRect.top - boxRect.top}px`,
+    left: `${place.left}px`,
+    top: `${place.top}px`,
     width: `${stepRect.width}px`,
     margin: '0',
     transform: style.transform,

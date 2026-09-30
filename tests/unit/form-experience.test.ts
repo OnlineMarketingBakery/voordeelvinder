@@ -1,6 +1,6 @@
 // The form's motion language (docs/MOTION.md): the step change's slide and stagger, the copy of
 // the outgoing step, the steps bar (geometry, drag, buttons), the selection pops, the messages,
-// the mascot and the CSS spring token. The browser behaviour is in
+// the mascot, the ambient light and the CSS spring token. The browser behaviour is in
 // tests/e2e/form-experience.spec.ts.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -10,18 +10,22 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import FormIsland from '../../src/components/form/FormIsland';
+import { FormPanel } from '../../src/components/form/FormPanel';
 import { ProgressCard, type ProgressCardProps } from '../../src/components/form/ProgressCard';
 import { resolveFlow } from '../../src/lib/flow/resolve';
 import { flowCopyFile, flowFile, sharedStepsFile } from '../../src/lib/flow/schema';
 import {
+  AMBIENT_PLACES,
   DRAG_THRESHOLD_PX,
   dragIntent,
   dragTarget,
+  ghostOffset,
   isGhostAttribute,
   ITEM_SLIDE_PX,
   itemEnterFrames,
   labelShift,
   MASCOT_MS,
+  mascotFramesFrom,
   mascotHopFrames,
   mascotNodFrames,
   messageVariants,
@@ -92,6 +96,23 @@ describe('the copy of the outgoing step', () => {
     for (const name of ['class', 'style', 'type', 'value', 'checked', 'src', 'd', 'viewBox']) {
       expect(isGhostAttribute(name), name).toBe(false);
     }
+  });
+
+  it("sits at the step's own place, so a step left mid-slide never jumps", () => {
+    const area = { left: 24, top: 100 };
+    // A step at rest: its box on screen is its place.
+    expect(ghostOffset({ left: 32, top: 140 }, area)).toEqual({ left: 8, top: 40 });
+    // Left while it still slides in from the left, 250 px short of its place: the copy goes to
+    // the place itself, because its slide out starts from that same transform.
+    const slide = { m41: -250, m42: 0 };
+    const place = ghostOffset({ left: 32 - 250, top: 140 }, area, slide);
+    expect(place).toEqual({ left: 8, top: 40 });
+    // On screen, place plus transform: exactly where the step was (not 500 px off).
+    expect(area.left + place.left + slide.m41).toBe(32 - 250);
+    expect(ghostOffset({ left: 32, top: 152 }, area, { m41: 0, m42: 12 })).toEqual({
+      left: 8,
+      top: 40,
+    });
   });
 });
 
@@ -233,6 +254,73 @@ describe('picks, messages and the mascot', () => {
     expect(hop.some((transform) => /translateY\(-\d+%\)/.test(transform))).toBe(true);
     expect(hop.join(' ')).not.toMatch(/px/);
   });
+
+  it('starts a mascot move where the mascot is when it cuts another one short', () => {
+    // Nothing playing: the move as it is, from upright.
+    expect(mascotFramesFrom(mascotHopFrames(), 'none')).toEqual(mascotHopFrames());
+    // A hop after a nod (an auto-advance 300 ms after the pick): from the nod's tilt, with the
+    // first keyframe's easing; the rest of the hop as it is.
+    const tilted = 'matrix(0.9997, 0.025, -0.025, 0.9997, 0, 0)';
+    const hop = mascotFramesFrom(mascotHopFrames(), tilted);
+    expect(hop[0]).toEqual({ ...mascotHopFrames()[0], transform: tilted });
+    expect(hop.slice(1)).toEqual(mascotHopFrames().slice(1));
+    // A nod after a hop (a pick while it is in the air), and a move after one of its own kind.
+    const inTheAir = 'matrix(0.98, 0, 0, 1.03, 0, -17)';
+    const nod = mascotFramesFrom(mascotNodFrames(), inTheAir);
+    expect(nod[0]).toEqual({ transform: inTheAir });
+    expect(nod.slice(1)).toEqual(mascotNodFrames().slice(1));
+    expect(mascotFramesFrom(mascotHopFrames(), inTheAir)[0]?.transform).toBe(inTheAir);
+    expect(mascotFramesFrom([], inTheAir)).toEqual([]);
+  });
+});
+
+describe('the ambient light', () => {
+  const image = { src: '/fox.webp', width: 941, height: 842, sizes: '80px', sources: [] };
+  const html = renderToStaticMarkup(
+    createElement(FormPanel, {
+      panel: { title: 'Titel', body: 'Tekst', image },
+      stepKey: 'postcode',
+      pickKey: 0,
+    }),
+  );
+  const classOf = (tag: string) => new RegExp(`<${tag}\\b[^>]*class="([^"]*)"`).exec(html)?.[1];
+  const picture = classOf('picture') ?? '';
+
+  it("is the mascot's: a glow behind it, not behind the panel's title and body copy", () => {
+    expect(classOf('div')).not.toContain('before:');
+    expect(picture.split(' ')).toContain('relative');
+    expect(picture).toContain('before:-z-10');
+  });
+
+  it('stays clear of the text at every place (their contrast on purple)', () => {
+    const places = [...picture.matchAll(/before:\[translate:(-?\d+)%_(-?\d+)%\]/g)].map(
+      ([, x, y]) => ({ x: Number(x) / 100, y: Number(y) / 100 }),
+    );
+    expect(places).toHaveLength(AMBIENT_PLACES);
+    // The panel: 80 % of the picture's height, centred on it: its top never rises above the
+    // picture's box (the title and the body copy are above it).
+    expect(picture).toContain('lg:before:h-[80%]');
+    for (const { y } of places) expect(0.5 + y * 0.8).toBeGreaterThanOrEqual(0);
+    // The phone header: 120 % of the 80 px mascot, centred on it: its right edge never reaches
+    // the title, 16 px beside the mascot (gap-4).
+    expect(picture).toContain('before:w-[120%]');
+    for (const { x } of places) expect(40 + (x + 1) * 96).toBeLessThanOrEqual(80 + 16);
+  });
+
+  it('glides to its next place on a step change within 2 s and never loops (WCAG 2.2.2)', () => {
+    expect(html).not.toMatch(/animate-|infinite/);
+    expect(css).not.toContain('@keyframes form-ambient');
+    const glide =
+      /motion-safe:before:duration-\[calc\(var\(--motion-duration-slow\)\*(\d+)\)\]/.exec(picture);
+    expect(Number(glide?.[1]) * duration.slow).toBeLessThanOrEqual(2000);
+    // A place for every data-light after the first, with motion on only: with reduced motion
+    // it stays where it starts. The server renders it there (nothing moves at hydration).
+    for (let place = 1; place < AMBIENT_PLACES; place += 1) {
+      expect(picture).toContain(`motion-safe:data-[light=${place}]:before:[translate:`);
+    }
+    expect(picture).not.toContain(`data-[light=${AMBIENT_PLACES}]`);
+    expect(html).not.toContain('data-light=');
+  });
 });
 
 describe('the CSS side of the motion system', () => {
@@ -247,14 +335,15 @@ describe('the CSS side of the motion system', () => {
     );
   });
 
-  it('switches every loop and sweep off with reduced motion', () => {
+  it('switches the sweep off with reduced motion; nothing loops', () => {
     const start = css.indexOf('@utility sweep');
     const sweep = css.slice(start, css.indexOf('\n}\n', start));
     expect(sweep).toMatch(/prefers-reduced-motion: reduce\)\s*\{\s*transition: none;/);
-    // The ambient light, the ping and the label only run under motion-safe (the components).
-    for (const name of ['form-ambient', 'form-ping', 'form-label-in']) {
+    // The ping and the label only run under motion-safe (the components), once each.
+    for (const name of ['form-ping', 'form-label-in']) {
       expect(css).toContain(`@keyframes ${name}`);
     }
+    expect(css).not.toContain('infinite');
   });
 });
 

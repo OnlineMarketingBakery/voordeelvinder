@@ -83,8 +83,8 @@ async function tapThenClick(page: Page, card: string, button: string) {
 const settle = (page: Page) => page.waitForTimeout(AUTO_ADVANCE_DELAY_MS * 3);
 
 /**
- * A tap within AUTO_ADVANCE_GUARD_MS of an auto-advance counts as the second half of a double
- * tap and doesn't move on again; people take longer to read the new step. Wait it out.
+ * A tap within AUTO_ADVANCE_GUARD_MS of an auto-advance (or of "Terug") counts as the second half
+ * of a double tap and doesn't move on; people take longer to read the new step. Wait it out.
  */
 const readStep = (page: Page) => page.waitForTimeout(AUTO_ADVANCE_GUARD_MS);
 
@@ -226,6 +226,7 @@ test.describe('form motion: auto-advance', () => {
     await page.getByRole('button', { name: buttons.back, exact: true }).click();
     await expect(heading(page)).toHaveText('Heb je een sociaal tarief?');
     await expect(radio(page, 'Weet ik niet', 'Heb je een budgetmeter?')).toBeChecked();
+    await readStep(page);
     await tap(page, 'Nee', 'Heb je een budgetmeter?');
     await expect(heading(page)).toHaveText('Ken je je jaarlijks energieverbruik?');
   });

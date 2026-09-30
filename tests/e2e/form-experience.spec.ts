@@ -1,10 +1,12 @@
 // The form's motion language in the browser (docs/MOTION.md): the steps bar (its buttons and the
-// draggable pill jump back), the outgoing step's copy (visual only: outside the form,
-// aria-hidden, inert, gone after the transition), reduced motion (no slide) and no sideways
-// scroll while steps slide. The pure parts are in tests/unit/form-experience.test.ts.
+// draggable pill jump back, the step titles it shows: never after a jump, hoverable, Escape
+// hides them), the outgoing step's copy (visual only: outside the form, aria-hidden, inert, gone
+// after the transition, where the step was even mid-slide), reduced motion (no slide) and no
+// sideways scroll while steps slide. The pure parts are in tests/unit/form-experience.test.ts.
 import { expect, test, type Page } from '@playwright/test';
 
 import copy from '../../src/content/flows/nl/_copy.json' with { type: 'json' };
+import { STEP_GUARD_MS } from '../../src/lib/form/submit';
 import { stubLead, stubTurnstile } from '../support/form-submit';
 
 test.beforeEach(async ({ page }) => {
@@ -26,6 +28,13 @@ const bar = (page: Page) => page.locator('[data-steps-bar]');
 const pill = (page: Page) => page.locator('[data-steps-pill]');
 const jump = (step: number, title: string) =>
   copy.progressJump.replace('{step}', String(step)).replace('{title}', title);
+/** A finished step's button on the steps bar, and the title the bar shows for it. */
+const stepButton = (page: Page, step: number, title: string) =>
+  bar(page).getByRole('button', { name: jump(step, title) });
+const barTitle = (page: Page, title: string) => bar(page).getByText(title, { exact: true });
+
+const POSTCODE = 'Wat is je postcode?';
+const OWNERSHIP = 'Ben je eigenaar van de woning?';
 
 /** A radio picked with the keyboard (no auto-advance racing the test). */
 async function choose(page: Page, name: string) {
@@ -66,7 +75,8 @@ test.describe('form experience: the steps bar', () => {
     await expect(heading(page)).toBeFocused();
     await expect(control(page, 'Wat is je postcode?')).toHaveValue('3000');
     await expect(bar(page).getByRole('button')).toHaveCount(0);
-    // Forward again: the answers are still there.
+    // Forward again (after the double-click guard a jump starts): the answers are still there.
+    await page.waitForTimeout(STEP_GUARD_MS);
     await next(page).click();
     await expect(heading(page)).toHaveText('Ben je eigenaar van de woning?');
     await expect(page.getByRole('radio', { name: 'Eigenaar', exact: true })).toBeChecked();
@@ -129,6 +139,90 @@ test.describe('form experience: the steps bar', () => {
     await open(page, '/vergelijken/zonnepanelen');
     await expect(pill(page)).toHaveText('1');
     await expect(bar(page).getByRole('button')).toHaveCount(0);
+  });
+});
+
+test.describe('form experience: the steps bar titles (WCAG 1.4.13)', () => {
+  test('a jump leaves no step title behind on the bar', async ({ page }) => {
+    await toRoof(page);
+    // Pointing at a finished step shows its title; a click jumps there (its button goes).
+    await stepButton(page, 1, POSTCODE).hover();
+    await expect(barTitle(page, POSTCODE)).toBeVisible();
+    await stepButton(page, 1, POSTCODE).click();
+    await expect(heading(page)).toHaveText(POSTCODE);
+    await expect(barTitle(page, POSTCODE)).toHaveCount(0);
+    // Forward again to the step the jump left: nothing points at the bar, so no title shows.
+    for (const title of [OWNERSHIP, 'Wat voor dak heb je?']) {
+      await page.waitForTimeout(STEP_GUARD_MS);
+      await next(page).click();
+      await expect(heading(page)).toHaveText(title);
+    }
+    await expect(bar(page).getByRole('button')).toHaveCount(2);
+    await expect(barTitle(page, POSTCODE)).toHaveCount(0);
+  });
+
+  test('the pointer can move from a finished step onto its title', async ({ page }) => {
+    await toRoof(page);
+    const first = stepButton(page, 1, POSTCODE);
+    const title = barTitle(page, POSTCODE);
+    await first.hover();
+    await expect(title).toBeVisible();
+    const button = await first.boundingBox();
+    const label = await title.boundingBox();
+    if (!button || !label) throw new Error('no box for the step or its title');
+    // Straight up from the step (its title starts over the step's centre), over the gap between
+    // them: the title stays.
+    const x = label.x + 4;
+    await page.mouse.move(x, button.y + button.height / 2);
+    await page.mouse.move(x, label.y + label.height / 2, { steps: 8 });
+    await expect(title).toBeVisible();
+    // Off the title: it goes.
+    await page.mouse.move(x, label.y - 40);
+    await expect(title).toHaveCount(0);
+  });
+
+  test('Escape hides the title of a focused step until the focus comes back', async ({ page }) => {
+    await toRoof(page);
+    // A pick with the keyboard first: focus moved from here on is keyboard focus (:focus-visible).
+    await choose(page, 'Plat dak');
+    const first = stepButton(page, 1, POSTCODE);
+    await first.focus();
+    await expect(barTitle(page, POSTCODE)).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(barTitle(page, POSTCODE)).toHaveCount(0);
+    await expect(first).toBeFocused();
+    // Still focused: it stays hidden, also after the pointer came and went over another step.
+    await stepButton(page, 2, OWNERSHIP).hover();
+    await expect(barTitle(page, OWNERSHIP)).toBeVisible();
+    await page.mouse.move(0, 0);
+    await expect(barTitle(page, OWNERSHIP)).toHaveCount(0);
+    await expect(barTitle(page, POSTCODE)).toHaveCount(0);
+    // Focus on another step, and back: their titles show again.
+    await stepButton(page, 2, OWNERSHIP).focus();
+    await expect(barTitle(page, OWNERSHIP)).toBeVisible();
+    await first.focus();
+    await expect(barTitle(page, POSTCODE)).toBeVisible();
+  });
+
+  test('Escape hides the title of a pointed step until the pointer comes back', async ({
+    page,
+  }) => {
+    await toRoof(page);
+    const first = stepButton(page, 1, POSTCODE);
+    await first.hover();
+    await expect(barTitle(page, POSTCODE)).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(barTitle(page, POSTCODE)).toHaveCount(0);
+    // Moving over the same step keeps it hidden.
+    const box = await first.boundingBox();
+    if (!box) throw new Error('no box for the step');
+    await page.mouse.move(box.x + box.width / 2 + 3, box.y + box.height / 2 - 2);
+    await expect(barTitle(page, POSTCODE)).toHaveCount(0);
+    // Pointing at another step, and back at this one, shows the titles again.
+    await stepButton(page, 2, OWNERSHIP).hover();
+    await expect(barTitle(page, OWNERSHIP)).toBeVisible();
+    await first.hover();
+    await expect(barTitle(page, POSTCODE)).toBeVisible();
   });
 });
 
@@ -226,6 +320,65 @@ test.describe('form experience: motion on', () => {
     await expect(page.getByRole('heading', { level: 2, name: 'Wat is je postcode?' })).toHaveCount(
       0,
     );
+  });
+
+  test('a step left while it still slides in leaves from where it is on screen', async ({
+    page,
+  }) => {
+    await toRoof(page);
+    await page.waitForTimeout(600);
+    const back = await page
+      .getByRole('button', { name: copy.buttons.back, exact: true })
+      .elementHandle();
+    if (!back) throw new Error('no "Terug" button');
+    const result = await page.evaluate(async (button) => {
+      type Box = { x: number; y: number; width: number };
+      const boxOf = (element: Element): Box => {
+        const { x, y, width } = element.getBoundingClientRect();
+        return { x, y, width };
+      };
+      // Each copy of an outgoing step as it first shows: nothing has been painted since the
+      // copy was made, so its slide out is at its first keyframe.
+      const copies: Box[] = [];
+      const layer = document.querySelector('section[data-morph="form-card"] > div[inert]')!;
+      const observer = new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            const copy = (node as Element).firstElementChild;
+            if (copy) copies.push(boxOf(copy));
+          }
+        }
+      });
+      observer.observe(layer, { childList: true });
+      const frames = async (count: number) => {
+        for (let frame = 0; frame < count; frame += 1) {
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
+      };
+      // "Terug" twice, about 80 ms apart: the second leaves the ownership step mid-slide.
+      (button as HTMLButtonElement).click();
+      await frames(5);
+      const step = document
+        .getElementById('formulier-stap-titel')!
+        .closest('form > div > div > div')!;
+      const transform = getComputedStyle(step).transform;
+      const sliding = transform === 'none' ? 0 : new DOMMatrixReadOnly(transform).m41;
+      const before = boxOf(step);
+      (button as HTMLButtonElement).click();
+      await frames(1);
+      observer.disconnect();
+      return { before, sliding, copies };
+    }, back);
+    await expect(heading(page)).toHaveText(POSTCODE);
+    // The ownership step was still sliding in (not at its place yet)...
+    expect(Math.abs(result.sliding)).toBeGreaterThan(1);
+    // ...and its copy first shows exactly there, not as far off again.
+    expect(result.copies).toHaveLength(2);
+    const [, leaving] = result.copies;
+    // WebKit samples a frame or two apart; the bug this guards against was hundreds of px.
+    expect(Math.abs(leaving!.x - result.before.x)).toBeLessThanOrEqual(24);
+    expect(Math.abs(leaving!.y - result.before.y)).toBeLessThanOrEqual(24);
+    expect(Math.abs(leaving!.width - result.before.width)).toBeLessThanOrEqual(24);
   });
 
   test('no sideways scroll at 390 px while steps slide in and out', async ({ page }) => {

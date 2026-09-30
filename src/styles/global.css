@@ -395,21 +395,6 @@
  * form's CSS uses; each is applied under `motion-safe:` or switched off with reduced motion.
  */
 
-/* The light that drifts across the purple panel, very slowly (a pseudo-element, transform only). */
-@keyframes form-ambient {
-  0% {
-    translate: -45% -35%;
-  }
-
-  50% {
-    translate: 55% 10%;
-  }
-
-  100% {
-    translate: 5% 60%;
-  }
-}
-
 /* "Verstuur" on the last step: one ring that grows out of the button and fades. */
 @keyframes form-ping {
   from {

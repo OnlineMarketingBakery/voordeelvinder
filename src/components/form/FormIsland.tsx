@@ -214,16 +214,17 @@ const NARROW = '(max-width: 47.99rem)';
 /**
  * Scrolls the page just enough to show a field's whole question (its full height, also while
  * it is still expanding), never under the sticky header; nothing when it is already in view.
- * Focus stays where it is.
+ * Focus stays where it is. True when it scrolled.
  */
-function bringIntoView(cell: HTMLElement) {
+function bringIntoView(cell: HTMLElement): boolean {
   const header = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
   const top = cell.getBoundingClientRect().top;
   const bottom = top + (cell.firstElementChild ?? cell).getBoundingClientRect().height;
   const room = window.innerHeight;
-  if (top >= header && bottom <= room) return;
+  if (top >= header && bottom <= room) return false;
   const delta = top < header ? top - header : Math.min(bottom - room, top - header);
   window.scrollBy({ top: delta, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+  return true;
 }
 
 export default function FormIsland({
@@ -394,8 +395,13 @@ export default function FormIsland({
    * double-tap guards: every move that isn't forward ("Terug", a jump back, a reset, an undo).
    */
   const holdStill = () => {
-    advancedAt.current = null;
-    autoAdvancedAt.current = null;
+    // The step changes under the pointer ("Terug", a jump, a reset, an undo): the second half
+    // of a double click or tap lands on the new step, so both guards start now. A pick there
+    // only selects its card, and "Volgende" (maybe now where the reset button was) is ignored.
+    // eslint-disable-next-line react-hooks/purity -- an event handler's helper, never called in render
+    const now = performance.now();
+    advancedAt.current = now;
+    autoAdvancedAt.current = now;
     lastPointer.current = null;
     cancelAutoAdvance();
     clearFrame(revealFrame);
@@ -639,7 +645,9 @@ export default function FormIsland({
     revealFrame.current = window.requestAnimationFrame(() => {
       revealFrame.current = undefined;
       const cell = document.getElementById(`${domId.field(fieldId)}-vak`);
-      if (cell) bringIntoView(cell);
+      // The page moves under the finger: a second tap now lands on another card, which it
+      // may pick but never move the form on with (the auto-advance guard).
+      if (cell && bringIntoView(cell)) autoAdvancedAt.current = performance.now();
     });
   };
 

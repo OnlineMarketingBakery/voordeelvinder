@@ -103,9 +103,12 @@ with `client:load`. Both are indexable (brief §11: only the thank-you pages and
   the group and on each radio, since focus lands on a radio), focuses the first, scrolls it into
   view and announces its message in the `aria-live` region (again on a repeat: `liveText`). A
   valid step focuses the next step's title (h2) and announces "title. Stap X van Y" there.
-- **Double click:** a "Volgende" within `STEP_GUARD_MS` (350 ms) of the previous one moving
-  forward, with nothing answered in between, is ignored (`isRepeatSubmit`): a double click or
-  double tap moves one step, and never validates or submits the next step unseen.
+- **Double click:** a "Volgende" within `STEP_GUARD_MS` (350 ms) of the last step change
+  (forward, or back: "Terug", a jump, a reset, an undo), with nothing answered in between, is
+  ignored (`isRepeatSubmit`): a double click or double tap moves one step, and never validates or
+  submits the next step unseen (nor the fresh one, where "Volgende" takes the reset button's
+  place). A card picked within 500 ms of a step change other than "Volgende" is selected but
+  never moves the form on (`withinAutoAdvanceGuard`): the second half landed on the new step.
 - **Submit:** "Verstuur" validates, builds the submission (`buildSubmission`), locks the button
   and the answers (text inputs read-only, keeping focus; every change is ignored until a failure
   unlocks them, so nothing typed during the send is lost without a word) and posts it to
@@ -154,7 +157,8 @@ with `client:load`. Both are indexable (brief §11: only the thank-you pages and
   (`src/lib/form/navigation.ts` `pickOutcome`, `shouldAutoAdvance`). The double-click guard
   covers it too: an auto-advance and a "Volgende" within `STEP_GUARD_MS` of each other move one
   step, not two. On a phone (below `md`) a tap that leaves a question of the step open scrolls
-  that question into view (smoothly, at once with reduced motion); focus stays where it is.
+  that question into view (smoothly, at once with reduced motion); focus stays where it is. A
+  tap within 500 ms of that scroll only selects the card that moved under the finger.
 - **"Terug"** keeps the answers; on the first shown step it goes to the product page (`/` for
   energy) when preselected, else back in history (same site) or to `/`.
 - **Going back from the progress bar:** the steps before the current one on the visitor's path

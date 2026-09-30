@@ -83,6 +83,20 @@ export function stepExitFrames(travel: Travel, from = 'none', push = STEP_SLIDE_
   return [{ transform: from }, { transform: `translateX(${-travel * push}px)` }];
 }
 
+/**
+ * Where the outgoing step's copy goes in the step area (px from its top left): the step's own
+ * place, without the slide still running on it (`slide`: the translation of its computed
+ * transform, DOMMatrix m41/m42; the step's box on screen includes it). The copy's slide out
+ * starts from that same transform (stepExitFrames), so it shows exactly where the step was.
+ */
+export function ghostOffset(
+  step: { left: number; top: number },
+  area: { left: number; top: number },
+  slide: { m41: number; m42: number } = { m41: 0, m42: 0 },
+): { left: number; top: number } {
+  return { left: step.left - area.left - slide.m41, top: step.top - area.top - slide.m42 };
+}
+
 /** Each item of a new step: fades in and trails the step by ITEM_SLIDE_PX. */
 export function itemEnterFrames(travel: Travel): Keyframe[] {
   return [
@@ -456,9 +470,19 @@ export function messageVariants(reduced: boolean) {
 // The mascot in the purple panel (whole-image transforms until a split mascot exists, CONTENT-TODO
 // 5.8): it hops once when the step changes and nods when an answer is picked, never on the first
 // render. Sizes are percentages of the image, so the 80 px mascot of the phone header moves less
-// than the 323 px one of the desktop panel. Reduced motion: it stays still.
+// than the 323 px one of the desktop panel. A move that comes while another still plays starts
+// where that one has the mascot (mascotFramesFrom), so nothing jumps. The ambient light rests
+// behind the mascot and glides to its next place when the step changes (CSS, FormPanel). Reduced
+// motion: both stay still.
 
 export const MASCOT_MS = duration.slow;
+
+/**
+ * How many resting places the ambient light has behind the mascot: it glides to the next one on
+ * each step change (FormPanel's `data-light`, 0 to AMBIENT_PLACES - 1; 0 is where it starts, and
+ * where it stays with reduced motion).
+ */
+export const AMBIENT_PLACES = 3;
 
 /** A crouch, a hop of 6 % of its height and a soft landing, from the bottom centre. */
 export function mascotHopFrames(): Keyframe[] {
@@ -481,4 +505,16 @@ export function mascotNodFrames(): Keyframe[] {
     { transform: 'rotate(2deg)', offset: 0.65 },
     { transform: 'rotate(0deg)' },
   ];
+}
+
+/**
+ * A mascot move that starts where the mascot is: `from` is its computed transform, read while
+ * the move it replaces still plays ('none' when nothing does). Only the first keyframe's
+ * transform changes (its easing stays), so a hop after a nod, a nod after a hop, and a move after
+ * one of its own kind all go on from there instead of jumping back upright first.
+ */
+export function mascotFramesFrom(frames: Keyframe[], from: string): Keyframe[] {
+  const [first, ...rest] = frames;
+  if (!first || from === 'none') return frames;
+  return [{ ...first, transform: from }, ...rest];
 }

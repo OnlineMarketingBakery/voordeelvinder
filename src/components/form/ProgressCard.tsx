@@ -12,6 +12,8 @@
 // - tap or click a finished step: each one is a real <button> named by `jumpLabel` (the
 //   single-pointer alternative to dragging, WCAG 2.5.7, and the keyboard way). The current and
 //   future steps are not buttons. Pointing at (or focusing) a finished step shows its title.
+// A title shown on hover or focus follows WCAG 1.4.13: the pointer can move onto it, and Escape
+// hides it until the pointer or the focus leaves that step (Escape also ends a drag).
 //
 // Motion (docs/MOTION.md "Steps bar"): the pill and every fill move on the spring (CSS), a tick
 // draws in when a step is finished, the pill's number rolls, the bar glows softly on the last
@@ -74,6 +76,12 @@ type Drag = {
   dragging: boolean;
   target: number;
 };
+
+/**
+ * A finished step pointed at (a mouse) or focused (the keyboard), with the step it was on;
+ * `dismissed` once Escape hid its title, until the pointer or the focus leaves it.
+ */
+type Pointed = { index: number; on: string; dismissed: boolean };
 
 /** The pill's (and the label's) place: the centre of a segment, as a translate of the track. */
 function centre(index: number, count: number): string {
@@ -163,27 +171,41 @@ export function ProgressCard({
   const row = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const [dragTo, setDragTo] = useState<number | null>(null);
-  // The finished step pointed at or focused, with the step it was on (so it never outlives it).
-  const [pointedAt, setPointedAt] = useState<{ index: number; on: string } | null>(null);
+  // The finished step pointed at and the one focused, each on its own: a pointer that leaves
+  // never hides the title a focus shows.
+  const [pointedAt, setPointedAt] = useState<Pointed | null>(null);
+  const [focusedAt, setFocusedAt] = useState<Pointed | null>(null);
+  // A step change drops both (React's pattern for state from the previous props): the button
+  // that set one may be gone (a jump makes its step the current one), and a removed button gets
+  // no pointerleave or blur, so its title would show again back on this step.
+  if (pointedAt !== null && pointedAt.on !== current) setPointedAt(null);
+  if (focusedAt !== null && focusedAt.on !== current) setFocusedAt(null);
 
   const target = dragTo === null ? null : Math.min(dragTo, here);
   const pill = target ?? here;
-  const pointed = pointedAt?.on === current && pointedAt.index < here ? pointedAt.index : null;
+  const titled = (entry: Pointed | null) =>
+    entry && !entry.dismissed && entry.on === current && entry.index < here ? entry.index : null;
+  const pointed = titled(pointedAt) ?? titled(focusedAt);
   const shown = target ?? pointed;
   const label = shown === null ? undefined : steps[shown];
   const dragging = target !== null;
+  const titleShown = shown !== null;
 
-  // Escape while dragging: the pill goes back, nothing jumps.
+  // Escape hides the title, whatever shows it: a drag goes back (nothing jumps), and a step
+  // pointed at or focused keeps its title hidden until the pointer or the focus leaves it.
   useEffect(() => {
-    if (!dragging) return;
+    if (!titleShown) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       drag.current = null;
       setDragTo(null);
+      const dismiss = (entry: Pointed | null) => entry && { ...entry, dismissed: true };
+      setPointedAt(dismiss);
+      setFocusedAt(dismiss);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [dragging]);
+  }, [titleShown]);
 
   const finish = (jump: boolean) => {
     const state = drag.current;
@@ -243,9 +265,12 @@ export function ProgressCard({
     if (drag.current?.pointerId === event.pointerId) finish(false);
   };
 
-  const point = (index: number) => setPointedAt({ index, on: current });
+  const point = (index: number) => setPointedAt({ index, on: current, dismissed: false });
   const unpoint = (index: number) =>
     setPointedAt((previous) => (previous?.index === index ? null : previous));
+  const focusOn = (index: number) => setFocusedAt({ index, on: current, dismissed: false });
+  const unfocus = (index: number) =>
+    setFocusedAt((previous) => (previous?.index === index ? null : previous));
 
   return (
     <div className="rounded-2xl border border-lavender-300 bg-white px-5 pt-4 pb-4 shadow-form md:px-[37px] md:pt-[21px] md:pb-6">
@@ -298,9 +323,9 @@ export function ProgressCard({
                 }}
                 onPointerLeave={() => unpoint(index)}
                 onFocus={(event) => {
-                  if (isFocusVisible(event.currentTarget)) point(index);
+                  if (isFocusVisible(event.currentTarget)) focusOn(index);
                 }}
-                onBlur={() => unpoint(index)}
+                onBlur={() => unfocus(index)}
                 className="min-w-0 flex-1 cursor-pointer rounded-md"
               />
             );
@@ -341,11 +366,19 @@ export function ProgressCard({
             className={cx(LAYER, ready && ON_SPRING)}
             style={{ translate: centre(shown, count) }}
           >
+            {/* The title takes the pointer, and its bottom padding bridges the gap to the bar:
+                moving up from a step onto its title keeps it. */}
             <div
-              className="absolute bottom-full left-full mb-1.5 max-w-[calc(100%-2rem)] truncate rounded-md bg-ink-900 px-2.5 py-1 text-sm whitespace-nowrap text-white shadow-card motion-safe:animate-[form-label-in_var(--motion-duration-fast)_var(--ease-out)]"
+              onPointerEnter={(event) => {
+                if (event.pointerType === 'mouse') point(shown);
+              }}
+              onPointerLeave={() => unpoint(shown)}
+              className="pointer-events-auto absolute bottom-full left-full max-w-[calc(100%-2rem)] pb-1.5"
               style={{ translate: `-${labelShift(shown, count)}% 0` }}
             >
-              {label.title}
+              <div className="truncate rounded-md bg-ink-900 px-2.5 py-1 text-sm whitespace-nowrap text-white shadow-card motion-safe:animate-[form-label-in_var(--motion-duration-fast)_var(--ease-out)]">
+                {label.title}
+              </div>
             </div>
           </div>
         )}

@@ -1,11 +1,12 @@
 // Moving through the form (Tanjil's form feedback 2026-09-30): "Opnieuw beginnen" with its undo,
 // jumping back from the progress bar, and on a phone the next question of a two-question step
-// coming into view. The rules themselves are unit-tested in tests/unit/form-navigation.test.ts;
+// coming into view; a double click or tap whose second half lands on content that just moved
+// under the pointer. The rules themselves are unit-tested in tests/unit/form-navigation.test.ts;
 // auto-advance on such steps is in form-motion.spec.ts.
 import { expect, test, type Page } from '@playwright/test';
 
 import copy from '../../src/content/flows/nl/_copy.json' with { type: 'json' };
-import { AUTO_ADVANCE_DELAY_MS } from '../../src/lib/form/motion';
+import { AUTO_ADVANCE_DELAY_MS, AUTO_ADVANCE_GUARD_MS } from '../../src/lib/form/motion';
 import { UNDO_MS } from '../../src/lib/form/reset';
 import { STEP_GUARD_MS } from '../../src/lib/form/submit';
 import { stubLead, stubTurnstile } from '../support/form-submit';
@@ -58,6 +59,51 @@ async function tap(page: Page, name: string, group?: string) {
   await radio(page, name, group).locator('xpath=ancestor::label[1]').click();
 }
 
+/** The time between the two halves of a double click or tap in these tests. */
+const DOUBLE_CLICK_GAP_MS = 150;
+
+/**
+ * A double click on the button `button` (its name or text) whose second half, `gap` ms later,
+ * lands on `target`: a card (its label) or a button of what took the first one's place. A step
+ * change moves the content under the pointer, and which card lands there depends on the layout,
+ * so the test names it. Both halves are a pointerdown and a click, in the page, so the gap holds
+ * on a slow runner.
+ */
+async function doubleClickOnto(
+  page: Page,
+  button: string,
+  target: string,
+  gap = DOUBLE_CLICK_GAP_MS,
+) {
+  await page.evaluate(
+    async ([first, second, wait]) => {
+      const find = (name: string) =>
+        [...document.querySelectorAll<HTMLInputElement>('main input[type=radio]')]
+          .map((input) => input.closest('label'))
+          .find((label) => label?.textContent?.trim() === name) ??
+        [...document.querySelectorAll<HTMLButtonElement>('main button')].find(
+          (candidate) =>
+            candidate.getAttribute('aria-label') === name || candidate.textContent?.trim() === name,
+        );
+      const press = (name: string) => {
+        const element = find(name);
+        if (!element) throw new Error(`nothing named "${name}"`);
+        element.dispatchEvent(
+          new PointerEvent('pointerdown', { bubbles: true, isPrimary: true, button: 0 }),
+        );
+        element.click();
+      };
+      press(first);
+      await new Promise((resolve) => setTimeout(resolve, wait));
+      press(second);
+    },
+    [button, target, gap] as const,
+  );
+}
+
+/** Longer than the auto-advance delay plus a step change: enough to see it didn't happen. */
+const settle = (page: Page) => page.waitForTimeout(AUTO_ADVANCE_DELAY_MS * 3);
+
 async function goNext(page: Page, title: string) {
   await next(page).click();
   await expect(heading(page)).toHaveText(title);
@@ -82,6 +128,19 @@ async function toMeterType(page: Page) {
   await control(page, 'Wie is je huidige energieleverancier?').selectOption('luminus');
   await goNext(page, 'Wat voor meter heb je?');
   await choose(page, 'Dag/nachtmeter (tweevoudig tarief)');
+}
+
+/** At 390x560, on the digital meter + solar step (two questions), scrolled to the top. */
+async function toMetersOnPhone(page: Page) {
+  await page.setViewportSize({ width: 390, height: 560 });
+  await open(page, '/vergelijken/energie?energie=both');
+  await control(page, 'Wat is je postcode?').fill('9000');
+  await goNext(page, 'Wie is je huidige energieleverancier?');
+  await control(page, 'Wie is je huidige energieleverancier?').selectOption('luminus');
+  await goNext(page, 'Wat voor meter heb je?');
+  await choose(page, 'Dagmeter (enkelvoudig tarief)');
+  await goNext(page, 'Heb je een digitale meter?');
+  await page.evaluate(() => window.scrollTo(0, 0));
 }
 
 test.describe('form: "Opnieuw beginnen" and its undo', () => {
@@ -215,8 +274,65 @@ test.describe('form: "Opnieuw beginnen" and its undo', () => {
       ['Eigenaar', reset.button],
     );
     await expect(heading(page)).toHaveText('Wat is je postcode?');
-    await page.waitForTimeout(AUTO_ADVANCE_DELAY_MS * 3);
+    await settle(page);
     await expect(heading(page)).toHaveText('Wat is je postcode?');
+  });
+});
+
+test.describe('form: the second half of a double click lands on the new step', () => {
+  test('after the reset button, a card of the fresh step is only picked', async ({ page }) => {
+    await open(page, '/vergelijken');
+    await choose(page, 'Zonnepanelen');
+    await goNext(page, 'Wat is je postcode?');
+    await control(page, 'Wat is je postcode?').fill('3000');
+    await goNext(page, 'Ben je eigenaar van de woning?');
+    // The five product cards push the buttons of this two-card step down, under the pointer.
+    await doubleClickOnto(page, reset.button, 'Elektriciteit + gas');
+    await expect(heading(page)).toHaveText('Wat wil je vergelijken?');
+    // Picked, visibly (like any tap), but the fresh form doesn't move on by itself.
+    await expect(radio(page, 'Elektriciteit + gas')).toBeChecked();
+    await settle(page);
+    await expect(heading(page)).toHaveText('Wat wil je vergelijken?');
+  });
+
+  test('after the reset button, "Volgende" in its place is ignored: no errors', async ({
+    page,
+  }) => {
+    await toMeterType(page);
+    await doubleClickOnto(page, reset.button, buttons.next);
+    await expect(heading(page)).toHaveText('Wat is je postcode?');
+    await expect(heading(page)).toBeFocused();
+    await expect(page.locator('#veld-postcode-fout')).toHaveCount(0);
+    await expect(live(page)).toHaveText(reset.done);
+    // Pressed on purpose, once the guard is over, it validates as always.
+    await page.waitForTimeout(STEP_GUARD_MS);
+    await next(page).click();
+    await expect(page.locator('#veld-postcode-fout')).toHaveText(copy.errors.required);
+  });
+
+  test('after "Ongedaan maken", a card of the restored step is only picked', async ({ page }) => {
+    await toMeterType(page);
+    await resetButton(page).click();
+    await expect(undoButton(page)).toBeVisible();
+    // The reset's own guard is over: what follows is the undo's.
+    await page.waitForTimeout(AUTO_ADVANCE_GUARD_MS);
+    // Any tap on a complete single-question step moves on, but not this one.
+    await doubleClickOnto(page, reset.undo, 'Dagmeter (enkelvoudig tarief)');
+    await expect(heading(page)).toHaveText('Wat voor meter heb je?');
+    await expect(radio(page, 'Dagmeter (enkelvoudig tarief)')).toBeChecked();
+    await settle(page);
+    await expect(heading(page)).toHaveText('Wat voor meter heb je?');
+  });
+
+  test('after "Terug", a card of the answered step is only picked', async ({ page }) => {
+    await open(page, '/vergelijken');
+    await choose(page, 'Zonnepanelen');
+    await goNext(page, 'Wat is je postcode?');
+    await doubleClickOnto(page, buttons.back, 'Thuisbatterij');
+    await expect(heading(page)).toHaveText('Wat wil je vergelijken?');
+    await expect(radio(page, 'Thuisbatterij')).toBeChecked();
+    await settle(page);
+    await expect(heading(page)).toHaveText('Wat wil je vergelijken?');
   });
 });
 
@@ -236,6 +352,8 @@ test.describe('form: going back from the progress bar', () => {
     await expect(control(page, 'Wat is je postcode?')).toHaveValue('9000');
     // Nothing before the first step; the steps after it are never jump targets.
     await expect(page.getByRole('button', { name: /^Ga terug naar stap/ })).toHaveCount(0);
+    // A "Volgende" right after a step change is the second half of a double click: wait it out.
+    await page.waitForTimeout(STEP_GUARD_MS);
     await goNext(page, 'Wie is je huidige energieleverancier?');
     await expect(control(page, 'Wie is je huidige energieleverancier?')).toHaveValue('luminus');
     await page.waitForTimeout(STEP_GUARD_MS);
@@ -246,14 +364,7 @@ test.describe('form: going back from the progress bar', () => {
 
 test.describe('form: a two-question step on a phone', () => {
   test('a tap on the first question brings the second into view, focus stays', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 560 });
-    await open(page, '/vergelijken/energie?energie=both');
-    await control(page, 'Wat is je postcode?').fill('9000');
-    await goNext(page, 'Wie is je huidige energieleverancier?');
-    await control(page, 'Wie is je huidige energieleverancier?').selectOption('luminus');
-    await goNext(page, 'Wat voor meter heb je?');
-    await choose(page, 'Dagmeter (enkelvoudig tarief)');
-    await goNext(page, 'Heb je een digitale meter?');
+    await toMetersOnPhone(page);
     const second = page.locator('#veld-has_solar-vak');
     const inView = () =>
       second.evaluate((cell) => {
@@ -262,15 +373,43 @@ test.describe('form: a two-question step on a phone', () => {
         return box.top >= 0 && box.top + height <= window.innerHeight + 1;
       });
     // The second question starts (at least partly) below the fold.
-    await page.evaluate(() => window.scrollTo(0, 0));
     expect(await inView()).toBe(false);
     await tap(page, 'Ja', 'Heb je een digitale meter?');
     await expect.poll(inView).toBe(true);
     await expect(heading(page)).toHaveText('Heb je een digitale meter?');
     // Nothing in the second question took focus.
     expect(await second.evaluate((cell) => cell.contains(document.activeElement))).toBe(false);
-    // Its answer moves the step on (form-motion.spec.ts).
+    // Its answer moves the step on (form-motion.spec.ts), once the visitor has read it: a tap
+    // right after the scroll is the second half of a double tap (next test).
+    await page.waitForTimeout(AUTO_ADVANCE_GUARD_MS);
     await tap(page, 'Nee', 'Heb je zonnepanelen?');
     await expect(heading(page)).toHaveText('Heb je een sociaal tarief?');
   });
+
+  for (const gap of [DOUBLE_CLICK_GAP_MS, 250]) {
+    test(`a second tap ${gap} ms later at the same point picks what scrolled under it, never moves on`, async ({
+      page,
+    }) => {
+      await toMetersOnPhone(page);
+      const card = await radio(page, 'Nee', 'Heb je een digitale meter?')
+        .locator('xpath=ancestor::label[1]')
+        .boundingBox();
+      if (!card) throw new Error('no card');
+      const x = card.x + card.width / 2;
+      const y = card.y + card.height / 2;
+      await page.mouse.click(x, y);
+      await page.waitForTimeout(gap);
+      await page.mouse.click(x, y);
+      // The page scrolled the second question under the finger, and the tap picked its card
+      // (visibly, like any tap)…
+      await expect(
+        page.getByRole('radiogroup', { name: 'Heb je zonnepanelen?' }).getByRole('radio', {
+          checked: true,
+        }),
+      ).toHaveCount(1);
+      // …but the step stays: the visitor hasn't read that question yet.
+      await settle(page);
+      await expect(heading(page)).toHaveText('Heb je een digitale meter?');
+    });
+  }
 });
