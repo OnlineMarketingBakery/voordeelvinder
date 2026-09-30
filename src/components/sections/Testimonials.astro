@@ -59,10 +59,6 @@ const button =
         {items.map((item) => (
           <li class="group flex w-[calc(100vw-48px)] max-w-[374px] shrink-0 snap-start md:w-[340px] lg:w-[374px]">
             <figure class="lift relative flex w-full flex-col rounded-2xl bg-white px-6 pt-8 pb-8 shadow-card-lg lg:min-h-[337px] lg:px-[33px] lg:pt-[42px] lg:pb-[44px]">
-              <Icon
-                name="quote-mark"
-                class="absolute top-6 right-6 h-[27px] w-8 text-purple-500 lg:top-[30px] lg:right-[33px]"
-              />
               <figcaption class="flex items-center gap-[9px] pe-10">
                 {item.avatar && (
                   <span class="shrink-0 rounded-2xl border-[3px] border-lavender-300 bg-purple-500/6 p-[3px]">
@@ -82,6 +78,11 @@ const button =
                   )}
                 </span>
               </figcaption>
+              {/* After the figcaption: a figure allows its caption only first or last. */}
+              <Icon
+                name="quote-mark"
+                class="absolute top-6 right-6 h-[27px] w-8 text-purple-500 lg:top-[30px] lg:right-[33px]"
+              />
               <div class="mt-[21px] h-px bg-ink-600/26" />
               <blockquote class="mt-6 text-body text-ink-600">
                 <p>{item.quote}</p>
@@ -203,6 +204,9 @@ const button =
       const overflows = max > 1;
       controls.hidden = !overflows;
       track.toggleAttribute('data-controls', overflows);
+      // A tab stop only while there is something to scroll (server-rendered as one, for no-JS).
+      if (overflows) track.setAttribute('tabindex', '0');
+      else track.removeAttribute('tabindex');
       for (const button of buttons) {
         const atEnd =
           Number(button.dataset.carouselStep) < 0

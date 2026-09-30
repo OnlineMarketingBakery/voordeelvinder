@@ -128,7 +128,7 @@ describe('ProductSpotlight component', () => {
 
   it('puts the eyebrow in a pill, and the CTA as a link to the product form', async () => {
     const html = await render(solar);
-    expect(html).toMatch(/<p [^>]*>.*Zonnepanelen/s);
+    expect(html).toMatch(/>Zonnepanelen<\/span>/);
     expect(html).toMatch(/<a href="\/vergelijken\/zonnepanelen"[^>]*>Bereken je besparing/);
   });
 

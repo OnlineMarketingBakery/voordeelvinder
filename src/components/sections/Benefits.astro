@@ -105,23 +105,24 @@ const padding = isGrid
 
       <div class="mt-8 grid gap-y-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,640px)] lg:gap-x-5">
         {/* The mascot on the pattern (one box, so the pair scales together). From lg it
-              overflows its column like the design (−38 px left, 60 px below the cards' top). */}
+              fills its column; from xl it overflows it like the design (−38 px left), 60 px below the
+              cards' top. */}
         <div
-          class="benefits-art pointer-events-none relative mx-auto aspect-[584/581] w-full max-w-[300px] md:max-w-[420px] lg:mt-[60px] lg:mr-0 lg:-ml-[7.5%] lg:w-[115%] lg:max-w-[584px]"
+          class="benefits-art pointer-events-none relative mx-auto aspect-[584/581] w-full max-w-[300px] md:max-w-[420px] lg:mt-[60px] lg:mr-0 lg:ml-0 lg:w-full lg:max-w-[584px] xl:-ml-[7.5%] xl:w-[115%]"
           data-reveal
         >
           <Illustration
             src="backgrounds/energy-icon-pattern"
             alt=""
             widths={[280, 390, 543, 780, 1086]}
-            sizes="(min-width: 1024px) 543px, (min-width: 768px) 390px, 280px"
+            sizes="(min-width: 1280px) 543px, (min-width: 1170px) 430px, (min-width: 1024px) calc((100vw - 708px) * 0.93), (min-width: 768px) 390px, 280px"
             class="absolute top-[-4.99%] left-[-4.28%] h-[94.8%] w-[92.98%]"
           />
           <Illustration
             src={image.src}
             alt={image.alt}
             widths={[300, 420, 584, 840, 1168]}
-            sizes="(min-width: 1024px) 584px, (min-width: 768px) 420px, 300px"
+            sizes="(min-width: 1280px) 584px, (min-width: 1170px) 462px, (min-width: 1024px) calc(100vw - 708px), (min-width: 768px) 420px, 300px"
             class="relative h-auto w-full"
           />
         </div>
@@ -129,7 +130,7 @@ const padding = isGrid
         <ul role="list" class="relative grid gap-4 md:grid-cols-2 md:gap-5" data-reveal-stagger>
           {visible.map((item) => (
             <li class="group flex">
-              <div class="lift flex w-full flex-col rounded-2xl bg-white p-6 shadow-card group-hover:shadow-card-lg lg:p-[30px] xl:min-h-[295px]">
+              <div class="lift flex w-full flex-col rounded-2xl bg-white p-6 shadow-card group-hover:shadow-card-lg lg:py-[30px] lg:ps-[30px] lg:pe-4 xl:min-h-[295px]">
                 <span class="grid size-[59px] shrink-0 place-items-center rounded-lg border-[3px] border-lavender-300 bg-purple-500/6 text-purple-500">
                   <Icon name={item.icon} class={gridGlyphs[item.icon]} />
                 </span>

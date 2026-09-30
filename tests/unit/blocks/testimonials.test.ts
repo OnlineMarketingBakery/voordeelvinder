@@ -185,7 +185,8 @@ describe('Testimonials component', () => {
     expect(html).toMatch(/<img [^>]*loading="lazy"/);
     expect(html).toContain('aria-label="4 van 5 sterren"');
     expect(count(html, /text-purple-500"/g)).toBeGreaterThanOrEqual(4);
-    expect(count(html, /text-lavender-300"/g)).toBe(1);
+    // The empty star is an outline (shape differs, not only colour).
+    expect(count(html, /fill-none stroke-current/g)).toBe(1);
     expect(html).not.toContain('Leuven');
   });
 
