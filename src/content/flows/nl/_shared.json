@@ -96,10 +96,7 @@
                   {
                     "var": "energy_type"
                   },
-                  [
-                    "electricity",
-                    "both"
-                  ]
+                  ["electricity", "both"]
                 ]
               }
             ]
@@ -130,10 +127,7 @@
                   {
                     "var": "energy_type"
                   },
-                  [
-                    "gas",
-                    "both"
-                  ]
+                  ["gas", "both"]
                 ]
               }
             ]
