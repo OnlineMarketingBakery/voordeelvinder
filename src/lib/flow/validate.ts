@@ -21,7 +21,7 @@ import {
   type SharedStepsFile,
   type Step,
 } from './schema';
-import { DERIVED_KEYS } from './types';
+import { DERIVED_KEYS, REGIONS } from './types';
 
 /** A file as read from disk: its path relative to the flows folder (nl/energie.json). */
 export type SourceFile = { path: string; data: unknown };
@@ -84,24 +84,60 @@ const PAYLOAD_TYPES: Partial<Record<NonNullable<Field['payload']>, readonly Fiel
   derived: ['postcode'],
 };
 
-type Condition = { step: Step; where: string; rule: Rule; sameStep: boolean };
+/**
+ * A condition and what it may read from its own step (`readable`: field ids). A step's
+ * visibleIf reads none of them (they're shown only if it holds), a field's visibleIf only the
+ * fields above it (never itself: it would stay hidden until answered), and a next entry all.
+ */
+type Condition = {
+  step: Step;
+  where: string;
+  rule: Rule;
+  readable: ReadonlySet<string>;
+  field?: Field;
+};
 
 function conditions(flow: Flow): Condition[] {
-  return flow.steps.flatMap((step) => [
-    ...(step.visibleIf !== undefined
-      ? [{ step, where: `step "${step.id}" visibleIf`, rule: step.visibleIf, sameStep: false }]
-      : []),
-    ...step.fields.flatMap((field) =>
-      field.visibleIf !== undefined
-        ? [{ step, where: `field "${field.id}" visibleIf`, rule: field.visibleIf, sameStep: true }]
-        : [],
-    ),
-    ...step.next.flatMap((entry, index) =>
-      entry.if !== undefined
-        ? [{ step, where: `step "${step.id}" next[${index}]`, rule: entry.if, sameStep: true }]
-        : [],
-    ),
-  ]);
+  return flow.steps.flatMap((step) => {
+    const ids = step.fields.map((field) => field.id);
+    return [
+      ...(step.visibleIf !== undefined
+        ? [
+            {
+              step,
+              where: `step "${step.id}" visibleIf`,
+              rule: step.visibleIf,
+              readable: new Set<string>(),
+            },
+          ]
+        : []),
+      ...step.fields.flatMap((field, index) =>
+        field.visibleIf !== undefined
+          ? [
+              {
+                step,
+                where: `field "${field.id}" visibleIf`,
+                rule: field.visibleIf,
+                readable: new Set(ids.slice(0, index)),
+                field,
+              },
+            ]
+          : [],
+      ),
+      ...step.next.flatMap((entry, index) =>
+        entry.if !== undefined
+          ? [
+              {
+                step,
+                where: `step "${step.id}" next[${index}]`,
+                rule: entry.if,
+                readable: new Set(ids),
+              },
+            ]
+          : [],
+      ),
+    ];
+  });
 }
 
 /** Calls `visit` for every operation in a rule. */
@@ -215,11 +251,27 @@ export function checkFlow(flow: Flow, file: FlowFile): string[] {
     );
   }
   const contact = byId.get(CONTACT_STEP_ID);
-  if (contact?.visibleIf !== undefined) {
-    problems.push(`the "${CONTACT_STEP_ID}" step is always shown: it can't have a visibleIf`);
-  }
-  if (contact && contact.next.length > 0) {
-    problems.push(`the "${CONTACT_STEP_ID}" step is the last step: it can't have a next`);
+  if (contact) {
+    if (contact.visibleIf !== undefined) {
+      problems.push(`the "${CONTACT_STEP_ID}" step is always shown: it can't have a visibleIf`);
+    }
+    // The engine also skips a step none of whose fields is shown, and a lead needs every
+    // required contact field (name, phone, call moment, consent) answered.
+    for (const field of contact.fields) {
+      if (field.required === true && field.visibleIf !== undefined) {
+        problems.push(
+          `the "${CONTACT_STEP_ID}" step is always shown: its required field "${field.id}" can't have a visibleIf`,
+        );
+      }
+    }
+    if (contact.fields.every((field) => field.visibleIf !== undefined)) {
+      problems.push(
+        `the "${CONTACT_STEP_ID}" step needs a field without a visibleIf, or it can be skipped`,
+      );
+    }
+    if (contact.next.length > 0) {
+      problems.push(`the "${CONTACT_STEP_ID}" step is the last step: it can't have a next`);
+    }
   }
 
   // Dead ends: the contact step is the only way out, and every step has a fallback.
@@ -267,7 +319,8 @@ export function checkFlow(flow: Flow, file: FlowFile): string[] {
 
   // Conditions: known vars, asked before they're read, literals that are real codes.
   const derivedKeys: readonly string[] = DERIVED_KEYS;
-  const codesOf = (path: string): string[] | null => {
+  const codesOf = (path: string): readonly string[] | null => {
+    if (path === 'derived.region') return REGIONS;
     const [head = '', sub] = path.split('.');
     const field = fieldById.get(head);
     if (field?.type === 'day_slot' && (sub === 'day' || sub === 'slot')) {
@@ -291,7 +344,7 @@ export function checkFlow(flow: Flow, file: FlowFile): string[] {
     return fieldById.has(head) || implied.has(head);
   };
 
-  for (const { step, where, rule, sameStep } of conditions(flow)) {
+  for (const { step, where, rule, readable, field } of conditions(flow)) {
     const before = targetsOk ? ancestors(flow, step.id) : null;
     const seen = new Set<string>();
     visitOperations(rule, (op, args) => {
@@ -307,15 +360,18 @@ export function checkFlow(flow: Flow, file: FlowFile): string[] {
         }
         const head = path.split('.')[0]!;
         if (head === 'derived' || before === null) return;
-        const askedOn = fieldStep.has(head)
-          ? [fieldStep.get(head)!]
-          : implied.get(head)!.setters.map((id) => fieldStep.get(id)!);
-        const inTime = askedOn.some((id) => before.has(id) || (sameStep && id === step.id));
-        if (!inTime) {
-          problems.push(
-            `${where}: reads "${path}" before it is asked (step "${askedOn.join('", "')}")`,
-          );
+        // The fields that give it a value: the field itself, or those whose options set it.
+        const askedBy = fieldStep.has(head) ? [head] : implied.get(head)!.setters;
+        const inTime = askedBy.some((id) => before.has(fieldStep.get(id)!) || readable.has(id));
+        if (inTime) return;
+        if (field !== undefined && askedBy.includes(field.id)) {
+          problems.push(`${where}: reads its own value ("${path}"), so it is never shown`);
+          return;
         }
+        const askedOn = [...new Set(askedBy.map((id) => fieldStep.get(id)!))];
+        problems.push(
+          `${where}: reads "${path}" before it is asked (step "${askedOn.join('", "')}")`,
+        );
         return;
       }
       const comparisons = ['==', '!=', '===', '!=='];
@@ -328,6 +384,15 @@ export function checkFlow(flow: Flow, file: FlowFile): string[] {
       } else if (op === 'in' && Array.isArray(args[1])) {
         path = varPath(args[0]);
         literals = args[1];
+      }
+      if (path === 'derived.preselected') {
+        for (const literal of literals) {
+          if (typeof literal !== 'string' && typeof literal !== 'number') continue;
+          problems.push(
+            `${where}: compares "${path}" with ${JSON.stringify(literal)}, which is not true or false`,
+          );
+        }
+        return;
       }
       const codes = path === null ? null : codesOf(path);
       if (!codes) return;
@@ -344,7 +409,11 @@ export function checkFlow(flow: Flow, file: FlowFile): string[] {
   return problems;
 }
 
-/** What must be identical across locales: per flow, its settings and every field's codes. */
+/**
+ * What must be identical across locales: per flow, its settings, every step's fields and
+ * branching, and every field's codes, payload target and required flag. Only the copy differs,
+ * so the lead payload, the rules and the paths are the same in every locale.
+ */
 function codeSignature(flow: Flow): Map<string, string> {
   const signature = new Map<string, string>([
     ['product', flow.product],
@@ -352,8 +421,26 @@ function codeSignature(flow: Flow): Map<string, string> {
     ['firstStep', flow.firstStep],
   ]);
   for (const step of flow.steps) {
+    signature.set(`step "${step.id}" fields`, step.fields.map((field) => field.id).join(', '));
+    if (step.visibleIf !== undefined) {
+      signature.set(`step "${step.id}" visibleIf`, JSON.stringify(step.visibleIf));
+    }
+    signature.set(
+      `step "${step.id}" next`,
+      step.next
+        .map(
+          (entry) =>
+            `${entry.if === undefined ? '(always)' : JSON.stringify(entry.if)} → ${entry.goto}`,
+        )
+        .join(', '),
+    );
     for (const field of step.fields) {
       signature.set(`field "${field.id}" type`, field.type);
+      signature.set(`field "${field.id}" payload`, field.payload ?? 'answers');
+      signature.set(`field "${field.id}" required`, String(field.required ?? false));
+      if (field.visibleIf !== undefined) {
+        signature.set(`field "${field.id}" visibleIf`, JSON.stringify(field.visibleIf));
+      }
       const lists = codeLists(field);
       if (field.type === 'yes_no') lists.options = ['yes', 'no'];
       for (const [list, codes] of Object.entries(lists)) {
@@ -450,8 +537,15 @@ export function validateFlowSources(locales: LocaleSources[]): FlowIssue[] {
     }
     const resolved = new Map<string, Resolved>();
     byLocale.set(locale, resolved);
+    const products = new Set<string>();
+    const choices: ProductChoice[] = [];
 
     for (const { path, data } of flows) {
+      // A flow with schema errors still has its product: those errors are the useful ones.
+      const declared = flowFile.shape.product.safeParse(
+        (data as { product?: unknown } | null)?.product,
+      );
+      if (declared.success) products.add(declared.data);
       const parsed = flowFile.safeParse(data);
       if (!parsed.success) {
         issues.push(...schemaIssues(path, parsed.error));
@@ -482,7 +576,48 @@ export function validateFlowSources(locales: LocaleSources[]): FlowIssue[] {
       }
       issues.push(...checkFlow(flow, file).map((message) => ({ file: path, message })));
       resolved.set(name, { path, flow });
+      // resolveFlow keeps the order: a step from a reference lives in _shared.json.
+      flow.steps.forEach((step, index) => {
+        const where = 'use' in file.steps[index]! ? sharedFile!.path : path;
+        choices.push(...productChoices(step, where));
+      });
     }
+    issues.push(...missingProductFlows(locale, choices, products));
   }
   return [...issues, ...checkLocales(locales, byLocale)];
+}
+
+/** An option that continues in another product's flow, and the file that defines it. */
+type ProductChoice = { file: string; field: string; code: string; product: string };
+
+function productChoices(step: Step, file: string): ProductChoice[] {
+  return step.fields.flatMap((field) =>
+    field.type !== 'single_choice'
+      ? []
+      : field.options.flatMap((option) =>
+          option.product === undefined
+            ? []
+            : [{ file, field: field.id, code: option.code, product: option.product }],
+        ),
+  );
+}
+
+/** Options whose product has no flow in the locale, each reported once (shared steps repeat). */
+function missingProductFlows(
+  locale: string,
+  choices: ProductChoice[],
+  products: ReadonlySet<string>,
+): FlowIssue[] {
+  const reported = new Set<string>();
+  const issues: FlowIssue[] = [];
+  for (const { file, field, code, product } of choices) {
+    const key = JSON.stringify([file, field, code]);
+    if (products.has(product) || reported.has(key)) continue;
+    reported.add(key);
+    issues.push({
+      file,
+      message: `field "${field}": option "${code}" continues in the "${product}" flow, but ${locale} has no flow with product "${product}"`,
+    });
+  }
+  return issues;
 }

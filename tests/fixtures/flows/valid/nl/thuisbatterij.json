@@ -1,0 +1,11 @@
+{
+  "id": "thuisbatterij",
+  "version": 1,
+  "product": "thuisbatterij",
+  "firstStep": "product",
+  "steps": [
+    { "use": "product", "next": [{ "goto": "postcode" }] },
+    { "use": "postcode", "next": [{ "goto": "contact" }] },
+    { "use": "contact" }
+  ]
+}

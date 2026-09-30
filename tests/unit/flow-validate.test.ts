@@ -7,7 +7,9 @@ import { describe, expect, it } from 'vitest';
 
 import { resolveFlow } from '../../src/lib/flow/resolve';
 import { field, flowFile, flowId, sharedStepsFile } from '../../src/lib/flow/schema';
+import { REGIONS } from '../../src/lib/flow/types';
 import { validateFlowSources, type LocaleSources } from '../../src/lib/flow/validate';
+import { regionFor, type Region } from '../../src/lib/flow/validators/postcode';
 import { loadFlowSources } from '../../scripts/lib/flow-sources';
 import { FIXTURES, readFixture } from './flow-fixtures';
 
@@ -25,17 +27,30 @@ function byFile(issues: { file: string; message: string }[]): Record<string, str
   return grouped;
 }
 
-/** The valid fixture with the energy flow (and optionally the shared steps) changed. */
+/** The valid fixture's other flows: the shared product step offers their products. */
+const OTHER_FLOWS = ['zonnepanelen', 'thuisbatterij'];
+const otherFlows = (locale: string) =>
+  OTHER_FLOWS.map((name) => ({
+    path: `${locale}/${name}.json`,
+    data: structuredClone(readFixture(`valid/nl/${name}.json`)),
+  }));
+
+/**
+ * The valid fixture with the energy flow (and optionally the shared steps) changed. The other
+ * flows come along unchanged; their messages (repeats of the shared steps' ones) are left out.
+ */
 function mutated(change: (flow: any, shared: any) => void, { withShared = true } = {}) {
   const flow = structuredClone(readFixture('valid/nl/energie.json')) as any;
   const shared = structuredClone(readFixture('valid/nl/_shared.json')) as any;
   change(flow, shared);
   const locale: LocaleSources = {
     locale: 'nl',
-    flows: [{ path: 'nl/energie.json', data: flow }],
+    flows: [{ path: 'nl/energie.json', data: flow }, ...otherFlows('nl')],
     ...(withShared ? { shared: { path: 'nl/_shared.json', data: shared } } : {}),
   };
-  return validateFlowSources([locale]).map(({ file, message }) => `${file}: ${message}`);
+  return validateFlowSources([locale])
+    .filter(({ file }) => !OTHER_FLOWS.some((name) => file === `nl/${name}.json`))
+    .map(({ file, message }) => `${file}: ${message}`);
 }
 
 const step = (flow: any, id: string) => flow.steps.find((s: any) => s.id === id || s.use === id);
@@ -96,11 +111,14 @@ describe('validate:flows across locales', () => {
     return {
       locale: name,
       shared: { path: `${name}/_shared.json`, data: shared },
-      flows: [{ path: `${name}/energie.json`, data: flow }],
+      flows: [{ path: `${name}/energie.json`, data: flow }, ...otherFlows(name)],
     } satisfies LocaleSources;
   };
   const messages = (...locales: LocaleSources[]) =>
     validateFlowSources(locales).map((issue) => `${issue.file}: ${issue.message}`);
+  /** The energy flow's messages: the shared steps' differences repeat in every flow. */
+  const energieMessages = (...locales: LocaleSources[]) =>
+    messages(...locales).filter((message) => message.startsWith('fr/energie.json: '));
 
   it('accepts identical codes, and needs nl as the reference', () => {
     expect(messages(locale('nl'), locale('fr'))).toEqual([]);
@@ -109,13 +127,9 @@ describe('validate:flows across locales', () => {
 
   it('reports flows without an nl version', () => {
     const fr = locale('fr');
-    fr.flows.push({
-      path: 'fr/zonnepanelen.json',
-      data: readFixture('valid/nl/zonnepanelen.json'),
-    });
-    expect(messages(locale('nl'), fr)).toEqual([
-      'fr/zonnepanelen.json: no nl version of this flow',
-    ]);
+    const extra = { ...(readFixture('valid/nl/zonnepanelen.json') as any), id: 'extra' };
+    fr.flows.push({ path: 'fr/extra.json', data: extra });
+    expect(messages(locale('nl'), fr)).toEqual(['fr/extra.json: no nl version of this flow']);
   });
 
   it('reports every code difference', () => {
@@ -126,13 +140,19 @@ describe('validate:flows across locales', () => {
       flow.version = 2;
       delete shared.steps[0].fields[0].options[0].product;
     });
-    expect(messages(locale('nl'), changed)).toEqual([
+    expect(energieMessages(locale('nl'), changed)).toEqual([
       'fr/energie.json: version must match nl/energie.json: "1" there, "2" here',
       'fr/energie.json: field "product_choice" option "electricity" must match nl/energie.json: "product energie, sets {"energy_type":"electricity"}" there, "product -, sets {"energy_type":"electricity"}" here',
+      'fr/energie.json: step "supplier" fields must match nl/energie.json: "supplier" there, "supplier, new_field" here',
       'fr/energie.json: field "household_size" type must match nl/energie.json: "select" there, "single_choice" here',
+      'fr/energie.json: step "appliances" fields must match nl/energie.json: "heat_pump, electric_car" there, "heat_pump" here',
       'fr/energie.json: field "electric_car" type must match nl/energie.json: "yes_no" there, "(none)" here',
+      'fr/energie.json: field "electric_car" payload must match nl/energie.json: "answers" there, "(none)" here',
+      'fr/energie.json: field "electric_car" required must match nl/energie.json: "true" there, "(none)" here',
       'fr/energie.json: field "electric_car" options must match nl/energie.json: "yes, no" there, "(none)" here',
       'fr/energie.json: field "new_field" type must match nl/energie.json: "(none)" there, "text" here',
+      'fr/energie.json: field "new_field" payload must match nl/energie.json: "(none)" there, "answers" here',
+      'fr/energie.json: field "new_field" required must match nl/energie.json: "(none)" there, "false" here',
     ]);
   });
 });
@@ -346,7 +366,7 @@ describe('validate:flows loader and script', () => {
   it('exits 0 for valid flows and none, 1 with the problems otherwise', () => {
     const valid = run(join(FIXTURES, 'valid'));
     expect(valid.status).toBe(0);
-    expect(valid.stdout).toContain('2 flow(s) in 1 locale(s) are valid');
+    expect(valid.stdout).toContain('3 flow(s) in 1 locale(s) are valid');
     const empty = run(mkdtempSync(join(tmpdir(), 'vv-flows-')));
     expect(empty.status).toBe(0);
     expect(empty.stdout).toContain('no flow files yet');
@@ -354,5 +374,243 @@ describe('validate:flows loader and script', () => {
     expect(broken.status).toBe(1);
     expect(broken.stderr).toContain('12 problem(s)');
     expect(broken.stderr).toContain('nl/loop.json: loop: a → b → a');
+  });
+});
+
+describe('validate:flows edge cases', () => {
+  it('accepts only a JSONLogic operation as a condition', () => {
+    const notAnOperation =
+      'a condition is one JSONLogic operation, such as { "var": "has_solar" } (not a list or a literal)';
+    // Wrapped in a list, the rule evaluates to [false]: a non-empty list, so always true.
+    expect(
+      mutated((flow) => {
+        step(flow, 'knows_consumption').next[0].if = [
+          { '==': [{ var: 'knows_consumption' }, 'yes'] },
+        ];
+      }),
+    ).toEqual([`nl/energie.json: steps.6.next.0.if: ${notAnOperation}`]);
+    expect(mutated((flow) => (step(flow, 'supplier').visibleIf = 'false'))).toEqual([
+      `nl/energie.json: steps.2.visibleIf: ${notAnOperation}`,
+    ]);
+    // A literal first entry would make the later ones dead.
+    expect(mutated((flow) => (step(flow, 'knows_consumption').next[0].if = true))).toEqual([
+      `nl/energie.json: steps.6.next.0.if: ${notAnOperation}`,
+    ]);
+    expect(mutated((flow) => (step(flow, 'supplier').fields[0].visibleIf = null))).toEqual([
+      `nl/energie.json: steps.2.fields.0.visibleIf: ${notAnOperation}`,
+    ]);
+  });
+
+  it('needs a flow for every product an option continues in', () => {
+    const nl = (...names: string[]): LocaleSources => ({
+      locale: 'nl',
+      shared: { path: 'nl/_shared.json', data: readFixture('valid/nl/_shared.json') },
+      flows: names.map((name) => ({
+        path: `nl/${name}.json`,
+        data: structuredClone(readFixture(`valid/nl/${name}.json`)),
+      })),
+    });
+    const missing = (file: string, code: string) =>
+      `${file}: field "product_choice": option "${code}" continues in the "${code}" flow, but nl has no flow with product "${code}"`;
+    const messages = (locale: LocaleSources) =>
+      validateFlowSources([locale]).map(({ file, message }) => `${file}: ${message}`);
+    // The shared step is used by both flows: reported once, against _shared.json.
+    expect(messages(nl('energie', 'zonnepanelen'))).toEqual([
+      missing('nl/_shared.json', 'thuisbatterij'),
+    ]);
+    // An own step's option is reported against its flow.
+    const own = nl('energie');
+    const flow = own.flows[0]!.data as any;
+    const productStep = (readFixture('valid/nl/_shared.json') as any).steps[0];
+    flow.steps[0] = { ...productStep, id: 'product_own', next: [{ goto: 'postcode' }] };
+    flow.firstStep = 'product_own';
+    expect(messages(own)).toEqual([
+      missing('nl/energie.json', 'zonnepanelen'),
+      missing('nl/energie.json', 'thuisbatterij'),
+    ]);
+  });
+
+  it('keeps the fields of the contact step that must be filled in unconditional', () => {
+    const conditional = (id: string) =>
+      `nl/energie.json: the "contact" step is always shown: its required field "${id}" can't have a visibleIf`;
+    expect(
+      mutated((_, shared) => {
+        for (const contactField of shared.steps[2].fields) {
+          contactField.visibleIf = { '!': [{ var: 'derived.preselected' }] };
+        }
+      }),
+    ).toEqual([
+      ...['first_name', 'last_name', 'phone', 'email', 'call_moment', 'terms'].map(conditional),
+      'nl/energie.json: the "contact" step needs a field without a visibleIf, or it can be skipped',
+    ]);
+    // Without a contact step, only the missing reference is reported (and the broken gotos).
+    expect(
+      mutated((flow) => {
+        flow.steps.pop();
+        step(flow, 'consumption_kwh').next = [{ goto: 'appliances' }];
+        step(flow, 'appliances').next = [];
+      }),
+    ).toEqual([
+      'nl/energie.json: the flow must end with the shared "contact" step ({ "use": "contact" })',
+      'nl/energie.json: step "appliances" is a dead end: it has no next, so its path never reaches "contact"',
+    ]);
+    // An optional field may be conditional.
+    expect(
+      mutated((_, shared) => {
+        shared.steps[2].fields[6].visibleIf = { '!': [{ var: 'derived.preselected' }] };
+      }),
+    ).toEqual([]);
+  });
+
+  it('checks derived values: region codes and preselected booleans', () => {
+    const on = (rule: unknown) => (flow: any) => (step(flow, 'supplier').visibleIf = rule);
+    expect(mutated(on({ '==': [{ var: 'derived.region' }, 'vlaanderen'] }))).toEqual([
+      'nl/energie.json: step "supplier" visibleIf: compares "derived.region" with "vlaanderen", which is not one of its codes (flanders, wallonia, brussels)',
+    ]);
+    expect(mutated(on({ in: [{ var: 'derived.region' }, ['flanders', 'brussels']] }))).toEqual([]);
+    expect(mutated(on({ '==': [{ var: 'derived.preselected' }, 'yes'] }))).toEqual([
+      'nl/energie.json: step "supplier" visibleIf: compares "derived.preselected" with "yes", which is not true or false',
+    ]);
+    expect(mutated(on({ '!=': [1, { var: 'derived.preselected' }] }))).toEqual([
+      'nl/energie.json: step "supplier" visibleIf: compares "derived.preselected" with 1, which is not true or false',
+    ]);
+    expect(
+      mutated(
+        on({
+          and: [
+            { '==': [{ var: 'derived.preselected' }, false] },
+            { '!=': [{ var: 'derived.preselected' }, null] },
+            { '==': [{ var: 'derived.postcode' }, '9000'] },
+          ],
+        }),
+      ),
+    ).toEqual([]);
+    // The list matches the regions the postcode validator derives.
+    expect(['1000', '1300', '9000'].map(regionFor)).toEqual(['brussels', 'wallonia', 'flanders']);
+    expect([...REGIONS].sort()).toEqual(['brussels', 'flanders', 'wallonia']);
+    expect(REGIONS satisfies readonly Region[]).toHaveLength(3);
+  });
+
+  it('rejects ids that are built-in object properties', () => {
+    for (const id of ['constructor', 'hasOwnProperty', 'toString', '__proto__']) {
+      expect(flowId.safeParse(id).success).toBe(false);
+    }
+    expect(flowId.safeParse('constructor').error?.issues.map((issue) => issue.message)).toEqual([
+      '"constructor" is reserved (a built-in property of every object)',
+    ]);
+    expect(mutated((flow) => (step(flow, 'supplier').fields[0].id = 'constructor'))).toEqual([
+      'nl/energie.json: steps.2.fields.0.id: "constructor" is reserved (a built-in property of every object)',
+    ]);
+    const withSets = mutated((_, shared) => {
+      shared.steps[0].fields[0].options[3].sets = { constructor: 'x' };
+    });
+    expect(withSets).toHaveLength(1);
+    expect(withSets[0]).toMatch(/^nl\/_shared\.json: steps\.0\.fields\.0\.options\.3\.sets/);
+  });
+
+  it('lets a field condition read only the fields above it on its step', () => {
+    const onField = (index: number, rule: unknown) => (_: any, shared: any) => {
+      shared.steps[1].fields[index].visibleIf = rule;
+    };
+    // Hidden until checked, which can't happen.
+    expect(mutated(onField(1, { var: 'is_business' }))).toEqual([
+      'nl/energie.json: field "is_business" visibleIf: reads its own value ("is_business"), so it is never shown',
+    ]);
+    expect(mutated(onField(0, { var: 'is_business' }))).toEqual([
+      'nl/energie.json: field "postcode" visibleIf: reads "is_business" before it is asked (step "postcode")',
+    ]);
+    // An answer implied by the field's own options is its own value too.
+    expect(
+      mutated((_, shared) => {
+        shared.steps[0].fields[0].visibleIf = { '!': [{ var: 'energy_type' }] };
+      }),
+    ).toEqual([
+      'nl/energie.json: field "product_choice" visibleIf: reads its own value ("energy_type"), so it is never shown',
+    ]);
+    // A next entry reads any field of its step.
+    expect(
+      mutated((flow) => {
+        step(flow, 'appliances').next = [
+          { if: { '==': [{ var: 'heat_pump' }, 'yes'] }, goto: 'contact' },
+          { goto: 'contact' },
+        ];
+      }),
+    ).toEqual([]);
+  });
+
+  it('names the key that is wrong in an own step or a reference', () => {
+    expect(mutated((flow) => delete step(flow, 'supplier').title)).toEqual([
+      'nl/energie.json: steps.2.title: Invalid input: expected string, received undefined',
+    ]);
+    expect(mutated((flow) => (step(flow, 'supplier').fields[0].type = 'dropdown'))).toHaveLength(1);
+    expect(mutated((flow) => (step(flow, 'supplier').fields[0].type = 'dropdown'))[0]).toMatch(
+      /^nl\/energie\.json: steps\.2\.fields\.0\.type: /,
+    );
+    expect(mutated((flow) => (step(flow, 'postcode').nxt = []))).toEqual([
+      'nl/energie.json: steps.1: Unrecognized key: "nxt"',
+    ]);
+    expect(mutated((flow) => (step(flow, 'postcode').use = 'Postcode'))).toEqual([
+      'nl/energie.json: steps.1.use: a snake_case id such as meter_type',
+    ]);
+  });
+});
+
+describe('validate:flows across locales: payload and branching', () => {
+  const fr = (change: (flow: any, shared: any) => void): LocaleSources => {
+    const flow = structuredClone(readFixture('valid/nl/energie.json')) as any;
+    const shared = structuredClone(readFixture('valid/nl/_shared.json')) as any;
+    delete flow.locale;
+    change(flow, shared);
+    return {
+      locale: 'fr',
+      shared: { path: 'fr/_shared.json', data: shared },
+      flows: [{ path: 'fr/energie.json', data: flow }, ...otherFlows('fr')],
+    };
+  };
+  const nl: LocaleSources = {
+    locale: 'nl',
+    shared: { path: 'nl/_shared.json', data: readFixture('valid/nl/_shared.json') },
+    flows: [
+      { path: 'nl/energie.json', data: readFixture('valid/nl/energie.json') },
+      ...otherFlows('nl'),
+    ],
+  };
+  /** The energy flow's messages: the shared steps' differences repeat in every flow. */
+  const energieMessages = (other: LocaleSources) =>
+    validateFlowSources([nl, other])
+      .filter(({ file }) => file === 'fr/energie.json')
+      .map(({ message }) => message);
+
+  it('compares payload targets and required flags', () => {
+    expect(
+      energieMessages(
+        fr((_, shared) => {
+          shared.steps[2].fields[2].payload = 'answers';
+          shared.steps[2].fields[5].required = false;
+        }),
+      ),
+    ).toEqual([
+      'field "phone" payload must match nl/energie.json: "contact" there, "answers" here',
+      'field "terms" required must match nl/energie.json: "true" there, "false" here',
+    ]);
+  });
+
+  it('compares the fields of each step and the branching', () => {
+    expect(
+      energieMessages(
+        fr((flow) => {
+          const appliances = step(flow, 'appliances');
+          appliances.fields.reverse();
+          step(flow, 'knows_consumption').next[0].if['=='][1] = 'no';
+          step(flow, 'meter_type').visibleIf = { var: 'energy_type' };
+          delete step(flow, 'meters_solar').fields[1].visibleIf;
+        }),
+      ),
+    ).toEqual([
+      'step "meter_type" visibleIf must match nl/energie.json: "{"in":[{"var":"energy_type"},["electricity","both"]]}" there, "{"var":"energy_type"}" here',
+      'field "has_solar" visibleIf must match nl/energie.json: "{"in":[{"var":"energy_type"},["electricity","both"]]}" there, "(none)" here',
+      'step "knows_consumption" next must match nl/energie.json: "{"==":[{"var":"knows_consumption"},"yes"]} → consumption_kwh, (always) → household" there, "{"==":[{"var":"knows_consumption"},"no"]} → consumption_kwh, (always) → household" here',
+      'step "appliances" fields must match nl/energie.json: "heat_pump, electric_car" there, "electric_car, heat_pump" here',
+    ]);
   });
 });
