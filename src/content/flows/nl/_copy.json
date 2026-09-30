@@ -2,6 +2,44 @@
   "buttons": { "back": "Terug", "next": "Volgende", "submit": "Verstuur" },
   "progress": "Stap {step} van {total}",
   "yesNo": { "yes": "Ja", "no": "Nee" },
+  "phonePrefix": "+32",
+  "panel": {
+    "energie": {
+      "title": "Vind je beste energiedeal, zonder gedoe.",
+      "body": "In een paar eenvoudige stappen verzamelen we precies wat nodig is voor een persoonlijke vergelijking.",
+      "image": "mascot/fox-laptop-energy"
+    },
+    "zonnepanelen": {
+      "title": "Vind je beste energiedeal, zonder gedoe.",
+      "body": "In een paar eenvoudige stappen verzamelen we precies wat nodig is voor een persoonlijke vergelijking.",
+      "image": "mascot/fox-laptop",
+      "todo": "2.4"
+    },
+    "thuisbatterij": {
+      "title": "Vind je beste energiedeal, zonder gedoe.",
+      "body": "In een paar eenvoudige stappen verzamelen we precies wat nodig is voor een persoonlijke vergelijking.",
+      "image": "mascot/fox-laptop",
+      "todo": "2.4"
+    }
+  },
+  "pages": {
+    "vergelijken": {
+      "title": "Wat wil je vergelijken?",
+      "description": "In een paar eenvoudige stappen verzamelen we precies wat nodig is voor een persoonlijke vergelijking."
+    },
+    "energie": {
+      "title": "Vergelijk je energiecontract",
+      "description": "In een paar eenvoudige stappen verzamelen we precies wat nodig is voor een persoonlijke vergelijking."
+    },
+    "zonnepanelen": {
+      "title": "Vergelijk zonnepanelen",
+      "description": "In een paar eenvoudige stappen verzamelen we precies wat nodig is voor een persoonlijke vergelijking."
+    },
+    "thuisbatterij": {
+      "title": "Vergelijk thuisbatterijen",
+      "description": "In een paar eenvoudige stappen verzamelen we precies wat nodig is voor een persoonlijke vergelijking."
+    }
+  },
   "errors": {
     "required": "Vul dit veld in.",
     "invalid_type": "Er ging iets mis met dit antwoord. Probeer het opnieuw.",

@@ -1,0 +1,97 @@
+---
+// The form on /vergelijken and /vergelijken/<product> (brief §5, §7): loads the flows and copy,
+// resolves the icons and images the island needs (it can't use astro:assets), and renders the
+// island with its first step on the server (client:load, never client:only: brief §6.1). The
+// preselected pages render on demand and pass their query, so ?energie= is applied in that
+// first step already (nothing flashes before hydration).
+import { getImage } from 'astro:assets';
+
+import flagBe from '../../assets/images/flags/be.png';
+import { iconUrl, image } from '../../lib/assets';
+import { PRODUCTS, type Product } from '../../lib/flow/types';
+import { loadFormContent } from '../../lib/form-content';
+import { urlPreselects } from '../../lib/form/initial';
+import { formIconKeys } from '../../lib/form/labels';
+import { productPagePath } from '../../lib/form/submit';
+import type { FormEntry, FormFlows, FormPanel, ResolvedImage } from '../../lib/form/types';
+import FormIsland from './FormIsland';
+
+interface Props {
+  entry: FormEntry;
+  /** The request's query (on-demand pages only): ?energie= preselects the energy type. */
+  search?: string;
+}
+
+const { entry, search = '' } = Astro.props;
+const { flows: allFlows, copy } = await loadFormContent();
+const products: readonly Product[] = entry === 'vergelijken' ? PRODUCTS : [entry];
+const product: Product = entry === 'vergelijken' ? 'energie' : entry;
+const preselected = entry !== 'vergelijken';
+
+const flows: FormFlows = Object.fromEntries(products.map((key) => [key, allFlows[key]]));
+// Only the validated preselect reaches the island's props, never the rest of the query.
+const preselect = urlPreselects(allFlows[product], search, preselected);
+const icons = Object.fromEntries(formIconKeys(flows).map((key) => [key, iconUrl(key)]));
+
+// The panel mascot: 80 px in the mobile header, 323 px in the desktop panel (Figma 89:7439).
+const MASCOT_WIDTHS = [80, 160, 240, 323, 646, 969];
+const MASCOT_SIZES = '(min-width: 64rem) 323px, 80px';
+async function responsive(key: string): Promise<ResolvedImage> {
+  const meta = image(key);
+  const widths = MASCOT_WIDTHS.filter((width) => width <= meta.width);
+  const [avif, webp] = await Promise.all(
+    (['avif', 'webp'] as const).map((format) => getImage({ src: meta, widths, format })),
+  );
+  return {
+    src: webp!.src,
+    width: meta.width,
+    height: meta.height,
+    sizes: MASCOT_SIZES,
+    sources: [
+      { type: 'image/avif', srcset: avif!.srcSet.attribute },
+      { type: 'image/webp', srcset: webp!.srcSet.attribute },
+    ],
+  };
+}
+
+const panels: Partial<Record<Product, FormPanel>> = {};
+for (const key of products) {
+  const { title, body, image: imageKey } = copy.panel[key];
+  panels[key] = { title, body, image: await responsive(imageKey) };
+}
+
+const { panel: _panel, pages: _pages, ...formCopy } = copy;
+const flag = { src: flagBe.src, width: flagBe.width, height: flagBe.height };
+const backHref = preselected ? productPagePath(product) : '/';
+---
+
+<div class="mx-auto w-full max-w-form px-4 pt-4 pb-12 md:px-6 md:pt-8 lg:pt-[117px] lg:pb-[142px] xl:px-0">
+  <FormIsland
+    client:load
+    entry={entry}
+    flows={flows}
+    product={product}
+    preselected={preselected}
+    preselect={preselect}
+    copy={formCopy}
+    icons={icons}
+    panels={panels}
+    flag={flag}
+    backHref={backHref}
+  />
+  {/*
+    Before hydration the server-rendered <form> would submit natively (a GET that puts the
+    answers in the URL and drops the landing query). "Volgende" is disabled until then; this
+    also cancels any other native submit. The island always handles the submit itself, so it
+    stays on: preventDefault doesn't stop React's own handler.
+  */}
+  <script is:inline>
+    document.currentScript.parentElement.addEventListener(
+      'submit',
+      function (event) {
+        event.preventDefault();
+      },
+      true,
+    );
+  </script>
+</div>

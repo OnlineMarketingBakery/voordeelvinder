@@ -28,6 +28,7 @@
   --color-lime-50: #f8fceb; /* solar block */
   --color-lime-300: #c9e260; /* pill CTAs (header, hero, product blocks, CTA band, FAQ), top strip, highlight chip */
   --color-lime-400: #b7e137; /* form Volgende/Indienen, Abonneren, table column, accent bars (one button lime TO CONFIRM, CONTENT-TODO 5.3) */
+  --color-lime-600: #93b52a; /* the "Nee" card icon (Figma 90:9468); decorative only, 2.4:1 on white (CONTENT-TODO 5.2) */
 
   /* Ink */
   --color-ink-900: #03080f; /* headings, labels, button text */

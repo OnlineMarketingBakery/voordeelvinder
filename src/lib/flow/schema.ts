@@ -14,7 +14,7 @@
 // Build time only (Zod, node:fs via asset-keys): the engine imports these types, not the file.
 import { z } from 'zod';
 
-import { iconKeys } from '../asset-keys';
+import { iconKeys, imageKeys } from '../asset-keys';
 import { inspectLogic, isOperator, type JsonValue } from './logic';
 import { PRODUCTS } from './types';
 import { ERROR_CODES, WARNING_CODES } from './validators/errors';
@@ -280,12 +280,43 @@ const template = (...tokens: string[]) =>
     message: `must contain ${tokens.map((token) => `{${token}}`).join(' and ')}`,
   });
 
+/** A CONTENT-TODO row, e.g. "2.4": the copy is a fallback until that row is resolved. */
+const todoRow = z.string().regex(/^\d+\.\d+[a-z]?$/, 'a docs/CONTENT-TODO.md row such as 2.4');
+
+/** The purple side panel of one product's form (Figma 88:7430): title, body and mascot. */
+const panelCopy = z.strictObject({
+  /** The form page's h1. */
+  title: text,
+  body: text,
+  /** An image key (src/assets/images), e.g. "mascot/fox-laptop-energy". Decorative. */
+  image: z.enum(imageKeys),
+  todo: todoRow.optional(),
+});
+
+/** SEO fields of a form page. */
+const formPageSeo = z.strictObject({ title: text, description: text.optional() });
+
 /**
  * The form's interface copy per locale (<locale>/_copy.json): what the island shows around the
  * questions. Error messages are keyed by the validators' error codes (validators/errors.ts);
  * they may use the placeholders {min}, {max} and {unit} (number fields) and {maxLength} (text).
  */
 export const flowCopyFile = z.strictObject({
+  /** The fixed country code shown in front of phone fields (brief §6: +32, no picker). */
+  phonePrefix: text,
+  /** The side panel per product flow (on /vergelijken it follows the chosen product). */
+  panel: z.strictObject({
+    energie: panelCopy,
+    zonnepanelen: panelCopy,
+    thuisbatterij: panelCopy,
+  }),
+  /** SEO of /vergelijken and /vergelijken/<product>. */
+  pages: z.strictObject({
+    vergelijken: formPageSeo,
+    energie: formPageSeo,
+    zonnepanelen: formPageSeo,
+    thuisbatterij: formPageSeo,
+  }),
   buttons: z.strictObject({ back: text, next: text, submit: text }),
   /** "Stap {step} van {total}" (brief §7.6; engine progress()). */
   progress: template('step', 'total'),
@@ -310,6 +341,7 @@ export type StepRef = z.infer<typeof stepRef>;
 export type FlowFile = z.infer<typeof flowFile>;
 export type SharedStepsFile = z.infer<typeof sharedStepsFile>;
 export type FlowCopy = z.infer<typeof flowCopyFile>;
+export type FormPanelCopy = z.infer<typeof panelCopy>;
 
 /** A flow with its shared steps filled in (src/lib/flow/resolve.ts): what the engine runs. */
 export type Flow = Omit<FlowFile, 'steps'> & { steps: Step[] };

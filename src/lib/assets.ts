@@ -48,5 +48,11 @@ export function icon(key: string): ResolvedIcon {
   throw new Error(`Unknown icon "${key}" (src/assets/icons)`);
 }
 
+/** The URL of an icon's file, for code that draws it as a mask (the form island). */
+export function iconUrl(key: string): string {
+  const resolved = icon(key);
+  return resolved.kind === 'svg' ? resolved.Component.src : resolved.src;
+}
+
 export const allImageKeys = [...imageMap.keys()].sort();
 export const allIconKeys = [...svgIconMap.keys(), ...maskIconMap.keys()].sort();

@@ -6,28 +6,30 @@ deviate from it are recorded in `docs/decisions/`.
 
 ## Repo map
 
-| Path                                   | What lives there                                                                                                                   |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `src/content.config.ts`                | Every content collection and its Zod schema                                                                                        |
-| `src/content/site.json`                | Site-wide copy and settings                                                                                                        |
-| `src/content/pages/*.json`             | Page copy as an ordered list of typed section blocks                                                                               |
-| `src/content/flows/nl/*.json`          | Form flows (codes: `docs/FLOWS.md`); `_shared.json`: shared steps and switches (gas); `_copy.json`: the form's interface copy      |
-| `src/content/legal`, `blog`, `landing` | Markdown: legal pages, blog posts, campaign landing variants (Phase 3)                                                             |
-| `src/components/sections/`             | One Astro component per section block type; `Sections.astro` maps type → component                                                 |
-| `src/components/site/`, `ui/`          | Header/Footer (copy from `site.json`); Button, SectionPill, Logo, Container, Prose                                                 |
-| `src/components/blog/`, `legal/`       | Blog listing/post parts (cards, pagination, post nav); legal title band and table of contents                                      |
-| `src/layouts/Page.astro`               | Standard page: header, `<main id="main">`, footer                                                                                  |
-| `src/layouts/`                         | Layouts: `Base.astro` (`<head>`, robots, canonical), `ContentPage.astro` (pages/*.json route), `LegalPage.astro`, `BlogPost.astro` |
-| `src/pages/`                           | Routes; `api/*` are on-demand (`export const prerender = false`)                                                                   |
-| `src/server/env.ts`                    | Typed, validated server environment. The only reader of `process.env`                                                              |
-| `src/server/rules/`                    | Qualification rules — server-only, never shipped to the browser (Phase 5)                                                          |
-| `src/server/lead/`                     | Lead pipeline: validate, derive, classify, backup, forward, rate limit (Phase 5)                                                   |
-| `src/lib/`                             | Framework-free logic (`seo/`, `flow/` engine, JSONLogic subset and flow validation, `motion.ts`)                                   |
-| `src/styles/global.css`                | Tailwind entry and design tokens (`@theme`)                                                                                        |
-| `scripts/`                             | `deploy.sh` (run by Ploi), `validate-flows.ts`, cron jobs `leads-retry.ts`, `backups-prune.ts`                                     |
-| `tests/unit`, `tests/e2e`              | Vitest and Playwright (+ axe)                                                                                                      |
-| `server.mjs`, `ecosystem.config.cjs`   | Production entry (loads `.env`) and its PM2 definition                                                                             |
-| `docs/`                                | Brief, decisions (ADRs), content to-do list, design review, ops runbook                                                            |
+| Path                                   | What lives there                                                                                                                                   |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/content.config.ts`                | Every content collection and its Zod schema                                                                                                        |
+| `src/content/site.json`                | Site-wide copy and settings                                                                                                                        |
+| `src/content/pages/*.json`             | Page copy as an ordered list of typed section blocks                                                                                               |
+| `src/content/flows/nl/*.json`          | Form flows (codes: `docs/FLOWS.md`); `_shared.json`: shared steps and switches (gas); `_copy.json`: the form's interface copy                      |
+| `src/content/legal`, `blog`, `landing` | Markdown: legal pages, blog posts, campaign landing variants (Phase 3)                                                                             |
+| `src/components/sections/`             | One Astro component per section block type; `Sections.astro` maps type → component                                                                 |
+| `src/components/site/`, `ui/`          | Header/Footer (copy from `site.json`); Button, SectionPill, Logo, Container, Prose                                                                 |
+| `src/components/blog/`, `legal/`       | Blog listing/post parts (cards, pagination, post nav); legal title band and table of contents                                                      |
+| `src/components/form/`                 | The form island (React): `Form.astro` resolves content, icons and images; `FormIsland.tsx` runs the engine; `fields/` one component per field type |
+| `src/lib/form/`                        | The island's framework-free helpers: session storage, start state (URL preselect, restore), messages, labels, submit stub                          |
+| `src/layouts/Page.astro`               | Standard page: header, `<main id="main">`, footer                                                                                                  |
+| `src/layouts/`                         | Layouts: `Base.astro` (`<head>`, robots, canonical), `ContentPage.astro` (pages/*.json route), `LegalPage.astro`, `BlogPost.astro`                 |
+| `src/pages/`                           | Routes; `api/*` and `vergelijken/[product]` are on-demand (`export const prerender = false`)                                                       |
+| `src/server/env.ts`                    | Typed, validated server environment. The only reader of `process.env`                                                                              |
+| `src/server/rules/`                    | Qualification rules — server-only, never shipped to the browser (Phase 5)                                                                          |
+| `src/server/lead/`                     | Lead pipeline: validate, derive, classify, backup, forward, rate limit (Phase 5)                                                                   |
+| `src/lib/`                             | Framework-free logic (`seo/`, `flow/` engine, JSONLogic subset and flow validation, `motion.ts`)                                                   |
+| `src/styles/global.css`                | Tailwind entry and design tokens (`@theme`)                                                                                                        |
+| `scripts/`                             | `deploy.sh` (run by Ploi), `validate-flows.ts`, cron jobs `leads-retry.ts`, `backups-prune.ts`                                                     |
+| `tests/unit`, `tests/e2e`              | Vitest and Playwright (+ axe)                                                                                                                      |
+| `server.mjs`, `ecosystem.config.cjs`   | Production entry (loads `.env`) and its PM2 definition                                                                                             |
+| `docs/`                                | Brief, decisions (ADRs), content to-do list, design review, ops runbook                                                                            |
 
 ## Commands
 
