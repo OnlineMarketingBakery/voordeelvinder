@@ -8,13 +8,13 @@ lead sheet and the Meta forms (AGENTS.md rule 4: never change a code once live).
 
 ## Files
 
-| File                    | Holds                                                                                                                                                                                                                                        |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `nl/_shared.json`       | `switches` (`{ "gas": true }`) and the shared steps: `product`, `postcode`, `knows_consumption`, `household`, `appliances`, `contact`                                                                                                        |
-| `nl/energie.json`       | The energy flow (brief §7.3)                                                                                                                                                                                                                 |
-| `nl/zonnepanelen.json`  | The solar panel flow (§7.4 DRAFT; n8n: `pending`, ADR 0009)                                                                                                                                                                                  |
-| `nl/thuisbatterij.json` | The home battery flow (§7.4 DRAFT; n8n: `pending`, ADR 0009)                                                                                                                                                                                 |
-| `nl/_copy.json`         | The form's interface copy: buttons, progress, yes/no labels, error messages, e-mail suggestion, `phonePrefix`, the side `panel` per product and the form pages' SEO (`pages`); `settings.autoAdvance` switches auto-advance (docs/MOTION.md) |
+| File                    | Holds                                                                                                                                                                                                                                                                      |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nl/_shared.json`       | `switches` (`{ "gas": true }`) and the shared steps: `product`, `postcode`, `knows_consumption`, `household`, `appliances`, `contact`                                                                                                                                      |
+| `nl/energie.json`       | The energy flow (brief §7.3)                                                                                                                                                                                                                                               |
+| `nl/zonnepanelen.json`  | The solar panel flow (§7.4 DRAFT; n8n: `pending`, ADR 0009)                                                                                                                                                                                                                |
+| `nl/thuisbatterij.json` | The home battery flow (§7.4 DRAFT; n8n: `pending`, ADR 0009)                                                                                                                                                                                                               |
+| `nl/_copy.json`         | The form's interface copy: buttons, progress, yes/no labels, error messages, e-mail suggestion, send errors (`submitErrors`), `phonePrefix`, the side `panel` per product and the form pages' SEO (`pages`); `settings.autoAdvance` switches auto-advance (docs/MOTION.md) |
 
 ## How the form island reads them
 
@@ -92,8 +92,8 @@ with `client:load`. Both are indexable (brief §11: only the thank-you pages and
   `voordeelvinder:form:` key), not only its own.
 - **Duplicated tabs (known limitation):** browsers copy `sessionStorage` into a duplicated tab,
   so the copy continues with the same `leadId`/`eventId`. When both tabs submit the same
-  product, the second lead looks like a double submit to `/api/lead` (idempotent on `lead_id`,
-  Phase 5) and Meta dedupes the two events. Switching product in one tab avoids it (new ids);
+  product, the second lead looks like a double submit to `/api/lead` (idempotent on `lead_id`)
+  and Meta dedupes the two events. Switching product in one tab avoids it (new ids);
   telling the tabs apart would need a per-tab token and a BroadcastChannel check.
 - **Validation:** text-like fields validate on blur once something is typed; "Volgende" runs
   `validateStep`, shows every error under its field (`aria-describedby`; for cards and chips on
@@ -103,15 +103,35 @@ with `client:load`. Both are indexable (brief §11: only the thank-you pages and
 - **Double click:** a "Volgende" within `STEP_GUARD_MS` (350 ms) of the previous one moving
   forward, with nothing answered in between, is ignored (`isRepeatSubmit`): a double click or
   double tap moves one step, and never validates or submits the next step unseen.
-- **Submit (Phase 4):** "Verstuur" validates, builds the submission (`buildSubmission`), locks
-  the button, clears the sessions and goes to `/bedankt/<product>` (the thank-you page,
-  `src/content/pages/bedankt.json`: same copy for every product, noindex, nothing personal on
-  it). Nothing is sent
-  (`sendLead` in `src/lib/form/submit.ts` is a stub until Phase 5) and nothing is logged. When
-  the submission can't be built (an answer on the path no longer validates), the form goes to the
-  first invalid step and shows its errors. Phase 5 adds the error for a failed send (TODO in
-  `FormIsland.tsx`) and keeps `?test=1` for the session with the TESTMODUS badge (TODO in
-  `submissionContext`, brief §9.4).
+- **Submit:** "Verstuur" validates, builds the submission (`buildSubmission`), locks the button
+  and posts it to `POST /api/lead` (`sendLead` in `src/lib/form/submit.ts`): JSON, the
+  submission plus `website` (the honeypot, a hidden text input on the last step, not a flow
+  field) and `turnstile_token`; 15 s timeout per attempt; one automatic retry after 1.5 s on a
+  503 (or 502/504) or a network failure, with the same `lead_id` and a new Turnstile token (a
+  token is good for one check). On `{ ok: true, redirect }` it clears every form session, saves
+  `voordeelvinder:lead-safe` = `{ event_id, product }` (brief §9.1 step 9) and the morph marker,
+  and goes to the redirect (`/bedankt/<product>`: same copy for every product, noindex, nothing
+  personal on it). The thank-you page celebrates only with that flag for its product and removes
+  it (`src/scripts/celebrate.ts`), so a direct visit or a reload doesn't; Phase 6 pushes
+  `generate_lead` from the same read. On a failure the button unlocks, the answers stay, and
+  `_copy.json` `submitErrors[kind]` shows above the buttons and in the `aria-live` region:
+  `invalid` (400/413/415, also a flow changed by a deploy: with a "Pagina vernieuwen" button),
+  `turnstile` (403), `rate_limit` (429), `unavailable` (503 after the retry, other server
+  errors), `network`. Nothing is logged but the kind. When the submission can't be built (an
+  answer on the path no longer validates), the form goes to the first invalid step and shows its
+  errors.
+- **Turnstile** (`src/lib/turnstile.ts`, shared with the footer newsletter;
+  `src/components/form/useTurnstile.ts`): the script (`challenges.cloudflare.com`, explicit
+  rendering) loads the first time the last step shows, never on page load; the widget
+  (`appearance: interaction-only`, action `lead`) renders above the buttons with
+  `PUBLIC_TURNSTILE_SITE_KEY`, else (never on production: the build fails) Cloudflare's test key.
+  Each token is taken once, so a retry or a second "Verstuur" gets a fresh one. "Verstuur" waits
+  up to 5 s for a token; without the script (blocked, offline) the lead is sent without one and
+  the server decides.
+- **Test mode** (brief §9.4, `src/lib/test-mode.ts`): an inline script in `Base.astro` stores
+  `voordeelvinder:test` = `1` in sessionStorage on `?test=1` (removes it on `?test=0`) and shows
+  the "TESTMODUS" badge (`site.json` `testMode.badge`) on every page while it is set; the
+  submission's `meta.test` is the URL's `?test=` or else that flag.
 - **Motion (PR 17, docs/MOTION.md):** step slides, answer-card feedback, revealed questions,
   progress, error shake and the submit spinner; only visual, nothing waits for it. **Auto-advance**
   (`settings.autoAdvance`, on): a tap or click on a card of a step whose only visible field is a
@@ -222,6 +242,12 @@ Not in the brief or the design, written for the form (informal, neutral, no clai
   "Kies een antwoord uit de lijst."; consent "Vink dit vakje aan om verder te gaan."; call moment
   "Kies een dag en een tijdstip.".
 - E-mail suggestion: "Bedoel je {suggestion}?".
+- Send errors (`submitErrors`, CONTENT-TODO 2.29): network "Het versturen lukte niet. Controleer
+  je internetverbinding en probeer het opnieuw."; unavailable "Het versturen lukte niet. Probeer
+  het over een paar minuten opnieuw."; turnstile "We konden niet bevestigen dat je geen robot
+  bent. Probeer het opnieuw."; rate_limit "Je hebt al een paar keer verstuurd. Probeer het over
+  een uur opnieuw."; invalid "Er ging iets mis met je gegevens. Vernieuw de pagina en probeer het
+  opnieuw."; reload button "Pagina vernieuwen".
 - Call moment: slot labels "09:00–10:00" … "15:00–16:00"; group labels "Dag" and "Tijdstip".
 - Household sizes (CONTENT-TODO 2.5): "1 persoon", "2 personen", "3 personen", "4 personen",
   "5 of meer".

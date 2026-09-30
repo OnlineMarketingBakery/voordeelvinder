@@ -13,6 +13,12 @@
 // for it. Auto-advance (a tap on a single-question choice step) is `settings.autoAdvance` in
 // _copy.json. The form card is named `form-card` for the page transitions from a product card
 // and into the thank-you card.
+//
+// Submit (brief §9.1, docs/FLOWS.md): "Verstuur" posts the lead to /api/lead (sendLead) with the
+// honeypot and a Turnstile token (the widget and its script exist on the last step only). On OK
+// the form leaves the "lead is safe" flag for the thank-you page and goes there; on a failure the
+// button unlocks, the answers stay, and a message from _copy.json `submitErrors` shows above the
+// buttons and is announced.
 import { prefetch } from 'astro:prefetch';
 import {
   useEffect,
@@ -46,6 +52,7 @@ import {
   type FormStart,
 } from '../../lib/form/initial';
 import { choiceOptions, domId, UI_ICONS } from '../../lib/form/labels';
+import { LEAD_SAFE_KEY, serializeLeadSafe } from '../../lib/form/lead-safe';
 import { errorMessage, liveText, progressLabel, warningMessage } from '../../lib/form/messages';
 import {
   AUTO_ADVANCE_DELAY_MS,
@@ -73,6 +80,7 @@ import {
   submissionContext,
   MORPH_MARKER,
   thanksPath,
+  type SendFailure,
 } from '../../lib/form/submit';
 import type {
   FormCopy,
@@ -81,10 +89,11 @@ import type {
   FormPanel as FormPanelData,
 } from '../../lib/form/types';
 import { FormPanel } from './FormPanel';
-import { FormMotion, StepStage } from './motion';
+import { FadeInText, FormMotion, StepStage } from './motion';
 import { ProgressCard } from './ProgressCard';
 import { StepView } from './StepView';
 import { FormButton } from './ui';
+import { useTurnstile } from './useTurnstile';
 
 export type FormIslandProps = {
   entry: FormEntry;
@@ -102,6 +111,8 @@ export type FormIslandProps = {
   flag: { src: string; width: number; height: number };
   /** Where "Terug" on the first step goes: the product page (preselected) or the home page. */
   backHref: string;
+  /** The Turnstile site key (turnstileSiteKey in Form.astro); without one, no widget. */
+  turnstileSiteKey?: string | null;
 };
 
 type Ids = { leadId: string; eventId: string };
@@ -119,6 +130,8 @@ type State = FormStart & {
   ids: Ids | null;
   restored: boolean;
   submitting: boolean;
+  /** Why the last "Verstuur" couldn't send the lead; cleared by an answer or a step change. */
+  sendError: SendFailure | null;
 };
 
 /** A scheduled auto-advance: the step it was scheduled on and the picked field. */
@@ -180,6 +193,7 @@ export default function FormIsland({
   panels,
   flag,
   backHref,
+  turnstileSiteKey = null,
 }: FormIslandProps) {
   const [state, setState] = useState<State>(() => ({
     ...serverStart(flows, pageProduct, preselected, preselect),
@@ -192,8 +206,10 @@ export default function FormIsland({
     ids: null,
     restored: false,
     submitting: false,
+    sendError: null,
   }));
   const topRef = useRef<HTMLDivElement>(null);
+  const honeypotRef = useRef<HTMLInputElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const pendingFocus = useRef<PendingFocus>(null);
   const submitting = useRef(false);
@@ -221,6 +237,11 @@ export default function FormIsland({
   const { step: stepNumber, total } = progress(flow, state.step, state.answers, derived);
   const isLast = nextStep(flow, state.step, state.answers, derived) === null;
   const panel = panels[state.product] ?? panels[pageProduct];
+  // The last step is the contact step in every flow: the honeypot and Turnstile live there.
+  const { container: turnstileBox, token: turnstileToken } = useTurnstile(
+    isLast && state.restored,
+    turnstileSiteKey,
+  );
 
   // Restore once after mounting: storage only exists in the browser, and reading it during the
   // first render would not match the server-rendered HTML.
@@ -318,6 +339,7 @@ export default function FormIsland({
       announcement: `${title}. ${label}`,
       travel,
       shake: { pulse: current.shake.pulse, fields: [] },
+      sendError: null,
     }));
   };
 
@@ -360,7 +382,7 @@ export default function FormIsland({
       // A new flow is a new lead: a duplicated tab (sessionStorage is copied) that switches
       // product then no longer shares lead_id and event_id with the original (docs/FLOWS.md).
       const ids = product === current.product ? current.ids : { leadId: newId(), eventId: newId() };
-      return { ...current, answers, product, ids, errors, suggestions, warnings };
+      return { ...current, answers, product, ids, errors, suggestions, warnings, sendError: null };
     });
   };
 
@@ -402,7 +424,7 @@ export default function FormIsland({
     if (submitting.current) return;
     cancelAutoAdvance();
     submitting.current = true;
-    setState((current) => ({ ...current, submitting: true }));
+    setState((current) => ({ ...current, submitting: true, sendError: null }));
     const ids = state.ids ?? { leadId: newId(), eventId: newId() };
     let submission: Submission;
     try {
@@ -415,6 +437,7 @@ export default function FormIsland({
           derived,
           page: window.location.pathname,
           search: window.location.search,
+          store: sessionStore(),
           now: new Date(),
         }),
       );
@@ -429,25 +452,40 @@ export default function FormIsland({
       }
       return;
     }
-    try {
-      await sendLead(submission);
-    } catch {
-      // TODO(Phase 5): show a form-level error from _copy.json in the aria-live region.
-      console.error('form: the lead could not be sent');
-      unlock();
+    const result = await sendLead(submission, {
+      turnstileToken,
+      honeypot: honeypotRef.current?.value ?? '',
+    });
+    if (!result.ok) {
+      // The answers stay; the message shows above the buttons and is announced. Only the kind
+      // is logged, never the submission.
+      console.error(`form: the lead could not be sent (${result.kind})`);
+      const text = copy.submitErrors[result.kind];
+      submitting.current = false;
+      setState((current) => ({
+        ...current,
+        submitting: false,
+        sendError: result.kind,
+        announcement: liveText(current.announcement, text),
+      }));
       return;
     }
     submitted.current = true;
     // Every form page's session, not only this one: no contact details outlive the lead.
-    clearAllSessions(sessionStore());
-    // TODO(Phase 5): once /api/lead answered OK, set the "lead is safe" flag the thank-you page
-    // reads before it celebrates (src/scripts/celebrate.ts).
+    const store = sessionStore();
+    clearAllSessions(store);
     try {
-      sessionStore()?.setItem(MORPH_MARKER, 'form-card');
+      // The thank-you page celebrates (and, Phase 6, fires generate_lead) only with this flag
+      // for its product (brief §9.1 step 9, §10; src/scripts/celebrate.ts).
+      store?.setItem(
+        LEAD_SAFE_KEY,
+        serializeLeadSafe({ event_id: submission.event_id, product: submission.product }),
+      );
+      store?.setItem(MORPH_MARKER, 'form-card');
     } catch {
-      // No storage: the thank-you page falls back to the referrer.
+      // No storage: the thank-you page shows without the cheer and falls back to the referrer.
     }
-    window.location.assign(thanksPath(state.product));
+    window.location.assign(result.redirect);
   };
 
   /**
@@ -606,7 +644,42 @@ export default function FormIsland({
                   onPick={onPick}
                 />
               </StepStage>
+              {isLast && (
+                // The honeypot (brief §9.1 step 3): hidden from people, screen readers and the
+                // tab order; bots that fill every field fill it. Not a flow field: never stored.
+                <div aria-hidden="true" className="sr-only">
+                  <input
+                    ref={honeypotRef}
+                    type="text"
+                    name="website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    defaultValue=""
+                  />
+                </div>
+              )}
               <div className="mt-auto pt-8">
+                {isLast && (
+                  // Turnstile renders here (useTurnstile); visible only when Cloudflare asks the
+                  // visitor to click. React renders nothing inside it.
+                  <div ref={turnstileBox} className="flex justify-center empty:hidden" />
+                )}
+                {state.sendError && (
+                  <div className="mb-6">
+                    <FadeInText id="formulier-verzendfout" className="text-body text-danger">
+                      {copy.submitErrors[state.sendError]}
+                    </FadeInText>
+                    {state.sendError === 'invalid' && (
+                      <button
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        className="mt-2 text-body font-semibold text-ink-900 underline underline-offset-4"
+                      >
+                        {copy.submitErrors.reload}
+                      </button>
+                    )}
+                  </div>
+                )}
                 <div className="grid grid-cols-[auto_1fr] gap-3 border-t border-lavender-400 pt-6 md:flex md:justify-between md:pt-[52px]">
                   <FormButton
                     type="button"

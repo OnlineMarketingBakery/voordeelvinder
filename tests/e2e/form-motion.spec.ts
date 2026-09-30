@@ -5,8 +5,15 @@ import { expect, test, type Page } from '@playwright/test';
 
 import copy from '../../src/content/flows/nl/_copy.json' with { type: 'json' };
 import { AUTO_ADVANCE_DELAY_MS } from '../../src/lib/form/motion';
+import { stubLead, stubTurnstile } from '../support/form-submit';
 
 const { buttons } = copy;
+
+// "Verstuur" posts to a fake /api/lead that answers OK; Turnstile is the local stub.
+test.beforeEach(async ({ page }) => {
+  await stubTurnstile(page);
+  await stubLead(page);
+});
 
 /** Opens a form page and waits until the island has hydrated and restored its session. */
 async function open(page: Page, path: string) {
@@ -228,6 +235,7 @@ test.describe('form motion: motion on', () => {
   test.use({ reducedMotion: 'no-preference' });
 
   test('clicking through as fast as possible skips no step and submits once', async ({ page }) => {
+    const bodies = await stubLead(page);
     const errors = collectErrors(page);
     const thankYou: string[] = [];
     page.on('request', (request) => {
@@ -238,6 +246,7 @@ test.describe('form motion: motion on', () => {
     await solarByTaps(page);
     await page.waitForLoadState('networkidle');
     expect(thankYou).toHaveLength(1);
+    expect(bodies).toHaveLength(1);
     expect(errors).toEqual([]);
   });
 

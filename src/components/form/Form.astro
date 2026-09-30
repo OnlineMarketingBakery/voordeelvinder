@@ -14,6 +14,7 @@ import { urlPreselects } from '../../lib/form/initial';
 import { formIconKeys } from '../../lib/form/labels';
 import { productPagePath } from '../../lib/form/submit';
 import type { FormEntry, FormFlows, FormPanel, ResolvedImage } from '../../lib/form/types';
+import { turnstileSiteKey } from '../../lib/turnstile';
 import FormIsland from './FormIsland';
 
 interface Props {
@@ -63,6 +64,9 @@ for (const key of products) {
 const { panel: _panel, pages: _pages, ...formCopy } = copy;
 const flag = { src: flagBe.src, width: flagBe.width, height: flagBe.height };
 const backHref = preselected ? productPagePath(product) : '/';
+// Public (PUBLIC_*, inlined at build time); the test key off production when it isn't set.
+// A production build without a real key fails (here and in src/server/env.ts).
+const siteKey = turnstileSiteKey(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY, __SITE_ENV__);
 ---
 
 <div class="mx-auto w-full max-w-form px-4 pt-4 pb-12 md:px-6 md:pt-8 lg:pt-[117px] lg:pb-[142px] xl:px-0">
@@ -78,6 +82,7 @@ const backHref = preselected ? productPagePath(product) : '/';
     panels={panels}
     flag={flag}
     backHref={backHref}
+    turnstileSiteKey={siteKey}
   />
   {/*
     Before hydration the server-rendered <form> would submit natively (a GET that puts the

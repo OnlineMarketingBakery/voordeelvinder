@@ -6,6 +6,7 @@ import { tokenValue } from '../../src/lib/design/tokens';
 import { cubicBezier, distance, duration, ease, seconds, spring } from '../../src/lib/motion';
 
 const css = readFileSync(new URL('../../src/styles/global.css', import.meta.url), 'utf8');
+const base = readFileSync(new URL('../../src/layouts/Base.astro', import.meta.url), 'utf8');
 const normalise = (value: string) => value.replace(/\s+/g, '');
 
 describe('motion tokens', () => {
@@ -38,8 +39,13 @@ describe('motion tokens', () => {
 });
 
 describe('page transitions', () => {
-  it('opts in to native cross-document view transitions', () => {
-    expect(normalise(css)).toContain('@view-transition{navigation:auto;}');
+  it('opts in to native cross-document view transitions, inline and first in <head>', () => {
+    // Not (only) in the external stylesheet: Chromium may check the opt-in before it arrives.
+    const head = normalise(base.slice(base.indexOf('<head>'), base.indexOf('</head>')));
+    const optIn = head.indexOf('<styleis:inline>@view-transition{navigation:auto;}</style>');
+    expect(optIn).toBeGreaterThan(-1);
+    expect(head.indexOf('<script')).toBeGreaterThan(optIn);
+    expect(head.indexOf('<link')).toBeGreaterThan(optIn);
   });
 
   it('keeps the header still without blending two header snapshots', () => {

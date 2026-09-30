@@ -42,6 +42,13 @@ GSAP and Motion take seconds: use `seconds(duration.base)`.
   views nobody saw.
 - Smooth-scroll libraries and scroll snapping.
 
+**The opt-in is inline in `<head>`** (`Base.astro`, before any script), not only in the external
+stylesheet: Chromium can evaluate the new page's opt-in before an external stylesheet arrives
+(typically a page served from the prefetch cache, like the thank-you page after "Verstuur"),
+find none and abort with "Transition was aborted because of invalid state. ViewTransition opt-in
+disabled". Scripts that use `event.viewTransition` handle both outcomes of `finished`
+(`then(done, done)`), so an aborted transition never leaves an unhandled rejection.
+
 ## Patterns
 
 Each pattern is listed with its reduced-motion version (`prefers-reduced-motion: reduce`). When

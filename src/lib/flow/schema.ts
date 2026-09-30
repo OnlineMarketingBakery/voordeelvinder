@@ -330,6 +330,19 @@ export const flowCopyFile = z.strictObject({
   warnings: z.partialRecord(z.enum(WARNING_CODES), text).optional(),
   /** The e-mail typo suggestion, e.g. "Bedoel je {suggestion}?". */
   emailSuggestion: template('suggestion'),
+  /**
+   * The form-level message when "Verstuur" couldn't send the lead, per failure of sendLead
+   * (src/lib/form/submit.ts), and the label of the reload button shown with `invalid` (after a
+   * deploy changed the flow, a reload gets the new one).
+   */
+  submitErrors: z.strictObject({
+    network: text,
+    unavailable: text,
+    turnstile: text,
+    rate_limit: text,
+    invalid: text,
+    reload: text,
+  }),
   /** How the form behaves (not copy, but switched per locale like it; docs/MOTION.md). */
   settings: z.strictObject({
     /**

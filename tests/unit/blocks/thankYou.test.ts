@@ -159,6 +159,15 @@ describe('thankYou block', () => {
       }
     });
 
+    it('cleared too when the browser aborts the transition', async () => {
+      const page = await arrive({ activation: 'https://voordeelvinder.test/vergelijken/energie' });
+      const finished = Promise.reject(new DOMException('aborted', 'InvalidStateError'));
+      page.fire('pagereveal', { viewTransition: { finished } });
+      await finished.catch(() => {});
+      await Promise.resolve();
+      expect(page.name()).toBe('none');
+    });
+
     it('cleared when leaving, also when the reveal was missed', async () => {
       const page = await arrive({ activation: 'https://voordeelvinder.test/vergelijken/energie' });
       page.fire('pageswap');
@@ -224,27 +233,60 @@ describe('thankYou block', () => {
       vi.resetModules();
     });
 
-    it('never reads the stored form session and writes nothing personal', async () => {
+    /** Runs the script on `pathname` with the lead-safe `flag` stored: what it read and wrote. */
+    async function run(pathname: string, flag: string | null, blocked = false) {
       const reads: string[] = [];
+      const removed: string[] = [];
       const storage = {
         length: 0,
-        getItem: (key: string) => (reads.push(key), null),
+        getItem: (key: string) => {
+          reads.push(key);
+          return key === 'voordeelvinder:lead-safe' ? flag : null;
+        },
         key: (index: number) => (reads.push(`#${index}`), null),
         setItem: () => {},
-        removeItem: () => {},
+        removeItem: (key: string) => removed.push(key),
         clear: () => {},
       };
-      vi.stubGlobal('sessionStorage', storage);
-      vi.stubGlobal('localStorage', storage);
+      const fakeWindow = { location: { pathname } };
+      Object.defineProperty(fakeWindow, 'sessionStorage', {
+        get: () => {
+          if (blocked) throw new Error('blocked');
+          return storage;
+        },
+      });
       const writes: [string, string][] = [];
       const badge = { setAttribute: (name: string, value: string) => writes.push([name, value]) };
+      vi.stubGlobal('window', fakeWindow);
+      vi.stubGlobal('localStorage', storage);
       vi.stubGlobal('document', { querySelectorAll: () => [badge] });
       vi.resetModules();
       await import('../../../src/scripts/celebrate');
-      // Phase 4 reads nothing; Phase 5 may read the lead-safe flag, never a form session.
-      expect(reads.filter((key) => !key.startsWith('voordeelvinder:lead-safe'))).toEqual([]);
-      // It only switches the celebration on.
+      return { reads, removed, writes };
+    }
+
+    const safe = (product: string) =>
+      JSON.stringify({ event_id: '6f1c7a52-1d0e-4f7a-9d55-3f2b8c1e0a11', product });
+
+    it('celebrates when the form left the lead-safe flag for this product, and removes it', async () => {
+      const { reads, removed, writes } = await run('/bedankt/energie', safe('energie'));
+      // It reads only the flag, never a form session, and writes nothing personal.
+      expect(reads).toEqual(['voordeelvinder:lead-safe']);
+      expect(removed).toEqual(['voordeelvinder:lead-safe']);
       expect(writes).toEqual([['data-celebrate', '']]);
+      const slash = await run('/bedankt/zonnepanelen/', safe('zonnepanelen'));
+      expect(slash.writes).toEqual([['data-celebrate', '']]);
+    });
+
+    it('never celebrates a direct visit, a reload or another product', async () => {
+      expect((await run('/bedankt/energie', null)).writes).toEqual([]);
+      // Another product's flag is used up too: it is good for one thank-you page view.
+      const other = await run('/bedankt/thuisbatterij', safe('energie'));
+      expect(other.writes).toEqual([]);
+      expect(other.removed).toEqual(['voordeelvinder:lead-safe']);
+      expect((await run('/bedankt/energie', 'not json')).writes).toEqual([]);
+      expect((await run('/bedankt/energie', '{"product":"energie"}')).writes).toEqual([]);
+      expect((await run('/bedankt/energie', safe('energie'), true)).writes).toEqual([]);
     });
   });
 });

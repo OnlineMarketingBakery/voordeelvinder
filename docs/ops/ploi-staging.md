@@ -71,6 +71,7 @@ Lead pipeline settings (`src/server/env.ts`, brief §9.1):
 | `N8N_NEWSLETTER_WEBHOOK_URL` | optional (default: the lead webhook)                                                                                     | optional                                 |
 | `N8N_WEBHOOK_SECRET`         | required when a webhook is set; sent as `X-VV-Secret`                                                                    | required                                 |
 | `TURNSTILE_SECRET_KEY`       | optional; empty = test secret `1x0000000000000000000000000000000AA` (always passes)                                      | required; Cloudflare's test keys refused |
+| `PUBLIC_TURNSTILE_SITE_KEY`  | optional; empty = test site key `1x00000000000000000000AA` (build time: redeploy)                                        | required; Cloudflare's test keys refused |
 | `TURNSTILE_VERIFY_URL`       | refused (local and CI only: the e2e siteverify stand-in)                                                                 | refused                                  |
 | `LEAD_BACKUP_DIR`            | absolute, outside the site directory; created with mode 700, files 600                                                   | same                                     |
 | `RATE_LIMIT_PER_HOUR`        | requests per visitor IP per hour on `/api/lead` and `/api/newsletter` (each its own)                                     | same                                     |
@@ -184,3 +185,19 @@ bash scripts/deploy.sh
 # then fix main; the next deploy's `git pull` needs the branch back:
 git checkout main
 ```
+
+## Third-party origins and CSP
+
+The site loads nothing from other origins except the ones below. There is **no
+Content-Security-Policy yet** (neither Nginx nor `Base.astro` sends one); the CSP of brief §11
+comes with the tag setup (Phase 6) and must allow every origin in this table.
+
+| Origin                              | What                                                                                                                                      | Where                                          | CSP directives                           |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------- |
+| `https://challenges.cloudflare.com` | Cloudflare Turnstile: the script `turnstile/v0/api.js?render=explicit` and its iframe (brief §9.1 step 4). The server calls `siteverify`. | The form's last (contact) step only, on demand | `script-src`, `frame-src`, `connect-src` |
+
+Turnstile needs `PUBLIC_TURNSTILE_SITE_KEY` (public, fixed at build time: redeploy after a
+change) and `TURNSTILE_SECRET_KEY` (runtime). Without a site key, local, CI and staging render
+Cloudflare's always-passing test key `1x00000000000000000000AA`; a production build fails
+without a real one. In Cloudflare, the widget's hostnames must include every domain that serves
+the form (`voordeelvinder.be`, `www.voordeelvinder.be`; staging uses the test key).

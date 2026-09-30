@@ -6,7 +6,10 @@ import ChevronRight from '../../assets/icons/chevron-footer.svg';
 import MailContact from '../../assets/icons/mail-contact.svg';
 import Mail from '../../assets/icons/mail.svg';
 import Phone from '../../assets/icons/phone.svg';
+import { consentSegments } from '../../lib/form/labels';
+import type { NewsletterCopy } from '../../lib/newsletter';
 import { getSite, withYear } from '../../lib/site';
+import { turnstileSiteKey } from '../../lib/turnstile';
 import Button from '../ui/Button.astro';
 import Container from '../ui/Container.astro';
 import Logo from '../ui/Logo.astro';
@@ -20,6 +23,15 @@ const { overlap = false } = Astro.props;
 const site = await getSite();
 const { footer, contact } = site;
 const { newsletter } = footer;
+const consentParts = consentSegments(newsletter.consent.label, newsletter.consent.links);
+const newsletterCopy: NewsletterCopy = {
+  messages: newsletter.messages,
+  errors: newsletter.errors,
+};
+// Turnstile protects the sign-up (brief §9.1); its script only loads once the e-mail field gets
+// focus (src/scripts/newsletter-form.ts).
+// On production without a real key the build fails (turnstileSiteKey throws).
+const siteKey = turnstileSiteKey(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY, __SITE_ENV__);
 
 const rowClass = 'inline-flex min-h-11 items-center gap-1.5 text-body text-white lg:min-h-[39px]';
 const linkClass = `${rowClass} decoration-1 underline-offset-4 hover:underline`;
@@ -38,10 +50,13 @@ const columnHeading = 'text-title-lg lg:text-h3';
         </div>
 
         <form
-          class="w-full sm:max-w-[449px] lg:mt-[39px]"
+          class="relative w-full sm:max-w-[449px] lg:mt-[39px]"
           action="/api/newsletter"
           method="post"
-          data-newsletter
+          data-newsletter={newsletter.enabled ? 'on' : 'off'}
+          data-copy={JSON.stringify(newsletterCopy)}
+          data-offline={newsletter.errors.network}
+          data-sitekey={siteKey}
         >
           <label for="newsletter-email" class="sr-only">
             {newsletter.label}
@@ -55,6 +70,8 @@ const columnHeading = 'text-title-lg lg:text-h3';
                 type="email"
                 name="email"
                 autocomplete="email"
+                autocapitalize="none"
+                spellcheck="false"
                 required
                 placeholder={newsletter.placeholder}
                 disabled={!newsletter.enabled}
@@ -69,6 +86,50 @@ const columnHeading = 'text-title-lg lg:text-h3';
             >
               {newsletter.button}
             </Button>
+          </div>
+
+          {/* Not in the design: the consent the endpoint requires, and the form's messages. */}
+          <label class="mt-4 flex min-h-11 cursor-pointer items-start gap-3 text-sm text-white">
+            <input
+              type="checkbox"
+              name="consent"
+              value="true"
+              required
+              disabled={!newsletter.enabled}
+              class="mt-px size-5 shrink-0 cursor-pointer accent-lime-400 disabled:cursor-not-allowed"
+            />
+            <span>
+              {consentParts.map((part) =>
+                part.href ? (
+                  <a href={part.href} class="underline underline-offset-2 hover:no-underline">
+                    {part.text}
+                  </a>
+                ) : (
+                  part.text
+                ),
+              )}
+            </span>
+          </label>
+
+          <p data-newsletter-suggestion hidden>
+            <button
+              type="button"
+              class="min-h-11 text-left text-sm text-white underline underline-offset-4 hover:no-underline"
+            ></button>
+          </p>
+
+          <div data-newsletter-turnstile></div>
+
+          <p
+            id="newsletter-status"
+            role="status"
+            data-newsletter-status
+            class="mt-2 rounded-md text-sm empty:hidden data-[tone=error]:bg-white data-[tone=error]:px-4 data-[tone=error]:py-2.5 data-[tone=error]:text-danger data-[tone=info]:text-white data-[tone=success]:bg-lime-400 data-[tone=success]:px-4 data-[tone=success]:py-2.5 data-[tone=success]:text-ink-900"
+          ></p>
+
+          {/* Honeypot (brief §9.1): off screen and out of the tab order, so only bots fill it. */}
+          <div class="absolute -left-[10000px] size-px overflow-hidden" aria-hidden="true">
+            <input type="text" name="website" tabindex="-1" autocomplete="off" />
           </div>
         </form>
       </div>
@@ -164,3 +225,7 @@ const columnHeading = 'text-title-lg lg:text-h3';
     </Container>
   </div>
 </footer>
+
+<script>
+  import '../../scripts/newsletter';
+</script>

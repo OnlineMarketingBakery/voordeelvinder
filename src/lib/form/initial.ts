@@ -141,8 +141,3 @@ export function restoreStart({
   const step = firstInvalidStep(flow, answers, derived, resume) ?? resume;
   return { product: active, answers, step, flags };
 }
-
-/** ?test=1 marks the visit as a test (brief §9.4); the server decides `is_test`. */
-export function isTestVisit(search: string): boolean {
-  return new URLSearchParams(search).get('test') === '1';
-}

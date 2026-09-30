@@ -7,6 +7,7 @@ import {
   TURNSTILE_TEST_SECRET,
   turnstileSecret,
 } from '../../src/server/env';
+import { TURNSTILE_TEST_SITE_KEYS } from '../../src/lib/turnstile';
 
 const staging = {
   SITE_ENV: 'staging',
@@ -68,6 +69,7 @@ describe('parseServerEnv: n8n and Turnstile (Phase 5)', () => {
     N8N_LEAD_WEBHOOK_URL: 'https://n8n.example.test/webhook/lead',
     N8N_WEBHOOK_SECRET: secret,
     TURNSTILE_SECRET_KEY: '0x4AAAAAAAfakefakefakefakefake',
+    PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAAfakesitekey',
   };
 
   it('keeps them optional on local, CI and staging, and treats NAME= as not set', () => {
@@ -76,9 +78,12 @@ describe('parseServerEnv: n8n and Turnstile (Phase 5)', () => {
       N8N_LEAD_WEBHOOK_URL: '',
       N8N_WEBHOOK_SECRET: '',
       TURNSTILE_SECRET_KEY: '',
+      PUBLIC_TURNSTILE_SITE_KEY: '',
     });
     expect(env.N8N_LEAD_WEBHOOK_URL).toBeUndefined();
     expect(env.TURNSTILE_SECRET_KEY).toBeUndefined();
+    // The pages then render with the test site key (src/lib/turnstile.ts).
+    expect(env.PUBLIC_TURNSTILE_SITE_KEY).toBeUndefined();
     expect(turnstileSecret(env)).toBe(TURNSTILE_TEST_SECRET);
     expect(newsletterWebhookUrl(env)).toBeUndefined();
   });
@@ -97,8 +102,13 @@ describe('parseServerEnv: n8n and Turnstile (Phase 5)', () => {
     ).toBe('https://n8n.example.test/webhook/nl');
   });
 
-  it('requires the webhook, its secret and a real Turnstile key on production', () => {
-    for (const key of ['N8N_LEAD_WEBHOOK_URL', 'N8N_WEBHOOK_SECRET', 'TURNSTILE_SECRET_KEY']) {
+  it('requires the webhook, its secret and real Turnstile keys on production', () => {
+    for (const key of [
+      'N8N_LEAD_WEBHOOK_URL',
+      'N8N_WEBHOOK_SECRET',
+      'TURNSTILE_SECRET_KEY',
+      'PUBLIC_TURNSTILE_SITE_KEY',
+    ]) {
       expect(() => parseServerEnv({ ...production, [key]: undefined })).toThrow(key);
     }
     for (const test of ['1x', '2x', '3x']) {
@@ -108,6 +118,14 @@ describe('parseServerEnv: n8n and Turnstile (Phase 5)', () => {
           TURNSTILE_SECRET_KEY: `${test}0000000000000000000000000000000AA`,
         }),
       ).toThrow(/test key/);
+    }
+    expect(() => parseServerEnv({ ...production, PUBLIC_TURNSTILE_SITE_KEY: '' })).toThrow(
+      /PUBLIC_TURNSTILE_SITE_KEY/,
+    );
+    for (const siteKey of TURNSTILE_TEST_SITE_KEYS) {
+      expect(() => parseServerEnv({ ...production, PUBLIC_TURNSTILE_SITE_KEY: siteKey })).toThrow(
+        /must not be a Cloudflare test key[\s\S]*PUBLIC_TURNSTILE_SITE_KEY/,
+      );
     }
   });
 

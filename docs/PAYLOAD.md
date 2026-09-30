@@ -136,6 +136,13 @@ already normalised by the field validators (`src/lib/flow/validators/`); the ser
 it against the flow with the same validators, adds what only it can know and forwards the
 payload.
 
+On "Verstuur" the browser posts it as JSON to `POST /api/lead` (`sendLead` in
+`src/lib/form/submit.ts`, docs/FLOWS.md "Submit"): the submission plus `website` (the honeypot,
+`""` for people) and `turnstile_token` (from the contact step's Turnstile widget,
+`src/lib/turnstile.ts`; left out when the script could not load, and the server decides). A 503,
+502, 504 or network failure is retried once with the same `lead_id` and a fresh token. The
+request body's extra keys never reach n8n: the payload below is built by the server.
+
 | Part                                    | Form submission                                                                                                                                                                   | Added or recomputed by the server (Phase 5)                                                                                                                                                                          |
 | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `schema_version`, `lead_id`, `event_id` | yes (`lead_id` is generated once per form session)                                                                                                                                |                                                                                                                                                                                                                      |
@@ -173,8 +180,11 @@ retry as a lead. Change it only with approval in the PR, like the lead contract.
 }
 ```
 
-- The form posts `{ email, consent: true, website: "", turnstile_token, page, test }`; unknown
-  keys are refused. `email` is trimmed and lowercased by the form's own e-mail validator.
+- The footer form (`src/scripts/newsletter-form.ts`) posts
+  `{ email, consent: true, website: "", turnstile_token, page, test }`; unknown keys are refused.
+  `email` is trimmed and lowercased by the form's own e-mail validator. The token comes from the
+  same Turnstile module as the lead form's (`src/lib/turnstile.ts`), loaded when the e-mail
+  field gets focus; without one the form shows its `verification_failed` error and sends nothing.
 - `signup_id` and `submitted_at` come from the server. There is no client id, so a double
   submit gives two sign-ups; Mailchimp keys on the e-mail address. Delivery is at least once
   here too: deduplicate on `signup_id`. `email`, `meta.page` and `meta.user_agent` are
