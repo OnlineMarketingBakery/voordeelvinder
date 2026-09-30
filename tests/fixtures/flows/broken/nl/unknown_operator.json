@@ -1,0 +1,38 @@
+{
+  "id": "unknown_operator",
+  "version": 1,
+  "product": "energie",
+  "firstStep": "a",
+  "steps": [
+    {
+      "id": "a",
+      "title": "Vraag a",
+      "fields": [
+        {
+          "id": "a",
+          "type": "yes_no",
+          "required": true
+        }
+      ],
+      "next": [
+        {
+          "if": {
+            "xor": [
+              {
+                "var": "a"
+              },
+              "yes"
+            ]
+          },
+          "goto": "contact"
+        },
+        {
+          "goto": "contact"
+        }
+      ]
+    },
+    {
+      "use": "contact"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "id": "dead_end",
+  "version": 1,
+  "product": "energie",
+  "firstStep": "a",
+  "steps": [
+    {
+      "id": "a",
+      "title": "Vraag a",
+      "fields": [
+        {
+          "id": "a",
+          "type": "yes_no",
+          "required": true
+        }
+      ],
+      "next": [
+        {
+          "if": {
+            "==": [
+              {
+                "var": "a"
+              },
+              "yes"
+            ]
+          },
+          "goto": "b"
+        },
+        {
+          "goto": "contact"
+        }
+      ]
+    },
+    {
+      "id": "b",
+      "title": "Vraag b",
+      "fields": [
+        {
+          "id": "b",
+          "type": "yes_no",
+          "required": true
+        }
+      ],
+      "next": []
+    },
+    {
+      "use": "contact"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "id": "zonnepanelen",
+  "version": 1,
+  "product": "zonnepanelen",
+  "firstStep": "a",
+  "steps": [
+    {
+      "id": "a",
+      "title": "Vraag a",
+      "fields": [
+        {
+          "id": "a",
+          "type": "single_choice",
+          "required": true,
+          "options": [
+            {
+              "code": "one",
+              "label": "One"
+            },
+            {
+              "code": "two",
+              "label": "Two"
+            }
+          ]
+        }
+      ],
+      "next": [
+        {
+          "goto": "contact"
+        }
+      ]
+    },
+    {
+      "use": "contact"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "id": "late_var",
+  "version": 1,
+  "product": "energie",
+  "firstStep": "a",
+  "steps": [
+    {
+      "id": "a",
+      "title": "Vraag a",
+      "fields": [
+        {
+          "id": "a",
+          "type": "yes_no",
+          "required": true
+        }
+      ],
+      "next": [
+        {
+          "goto": "b"
+        }
+      ],
+      "visibleIf": {
+        "==": [
+          {
+            "var": "b"
+          },
+          "yes"
+        ]
+      }
+    },
+    {
+      "id": "b",
+      "title": "Vraag b",
+      "fields": [
+        {
+          "id": "b",
+          "type": "yes_no",
+          "required": true
+        }
+      ],
+      "next": [
+        {
+          "goto": "contact"
+        }
+      ]
+    },
+    {
+      "use": "contact"
+    }
+  ]
+}

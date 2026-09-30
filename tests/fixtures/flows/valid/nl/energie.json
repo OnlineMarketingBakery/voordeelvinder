@@ -1,0 +1,185 @@
+{
+  "id": "energie",
+  "version": 1,
+  "product": "energie",
+  "locale": "nl",
+  "firstStep": "product",
+  "steps": [
+    { "use": "product", "next": [{ "goto": "postcode" }] },
+    { "use": "postcode", "next": [{ "goto": "supplier" }] },
+    {
+      "id": "supplier",
+      "title": "Wie is je huidige energieleverancier?",
+      "fields": [
+        {
+          "id": "supplier",
+          "type": "select",
+          "required": true,
+          "options": [
+            { "code": "engie", "label": "Engie" },
+            { "code": "luminus", "label": "Luminus" },
+            { "code": "totalenergies", "label": "TotalEnergies" },
+            { "code": "other", "label": "Andere" },
+            { "code": "unknown", "label": "Weet ik niet" }
+          ]
+        }
+      ],
+      "next": [{ "goto": "meter_type" }]
+    },
+    {
+      "id": "meter_type",
+      "title": "Wat voor meter heb je?",
+      "visibleIf": { "in": [{ "var": "energy_type" }, ["electricity", "both"]] },
+      "fields": [
+        {
+          "id": "meter_type",
+          "type": "single_choice",
+          "required": true,
+          "options": [
+            { "code": "single", "label": "Dagmeter (enkelvoudig tarief)" },
+            { "code": "dual", "label": "Dag/nachtmeter (tweevoudig tarief)" },
+            { "code": "single_excl_night", "label": "Dagmeter + exclusief nacht" },
+            { "code": "dual_excl_night", "label": "Dag/nachtmeter + exclusief nacht" }
+          ]
+        }
+      ],
+      "next": [{ "goto": "meters_solar" }]
+    },
+    {
+      "id": "meters_solar",
+      "title": "Je meter en zonnepanelen",
+      "fields": [
+        {
+          "id": "digital_meter",
+          "type": "yes_no",
+          "label": "Heb je een digitale meter?",
+          "required": true,
+          "labels": { "yes": "Ja", "no": "Nee" }
+        },
+        {
+          "id": "has_solar",
+          "type": "yes_no",
+          "label": "Heb je zonnepanelen?",
+          "required": true,
+          "visibleIf": { "in": [{ "var": "energy_type" }, ["electricity", "both"]] }
+        }
+      ],
+      "next": [{ "goto": "tariff_meter" }]
+    },
+    {
+      "id": "tariff_meter",
+      "title": "Je tarief",
+      "fields": [
+        {
+          "id": "social_tariff",
+          "type": "yes_no",
+          "label": "Heb je een sociaal tarief?",
+          "required": true
+        },
+        {
+          "id": "budget_meter",
+          "type": "single_choice",
+          "label": "Heb je een budgetmeter?",
+          "required": true,
+          "options": [
+            { "code": "yes", "label": "Ja" },
+            { "code": "no", "label": "Nee" },
+            { "code": "unknown", "label": "Weet ik niet" }
+          ]
+        }
+      ],
+      "next": [{ "goto": "knows_consumption" }]
+    },
+    {
+      "id": "knows_consumption",
+      "title": "Ken je je jaarlijks energieverbruik?",
+      "fields": [{ "id": "knows_consumption", "type": "yes_no", "required": true }],
+      "next": [
+        { "if": { "==": [{ "var": "knows_consumption" }, "yes"] }, "goto": "consumption_kwh" },
+        { "goto": "household" }
+      ]
+    },
+    {
+      "id": "consumption_kwh",
+      "title": "Je jaarverbruik",
+      "hint": "Een gemiddeld gezin verbruikt ±3.500 kWh elektriciteit.",
+      "fields": [
+        {
+          "id": "electricity_kwh",
+          "type": "number",
+          "label": "Elektriciteit (kWh per jaar)",
+          "required": true,
+          "unit": "kWh",
+          "min": 100,
+          "max": 100000,
+          "softMin": 500,
+          "softMax": 20000,
+          "visibleIf": { "in": [{ "var": "energy_type" }, ["electricity", "both"]] }
+        },
+        {
+          "id": "gas_kwh",
+          "type": "number",
+          "label": "Gas (kWh per jaar)",
+          "required": true,
+          "unit": "kWh",
+          "min": 100,
+          "max": 150000,
+          "visibleIf": { "in": [{ "var": "energy_type" }, ["gas", "both"]] }
+        }
+      ],
+      "next": [{ "goto": "contact" }]
+    },
+    {
+      "id": "household",
+      "title": "Je woning",
+      "fields": [
+        {
+          "id": "household_size",
+          "type": "select",
+          "label": "Hoeveel personen wonen er in je woning?",
+          "required": true,
+          "options": [
+            { "code": "1", "label": "1" },
+            { "code": "2", "label": "2" },
+            { "code": "3", "label": "3" },
+            { "code": "4", "label": "4" },
+            { "code": "5_plus", "label": "5+" }
+          ]
+        },
+        {
+          "id": "home_type",
+          "type": "select",
+          "label": "Wat voor woning heb je?",
+          "required": true,
+          "options": [
+            { "code": "apartment", "label": "Appartement" },
+            { "code": "terraced", "label": "Rijwoning (gesloten bebouwing)" },
+            { "code": "semi_detached", "label": "Halfopen bebouwing" },
+            { "code": "detached", "label": "Open bebouwing" }
+          ]
+        }
+      ],
+      "next": [{ "goto": "appliances" }]
+    },
+    {
+      "id": "appliances",
+      "title": "Je toestellen",
+      "fields": [
+        {
+          "id": "heat_pump",
+          "type": "yes_no",
+          "label": "Heb je een warmtepomp?",
+          "required": true
+        },
+        {
+          "id": "electric_car",
+          "type": "yes_no",
+          "label": "Heb je een elektrische wagen?",
+          "required": true
+        }
+      ],
+      "next": [{ "goto": "contact" }]
+    },
+    { "use": "contact" }
+  ]
+}
