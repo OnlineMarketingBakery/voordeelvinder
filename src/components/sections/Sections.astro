@@ -1,23 +1,36 @@
 ---
 import type { Section } from '../../schemas/page';
+import ComparisonTable from './ComparisonTable.astro';
+import Features from './Features.astro';
 import Hero from './Hero.astro';
+import Steps from './Steps.astro';
 
 interface Props {
   sections: Section[];
 }
 
-// Hidden blocks stay in the content file but are not rendered.
-const sections = Astro.props.sections.filter((section) => !section.hidden);
+// Hidden blocks stay in the content file but are not rendered. A block without an anchor id
+// gets `<type>-<position>` (reserved by the page schema), so the heading ids derived from it
+// are unique even with two blocks of one type.
+const sections = Astro.props.sections
+  .map((section, index) => ({ ...section, id: section.id ?? `${section.type}-${index + 1}` }))
+  .filter((section) => !section.hidden);
 ---
 
 {sections.map((section) => {
   switch (section.type) {
     case 'hero':
       return <Hero {...section} />;
+    case 'features':
+      return <Features {...section} />;
+    case 'steps':
+      return <Steps {...section} />;
+    case 'comparisonTable':
+      return <ComparisonTable {...section} />;
     default: {
       // A schema type without a component fails astro check here instead of rendering nothing.
-      const unhandled: never = section.type;
-      throw new Error(`No component for section type "${String(unhandled)}"`);
+      const unhandled: never = section;
+      throw new Error(`No component for section type "${(unhandled as Section).type}"`);
     }
   }
 })}

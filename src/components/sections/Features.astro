@@ -1,0 +1,127 @@
+---
+// Value cards on coloured plates under a centred header (Figma home 60:15–60:20 on plates
+// 60:5–60:7, solar 69:951/75:2835/69:953, battery 80:2883–80:2885). `translucent` (home): the
+// front fades so the plate tints it, 6 px lip. `solid` (product pages): flat fronts, 9 px lip.
+// The plate is a hard offset shadow in the plate colour, so there is no extra element.
+import type { FeaturesBlock } from '../../schemas/blocks/features';
+import Container from '../ui/Container.astro';
+import Icon from '../ui/Icon.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+
+type Props = FeaturesBlock;
+
+const { id, eyebrow, title, intro, cardStyle, items } = Astro.props;
+
+const visible = items.filter((item) => !item.hidden);
+
+// The h2 id for aria-labelledby: from the anchor, else from the title (unique per page).
+const slug = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+const headingId = `${id ?? `features-${slug(title)}`}-title`;
+
+// Card front and plate lip per style and tone, from colour tokens. On hover the lip grows by
+// the `lift` distance, so the plate seems to stay put while the card rises. Hover is taken from
+// the static <li> (`group`), so a card rising from under the cursor doesn't drop back.
+const cards = {
+  translucent: {
+    purple:
+      'bg-purple-600 bg-linear-to-b from-lavender-50 to-lavender-50/86 shadow-[0_6px_0_var(--color-purple-600)] motion-safe:group-hover:shadow-[0_calc(6px_+_var(--motion-distance-1)/2)_0_var(--color-purple-600)]',
+    lime: 'border border-lime-400 bg-lime-300 bg-linear-to-b from-white to-white/85 shadow-[0_6px_0_var(--color-lime-300)] motion-safe:group-hover:shadow-[0_calc(6px_+_var(--motion-distance-1)/2)_0_var(--color-lime-300)]',
+  },
+  solid: {
+    purple:
+      'bg-lavender-50 shadow-[0_9px_0_var(--color-purple-600)] motion-safe:group-hover:shadow-[0_calc(9px_+_var(--motion-distance-1)/2)_0_var(--color-purple-600)]',
+    lime: 'bg-lime-50 shadow-[0_9px_0_var(--color-lime-300)] motion-safe:group-hover:shadow-[0_calc(9px_+_var(--motion-distance-1)/2)_0_var(--color-lime-300)]',
+  },
+} as const;
+
+// translucent: only the body is pinned to the card bottom, in a box of the same height in every
+// card so the first lines line up (Figma); solid: title and body together.
+const layout = {
+  translucent: {
+    card: 'lg:min-h-[402px]',
+    title: 'lg:mt-12',
+    body: 'lg:mt-auto lg:pt-8 lg:min-h-[152px] xl:min-h-[104px]',
+  },
+  solid: { card: 'lg:min-h-[361px]', title: 'lg:mt-auto lg:pt-12', body: '' },
+} as const;
+
+const tiles = {
+  purple: 'bg-purple-600 text-white',
+  lime: 'bg-lime-300 text-ink-900',
+} as const;
+
+// Glyph sizes from Figma at lg (tile 76); 0.84× in the 64 px mobile tile.
+const glyphs: Record<FeaturesBlock['items'][number]['icon'], string> = {
+  money: 'size-[31px] lg:size-[37px]',
+  send: 'size-[39px] lg:size-[46px]',
+  wallet: 'size-[39px] lg:size-[46px]',
+  time: 'size-10 lg:size-12',
+  home: 'size-8 lg:size-[38px]',
+  'renewable-energy': 'size-8 lg:size-[38px]',
+  'home-bolt': 'size-[35px] lg:size-[42px]',
+  'shield-bolt': 'size-[35px] lg:size-[42px]',
+};
+---
+
+<section {id} aria-labelledby={headingId} class="pt-16 pb-4 md:pt-24 lg:pt-32">
+  <Container>
+    <SectionHeading
+      id={headingId}
+      {eyebrow}
+      {title}
+      {intro}
+      align="center"
+      titleClass="mx-auto max-w-[713px] text-h3 md:text-h2"
+      introClass="max-w-[788px] max-md:text-body"
+    />
+    <ul
+      role="list"
+      class:list={[
+        'mx-auto mt-8 flex max-w-xl flex-col gap-8 lg:mt-10',
+        // Four cards (not designed) go 2 × 2 instead of shrinking below a readable width.
+        visible.length === 4
+          ? 'lg:grid lg:max-w-[770px] lg:grid-cols-2 lg:gap-[30px]'
+          : 'lg:max-w-none lg:flex-row lg:justify-center lg:gap-[30px]',
+      ]}
+      data-reveal-stagger
+    >
+      {visible.map((item) => (
+        <li class="group flex lg:min-w-0 lg:basis-[370px]">
+          <div
+            class:list={[
+              'lift flex w-full flex-col rounded-3xl p-6 md:p-8 lg:p-[34px]',
+              cards[cardStyle][item.tone],
+              layout[cardStyle].card,
+            ]}
+          >
+            <span
+              class:list={[
+                'grid size-16 shrink-0 place-items-center rounded-lg lg:size-[76px] lg:rounded-xl',
+                tiles[item.tone],
+              ]}
+            >
+              <Icon name={item.icon} class={glyphs[item.icon]} />
+            </span>
+            <h3
+              class:list={[
+                'mt-8 text-title-sm hyphens-auto text-ink-800 md:text-title',
+                layout[cardStyle].title,
+              ]}
+            >
+              {item.title.split('\n').map((line, index) => (
+                <span class="block">{`${index > 0 ? ' ' : ''}${line}`}</span>
+              ))}
+            </h3>
+            <p class:list={['mt-4 text-body text-ink-600', layout[cardStyle].body]}>{item.body}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </Container>
+</section>

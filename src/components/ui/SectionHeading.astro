@@ -1,0 +1,75 @@
+---
+// Section header: optional eyebrow pill, the h2 (with an optional lime highlight on part of
+// the title) and an optional intro. Used by every marketing section block.
+import type { Copy } from '../../lib/copy';
+import CopyText from './CopyText.astro';
+import Highlight from './Highlight.astro';
+import SectionPill, { type PillIcon, type PillTone } from './SectionPill.astro';
+
+interface Props {
+  /** id of the h2, for aria-labelledby on the section. */
+  id: string;
+  eyebrow?: string | undefined;
+  pillTone?: PillTone;
+  pillIcon?: PillIcon;
+  title: string;
+  /** A substring of the title shown on the lime chip. */
+  highlight?: string | undefined;
+  intro?: Copy | undefined;
+  align?: 'start' | 'center';
+  /** White text on purple surfaces. */
+  onDark?: boolean;
+  titleClass?: string;
+  introClass?: string;
+  class?: string;
+}
+
+const {
+  id,
+  eyebrow,
+  pillTone = 'lime',
+  pillIcon = 'info',
+  title,
+  highlight,
+  intro,
+  align = 'start',
+  onDark = false,
+  titleClass = 'text-h3 md:text-h2',
+  introClass,
+  class: className,
+} = Astro.props;
+
+const at = highlight ? title.indexOf(highlight) : -1;
+if (highlight && at === -1) throw new Error(`Highlight "${highlight}" is not part of "${title}"`);
+const parts =
+  highlight && at >= 0
+    ? [title.slice(0, at), highlight, title.slice(at + highlight.length)]
+    : [title, undefined, undefined];
+---
+
+<div class:list={[align === 'center' && 'mx-auto text-center', className]} data-reveal>
+  {eyebrow && <SectionPill label={eyebrow} tone={pillTone} icon={pillIcon} class="mb-4 lg:mb-5" />}
+  <h2
+    {id}
+    class:list={[
+      titleClass,
+      onDark ? 'text-white' : 'text-ink-800',
+      align === 'center' && 'text-balance',
+    ]}
+  >
+    {parts[0]}
+    {parts[1] && <Highlight text={parts[1]} />}
+    {parts[2]}
+  </h2>
+  {intro && (
+    <CopyText
+      copy={intro}
+      class:list={[
+        'mt-4 text-body-lg',
+        onDark ? 'text-white' : 'text-ink-600',
+        align === 'center' && 'mx-auto',
+        introClass,
+      ]}
+    />
+  )}
+</div>

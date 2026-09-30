@@ -1,8 +1,11 @@
 import { expect, test } from '@playwright/test';
 
 import home from '../../src/content/pages/home.json' with { type: 'json' };
+import type { Section } from '../../src/schemas/page';
 
-const hero = home.sections.find((s) => s.type === 'hero')!;
+// The JSON import types every block as one loose union; read the hero with its schema type.
+type HeroBlock = Extract<Section, { type: 'hero' }>;
+const hero = home.sections.find((s) => s.type === 'hero') as unknown as HeroBlock;
 
 test.describe('home hero', () => {
   test('shows the only h1, the copy and the CTA to the form', async ({ page }) => {
@@ -47,5 +50,28 @@ test.describe('home hero', () => {
     const section = page.getByRole('region', { name: hero.title });
     await expect(section.getByRole('heading', { level: 1 })).toHaveCSS('opacity', '1');
     await expect(section.locator('h1 + p')).toHaveCSS('opacity', '1');
+  });
+});
+
+test.describe('home sections', () => {
+  test('every in-page link in the header and footer has a target', async ({ page }) => {
+    await page.goto('/');
+    const hrefs = await page
+      .locator('header a[href^="/#"], footer a[href^="/#"]')
+      .evaluateAll((links) => links.map((a) => a.getAttribute('href')!));
+    const ids = [...new Set(hrefs.map((href) => href.slice(2)))];
+    // FAQ (#veelgestelde-vragen) arrives with the next home PR.
+    const pending = new Set(['veelgestelde-vragen']);
+    for (const id of ids.filter((id) => !pending.has(id))) {
+      await expect(page.locator(`[id="${id}"]`), `#${id}`).toHaveCount(1);
+    }
+  });
+
+  test('shows one h2 per section, in order', async ({ page }) => {
+    await page.goto('/');
+    const expected = (home.sections as Section[])
+      .filter((s) => s.type !== 'hero' && !s.hidden && 'title' in s)
+      .map((s) => (s as { title: string }).title);
+    await expect(page.locator('main h2')).toHaveText(expected);
   });
 });

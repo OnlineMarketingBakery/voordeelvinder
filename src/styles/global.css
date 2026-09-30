@@ -277,8 +277,11 @@
     translate var(--motion-duration-base) var(--ease-out),
     box-shadow var(--motion-duration-base) var(--ease-out);
 
+  /* A static parent marked `group` takes the hover, so the card can't rise out from under the
+     cursor, lose :hover and drop back (jitter at its bottom edge). */
   @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-    &:hover {
+    &:hover,
+    :where(.group):hover > & {
       translate: 0 calc(-1 * var(--motion-distance-1) / 2);
     }
   }

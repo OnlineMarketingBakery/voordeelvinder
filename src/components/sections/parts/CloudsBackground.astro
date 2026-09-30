@@ -1,0 +1,26 @@
+---
+// Full-bleed clouds behind a section (Figma 60:373 comparison table; 69:1304 and 80:3175
+// benefits). The photo is pre-tinted purple and opaque, faded to white at the top, so the
+// section needs no blend or mask but must sit on the white page. Put it first inside a
+// `relative isolate` section: it fills the section and keeps the bottom of the clouds in view.
+import Illustration from '../../ui/Illustration.astro';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<div
+  class:list={['pointer-events-none absolute inset-0 -z-10 overflow-hidden', className]}
+  aria-hidden="true"
+>
+  <Illustration
+    src="backgrounds/clouds-purple-fade"
+    alt=""
+    widths={[640, 960, 1440, 1920, 2880]}
+    sizes="100vw"
+    class="absolute inset-0 size-full object-cover object-bottom"
+  />
+</div>

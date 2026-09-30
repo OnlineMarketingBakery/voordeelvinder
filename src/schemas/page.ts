@@ -3,10 +3,18 @@
 // src/schemas/blocks; add new types to the union below and to AGENTS.md.
 import { z } from 'astro/zod';
 
+import { comparisonTableBlock } from './blocks/comparisonTable';
+import { featuresBlock } from './blocks/features';
 import { heroBlock } from './blocks/hero';
+import { stepsBlock } from './blocks/steps';
 import { text } from './primitives';
 
-export const section = z.discriminatedUnion('type', [heroBlock]);
+export const section = z.discriminatedUnion('type', [
+  heroBlock,
+  featuresBlock,
+  stepsBlock,
+  comparisonTableBlock,
+]);
 
 export type Section = z.infer<typeof section>;
 
@@ -27,6 +35,14 @@ export const page = z
       });
     }
     const ids = value.sections.map((s) => s.id).filter((id): id is string => id !== undefined);
+    const reserved = ids.find((id) => /^[a-z][a-zA-Z]*-\d+$/.test(id));
+    if (reserved) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['sections'],
+        message: `block id "${reserved}" looks like a generated one (<type>-<n>); pick another`,
+      });
+    }
     const duplicate = ids.find((id, index) => ids.indexOf(id) !== index);
     if (duplicate) {
       ctx.addIssue({

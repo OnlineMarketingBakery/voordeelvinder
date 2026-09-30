@@ -1,0 +1,143 @@
+---
+// "Hoe het werkt" (Figma 60:9 home, 69:938 solar, 80:2878 battery): numbered steps on a purple
+// panel. From lg: one row of cards under a timeline with step pills. Below lg: one column with
+// a vertical connector behind it. `start` (home) has a left-aligned header and the mascot
+// breaking out above the panel; `center` (product pages) a centred header.
+import type { StepsBlock } from '../../schemas/blocks/steps';
+import Icon from '../ui/Icon.astro';
+import Illustration from '../ui/Illustration.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+import StepPill from './parts/StepPill.astro';
+
+type Props = StepsBlock;
+
+const { id, align, title, highlight, intro, mascot, items } = Astro.props;
+const headingId = `${id ?? 'steps'}-title`;
+const centered = align === 'center';
+
+// Figma differences per layout: home has a tighter panel bottom (63 vs ≈80) and 40px between
+// the intro and the pills; product pages set the subtitle right under the h2 and the timeline
+// 60px below it.
+const layout = centered
+  ? {
+      panel: 'xl:pb-20',
+      heading: 'max-w-[48rem]',
+      intro: 'max-md:text-body lg:mt-1',
+      list: 'lg:mt-15',
+    }
+  : {
+      panel: 'xl:pb-[63px]',
+      heading: 'md:max-w-[440px] lg:max-w-[560px]',
+      intro: 'max-w-[536px] max-md:text-body lg:mt-5',
+      list: '',
+    };
+---
+
+<section
+  id={id}
+  aria-labelledby={headingId}
+  class:list={[
+    // The gap to the previous block is a margin, so the section box (and an anchor jump to it)
+    // starts at the top of the mascot, which breaks 40px out above the panel.
+    'mt-16 md:mt-24 lg:mt-32',
+    mascot && 'pt-10',
+  ]}
+>
+  <div
+    class:list={[
+      'surface-dark relative isolate mx-auto w-[calc(100%-2rem)] max-w-wide rounded-3xl bg-purple-600 px-5 pt-12 pb-10 md:w-[calc(100%-3rem)] md:rounded-4xl md:px-10 md:pt-14 md:pb-12 lg:px-12 lg:pt-16 lg:pb-14 xl:px-[77px] xl:pt-[72px]',
+      layout.panel,
+    ]}
+  >
+    {mascot && (
+      <div
+        class="steps-mascot relative z-10 -mt-[88px] mb-2 ml-auto w-[180px] md:absolute md:-top-10 md:right-8 md:m-0 md:w-[220px] lg:right-12 lg:w-[260px] xl:right-[116px] xl:w-[333px]"
+        data-reveal
+      >
+        <Illustration
+          src={mascot.src}
+          alt={mascot.alt}
+          widths={[180, 220, 260, 333, 440, 520, 666]}
+          sizes="(min-width: 1280px) 333px, (min-width: 1024px) 260px, (min-width: 768px) 220px, 180px"
+          class="h-auto w-full"
+        />
+      </div>
+    )}
+    <SectionHeading
+      id={headingId}
+      {title}
+      {highlight}
+      {intro}
+      {align}
+      onDark
+      class={layout.heading}
+      introClass={layout.intro}
+    />
+    <ol
+      role="list"
+      class:list={[
+        'steps-timeline relative mx-auto mt-10 grid max-w-[480px] gap-10 lg:max-w-none lg:auto-cols-fr lg:grid-flow-col lg:gap-6 xl:gap-[31px]',
+        // The line (Figma 60:346, white 47%): a vertical connector behind the column below lg,
+        // the horizontal timeline through the pill centres from lg. Pills and cards cover it.
+        'before:absolute before:inset-y-0 before:left-[calc(50%-1px)] before:w-0.5 before:bg-white/47 lg:before:inset-x-0 lg:before:top-[22px] lg:before:bottom-auto lg:before:h-0.5 lg:before:w-auto',
+        layout.list,
+      ]}
+      data-reveal-stagger
+    >
+      {items.map((item) => (
+        <li class="flex flex-col items-center">
+          <StepPill label={item.label} tone={item.tone} />
+          <div class="relative mt-[38px] flex w-full flex-1 flex-col items-center rounded-3xl bg-white px-6 pt-10 pb-8 text-center shadow-on-purple lg:min-h-[297px] lg:pt-12 xl:px-8 xl:pt-[58px] xl:pb-11">
+            <Icon name={item.icon} class="size-13 shrink-0 text-ink-900" />
+            <h3 class="mt-7 text-title-lg text-ink-900">{item.title}</h3>
+            <p class="mt-4 max-w-[322px] text-body text-ink-600">{item.body}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  /*
+   * The timeline draws in (scale-x, from the left) as the steps scroll into view: lg+ only,
+   * where it is horizontal. Without scroll-driven animations, or with reduced motion, it is
+   * simply there. 64rem = Tailwind's lg. Longhands only: the CSS minifier would otherwise fold
+   * animation-timeline into the `animation` shorthand, which browsers reject.
+   */
+  @media (min-width: 64rem) and (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .steps-timeline {
+        view-timeline: --steps-timeline block;
+      }
+
+      .steps-timeline::before {
+        transform-origin: left center;
+        animation-name: steps-timeline-draw;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: --steps-timeline;
+        animation-range: entry 0% cover 40%;
+      }
+    }
+  }
+
+  @keyframes steps-timeline-draw {
+    from {
+      scale: 0 1;
+    }
+  }
+
+  /* The mascot's scroll reveal (src/scripts/reveal.ts) adds a small tilt to the rise and fade. */
+  .steps-mascot[data-reveal-ready] {
+    transform-origin: 50% 100%;
+    transition:
+      opacity var(--motion-duration-slow) var(--ease-out),
+      translate var(--motion-duration-slow) var(--ease-out),
+      rotate var(--motion-duration-slow) var(--ease-out);
+  }
+
+  .steps-mascot[data-reveal-ready]:not(.is-revealed) {
+    rotate: -4deg;
+  }
+</style>

@@ -1,0 +1,30 @@
+---
+// The "Stap 01" pill over a step card (Figma 60:350/353/356, 69:1281…): a white 3px outline
+// with a pointer below, a purple or lime fill and a top gloss, all in CSS (173×45 + 12px).
+// The gloss stops at 40% of the height, so white text on purple keeps ≥4.5:1 (WCAG AA).
+interface Props {
+  label: string;
+  tone: 'purple' | 'lime';
+  class?: string;
+}
+
+const { label, tone, class: className } = Astro.props;
+
+// Gloss from Figma 60:362–364: purple white/33 at opacity .5, lime white/69.
+const tones = {
+  purple: 'bg-purple-500 from-white/16 text-white',
+  lime: 'bg-lime-400 from-white/69 text-ink-900',
+} as const;
+---
+
+<p
+  class:list={[
+    'relative inline-flex h-[45px] min-w-[173px] shrink-0 items-center justify-center rounded-full border-[3px] border-white bg-linear-to-b to-transparent to-40% px-5 text-label whitespace-nowrap',
+    // Pointer: overlaps the outline by 1px and ends 12px below it, with a slightly rounded tip.
+    "after:absolute after:top-[calc(100%+2px)] after:left-1/2 after:h-[13px] after:w-[17px] after:-translate-x-1/2 after:bg-white after:[clip-path:path('M0_0H17L9.9_11.2Q8.5_13_7.1_11.2Z')]",
+    tones[tone],
+    className,
+  ]}
+>
+  {label}
+</p>
