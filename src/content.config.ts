@@ -79,6 +79,12 @@ const site = defineCollection({
           unavailable: text,
           network: text,
         }),
+        /**
+         * When the form's script can't load although the visitor is online, so only a reload
+         * helps (src/lib/newsletter-loader.ts): the message, and the button that reloads the
+         * page. Offline, `errors.network` shows instead.
+         */
+        reload: z.strictObject({ message: text, button: text }),
       }),
       links: z.strictObject({ heading: text, items: z.array(link).min(1) }),
       legal: z.strictObject({ heading: text, items: z.array(link).min(1) }),

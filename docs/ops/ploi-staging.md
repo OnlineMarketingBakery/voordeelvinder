@@ -192,9 +192,9 @@ The site loads nothing from other origins except the ones below. There is **no
 Content-Security-Policy yet** (neither Nginx nor `Base.astro` sends one); the CSP of brief §11
 comes with the tag setup (Phase 6) and must allow every origin in this table.
 
-| Origin                              | What                                                                                                                                      | Where                                          | CSP directives                           |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------- |
-| `https://challenges.cloudflare.com` | Cloudflare Turnstile: the script `turnstile/v0/api.js?render=explicit` and its iframe (brief §9.1 step 4). The server calls `siteverify`. | The form's last (contact) step only, on demand | `script-src`, `frame-src`, `connect-src` |
+| Origin                              | What                                                                                                                                      | Where                                                                                                                                    | CSP directives                           |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `https://challenges.cloudflare.com` | Cloudflare Turnstile: the script `turnstile/v0/api.js?render=explicit` and its iframe (brief §9.1 step 4). The server calls `siteverify`. | On demand only: the form's last (contact) step, and the footer newsletter on every page (when its e-mail field gets focus, or on submit) | `script-src`, `frame-src`, `connect-src` |
 
 Turnstile needs `PUBLIC_TURNSTILE_SITE_KEY` (public, fixed at build time: redeploy after a
 change) and `TURNSTILE_SECRET_KEY` (runtime). Without a site key, local, CI and staging render

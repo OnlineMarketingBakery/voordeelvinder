@@ -69,6 +69,10 @@
         "rate_limited": "Je hebt het al een paar keer geprobeerd. Probeer het later opnieuw.",
         "unavailable": "Inschrijven lukt nu even niet. Probeer het later opnieuw.",
         "network": "Geen verbinding. Kijk je internetverbinding na en probeer het opnieuw."
+      },
+      "reload": {
+        "message": "Er ging iets mis. Vernieuw de pagina en probeer het opnieuw.",
+        "button": "Pagina vernieuwen"
       }
     },
     "links": {

@@ -6,9 +6,11 @@
 import { liveText } from '../lib/form/messages';
 import {
   checkEmail,
+  describedBy,
   errorField,
+  NEWSLETTER_ENDPOINT,
   newsletterBody,
-  outcomeOf,
+  sendSignup,
   suggestionText,
   type NewsletterCopy,
   type NewsletterError,
@@ -26,6 +28,15 @@ function part<T extends Element>(form: ParentNode, selector: string): T {
   return element;
 }
 
+/** sessionStorage, for the test-mode flag; null where it is blocked (reading it can throw). */
+function sessionFlags(): Pick<Storage, 'getItem'> | null {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
 export function enhance(form: HTMLFormElement): NewsletterForm {
   const copy = JSON.parse(form.dataset.copy ?? '{}') as NewsletterCopy;
   const email = part<HTMLInputElement>(form, 'input[name="email"]');
@@ -35,6 +46,7 @@ export function enhance(form: HTMLFormElement): NewsletterForm {
   const status = part<HTMLElement>(form, '[data-newsletter-status]');
   const suggestionBox = part<HTMLElement>(form, '[data-newsletter-suggestion]');
   const suggestionButton = part<HTMLButtonElement>(suggestionBox, 'button');
+  const announcer = part<HTMLElement>(form, '[data-newsletter-announce]');
   const turnstileBox = part<HTMLElement>(form, '[data-newsletter-turnstile]');
   let widget: TurnstileWidget | undefined;
   /** Loads Turnstile and renders its widget, once; again after the script failed to load. */
@@ -53,6 +65,7 @@ export function enhance(form: HTMLFormElement): NewsletterForm {
   }
 
   let sending = false;
+  let invalid: HTMLInputElement | undefined;
   let suggested: string | undefined;
 
   function say(text: string, tone: 'info' | 'success' | 'error') {
@@ -65,16 +78,23 @@ export function enhance(form: HTMLFormElement): NewsletterForm {
     delete status.dataset.tone;
   }
 
-  function markInvalid(field: HTMLInputElement | undefined) {
+  /** aria-invalid and aria-describedby of both fields, from `invalid` and `suggested`. */
+  function describe() {
     for (const input of [email, consent]) {
-      if (input === field) {
-        input.setAttribute('aria-invalid', 'true');
-        input.setAttribute('aria-describedby', status.id);
-      } else {
-        input.removeAttribute('aria-invalid');
-        input.removeAttribute('aria-describedby');
-      }
+      if (input === invalid) input.setAttribute('aria-invalid', 'true');
+      else input.removeAttribute('aria-invalid');
+      const ids = describedBy({
+        error: input === invalid ? status.id : undefined,
+        suggestion: input === email && suggested ? suggestionBox.id : undefined,
+      });
+      if (ids) input.setAttribute('aria-describedby', ids);
+      else input.removeAttribute('aria-describedby');
     }
+  }
+
+  function markInvalid(field: HTMLInputElement | undefined) {
+    invalid = field;
+    describe();
   }
 
   function showError(error: NewsletterError, { focus = false } = {}) {
@@ -89,11 +109,13 @@ export function enhance(form: HTMLFormElement): NewsletterForm {
     suggested = suggestion;
     suggestionBox.hidden = suggestion === undefined;
     suggestionButton.textContent = suggestion ? suggestionText(copy, suggestion) : '';
+    if (!suggestion) announcer.textContent = '';
+    describe();
   }
 
   /** Clears an error about `field` once the visitor changes it. */
   function clearErrorOf(field: HTMLInputElement) {
-    if (field.getAttribute('aria-invalid') !== 'true') return;
+    if (invalid !== field) return;
     markInvalid(undefined);
     clearStatus();
   }
@@ -123,6 +145,13 @@ export function enhance(form: HTMLFormElement): NewsletterForm {
     const check = checkEmail(email.value);
     showSuggestion(check.suggestion);
     if (!check.ok) showError(check.error);
+    // Focus has moved on, so the field's description isn't read: announce the suggestion.
+    if (check.suggestion) {
+      announcer.textContent = liveText(
+        announcer.textContent ?? '',
+        suggestionText(copy, check.suggestion),
+      );
+    }
   }
   email.addEventListener('blur', checkTyped);
   // Typed and left before this script arrived (it loads on the first focus): check it now.
@@ -152,31 +181,23 @@ export function enhance(form: HTMLFormElement): NewsletterForm {
     markInvalid(undefined);
     lock(true);
     say(copy.messages.sending, 'info');
-    let outcome: 'success' | NewsletterError;
     // A fresh token per request: take() hands each one out once.
     const token = await turnstile().take(TOKEN_WAIT_MS);
-    if (!token) {
-      outcome = 'verification_failed';
-    } else {
-      try {
-        const response = await fetch(form.getAttribute('action') ?? '/api/newsletter', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', accept: 'application/json' },
-          body: JSON.stringify(
-            newsletterBody({
-              email: check.email,
-              website: honeypot.value,
-              token,
-              pathname: location.pathname,
-              search: location.search,
-            }),
-          ),
-        });
-        outcome = outcomeOf(response.status);
-      } catch {
-        outcome = 'network';
-      }
-    }
+    // A request without an answer gives up after SIGNUP_TIMEOUT_MS ('network'), so the button
+    // unlocks.
+    const outcome: 'success' | NewsletterError = token
+      ? await sendSignup(
+          newsletterBody({
+            email: check.email,
+            website: honeypot.value,
+            token,
+            pathname: location.pathname,
+            search: location.search,
+            store: sessionFlags(),
+          }),
+          { endpoint: form.getAttribute('action') ?? NEWSLETTER_ENDPOINT },
+        )
+      : 'verification_failed';
     lock(false);
 
     if (outcome === 'success') {

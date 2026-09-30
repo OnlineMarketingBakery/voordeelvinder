@@ -2,6 +2,7 @@
 // submit and loads the real work (src/scripts/newsletter-form.ts, with the e-mail validator)
 // only once the form is near the viewport or gets focus. Without JavaScript the browser's own
 // checks apply and the form posts to the endpoint as is.
+import { loadFailure } from '../lib/newsletter-loader';
 import type { NewsletterForm } from './newsletter-form';
 
 const form = document.querySelector<HTMLFormElement>('form[data-newsletter="on"]');
@@ -9,10 +10,16 @@ const form = document.querySelector<HTMLFormElement>('form[data-newsletter="on"]
 if (form) {
   // The form shows its own inline messages instead of the browser's bubbles.
   form.noValidate = true;
+  const reload = form.querySelector<HTMLElement>('[data-newsletter-reload]');
+  reload?.querySelector('button')?.addEventListener('click', () => location.reload());
   let enhanced: Promise<NewsletterForm> | undefined;
   const load = () => {
     enhanced ??= import('./newsletter-form')
-      .then(({ enhance }) => enhance(form))
+      .then(({ enhance }) => {
+        // A reload offered after a failed try is moot now: the form reports its own states.
+        if (reload) reload.hidden = true;
+        return enhance(form);
+      })
       .catch((error: unknown) => {
         enhanced = undefined;
         throw error;
@@ -26,13 +33,16 @@ if (form) {
     void load()
       .then((controller) => controller.submit())
       .catch(() => {
-        // The script didn't load (offline): say so in the live region.
+        // The script didn't load: say why in the live region, with the reload button when only
+        // a reload helps (src/lib/newsletter-loader.ts).
+        const failure = loadFailure(navigator.onLine);
         const status = form.querySelector<HTMLElement>('[data-newsletter-status]');
-        const message = form.dataset.offline;
+        const message = failure === 'offline' ? form.dataset.offline : form.dataset.reload;
         if (status && message) {
           status.dataset.tone = 'error';
           status.textContent = message;
         }
+        if (reload) reload.hidden = failure !== 'reload';
       });
   });
 
