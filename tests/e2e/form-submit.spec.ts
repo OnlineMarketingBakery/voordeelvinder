@@ -1,8 +1,9 @@
 // "Verstuur" and the lead endpoint (brief §6.1, §9.1, §9.4): what the form does with each answer
 // of POST /api/lead, faked with page.route (tests/support/form-submit.ts): OK → the thank-you
 // page celebrates; 503 → one retry with the same lead_id; 403, 429, 400 and no network → a
-// message, the button unlocked and the answers kept. Also the honeypot, Turnstile (a local stub
-// for Cloudflare's script, loaded only on the contact step) and test mode (?test=1).
+// message, the button unlocked and the answers kept (locked while sending). Also the honeypot
+// (no cheer for its pretend OK), Turnstile (a local stub for Cloudflare's script, loaded only on
+// the contact step, again after a failed load) and test mode (?test=1).
 import { expect, test, type Page } from '@playwright/test';
 
 import copy from '../../src/content/flows/nl/_copy.json' with { type: 'json' };
@@ -190,6 +191,52 @@ test.describe('form submit: the endpoint answers OK', () => {
     expect(bodies).toHaveLength(1);
     expect(bodies[0]).not.toHaveProperty('turnstile_token');
   });
+
+  test('a Turnstile script that failed to load is loaded again on "Verstuur"', async ({ page }) => {
+    const scripts = await stubTurnstile(page);
+    // The first request fails (offline for a moment, a blocker); later ones reach the stub.
+    let failed = 0;
+    await page.route('https://challenges.cloudflare.com/**', (route) => {
+      if (failed > 0) return route.fallback();
+      failed += 1;
+      return route.abort();
+    });
+    const bodies = await stubLead(page);
+    await toContact(page);
+    await expect.poll(() => failed).toBe(1);
+    expect(scripts).toEqual([]);
+    await fillContact(page);
+    await submit(page).click();
+    await page.waitForURL('**/bedankt/thuisbatterij');
+    // Loaded again, and the lead went with a token.
+    expect(scripts).toHaveLength(1);
+    expect(bodies).toHaveLength(1);
+    expect(String(bodies[0]!.turnstile_token)).toMatch(
+      new RegExp(`^${FAKE_TURNSTILE_TOKEN}-\\d+$`),
+    );
+  });
+
+  test('a filled honeypot gets a pretend OK: the thank-you page shows, without the cheer', async ({
+    page,
+  }) => {
+    await stubTurnstile(page);
+    const bodies = await stubLead(page);
+    await toContact(page);
+    await fillContact(page);
+    // A bot fills every input, the hidden one too (the endpoint answers OK and stores nothing).
+    await page.locator('main form input[name="website"]').evaluate((input: HTMLInputElement) => {
+      input.value = 'https://spam.example';
+    });
+    await submit(page).click();
+    await page.waitForURL('**/bedankt/thuisbatterij');
+    await page.waitForLoadState('load');
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]).toMatchObject({ website: 'https://spam.example' });
+    await expect(celebration(page)).not.toHaveAttribute('data-celebrate');
+    expect(
+      await page.evaluate(() => sessionStorage.getItem('voordeelvinder:lead-safe')),
+    ).toBeNull();
+  });
 });
 
 test.describe('form submit: the lead could not be sent', () => {
@@ -270,6 +317,62 @@ test.describe('form submit: the lead could not be sent', () => {
       expect(new Set(bodies.map((body) => body.lead_id)).size).toBe(1);
     });
   }
+
+  test('while sending, nothing changes; after a failure a corrected answer goes out', async ({
+    page,
+  }) => {
+    await stubTurnstile(page);
+    const bodies = await stubLead(page);
+    // The first send waits until the test lets it fail (403); stubLead answers the next one.
+    let fail!: () => void;
+    const failing = new Promise<void>((resolve) => {
+      fail = resolve;
+    });
+    await page.route('**/api/lead', async (route) => {
+      if (route.request().method() !== 'POST' || bodies.length > 0) return route.fallback();
+      bodies.push(route.request().postDataJSON() as Record<string, unknown>);
+      await failing;
+      await route.fulfill({
+        status: 403,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: false, error: 'verification_failed' }),
+      });
+    });
+    await toContact(page);
+    await fillContact(page);
+    await submit(page).click();
+    await expect.poll(() => bodies.length).toBe(1);
+    await expect(submit(page)).toHaveAttribute('aria-disabled', 'true');
+
+    // Sending: text inputs are read-only (focus stays in them); chips and checkboxes don't change.
+    const phone = control(page, 'Telefoonnummer');
+    await expect(phone).not.toBeEditable();
+    await phone.focus();
+    await page.keyboard.type('9');
+    await expect(phone).toBeFocused();
+    await expect(phone).toHaveValue('0475 12 34 56');
+    const thursday = page.getByRole('radio', { name: 'Donderdag', exact: true });
+    await thursday.focus();
+    await page.keyboard.press('Space');
+    await expect(thursday).not.toBeChecked();
+    await expect(page.getByRole('radio', { name: 'Woensdag', exact: true })).toBeChecked();
+    const terms = page.getByRole('checkbox', { name: /Ik ga akkoord/ });
+    await terms.locator('xpath=ancestor::label[1]').click({ position: { x: 17, y: 20 } });
+    await expect(terms).toBeChecked();
+
+    // It fails: everything unlocks, and the corrected number goes out with the next press.
+    fail();
+    await expect(sendError(page)).toHaveText(submitErrors.turnstile);
+    await expect(phone).toBeEditable();
+    await phone.fill('0476 65 43 21');
+    await submit(page).click();
+    await page.waitForURL('**/bedankt/thuisbatterij');
+    expect(bodies).toHaveLength(2);
+    expect(bodies[0]!.contact).toMatchObject({ phone_e164: '+32475123456' });
+    expect(bodies[1]!.contact).toMatchObject({ phone_e164: '+32476654321' });
+    expect(bodies[1]!.call_preference).toEqual({ day: 'wed', slot: '13-14' });
+    expect(bodies[1]!.consent).toMatchObject({ terms: true });
+  });
 
   test('changing an answer clears the message', async ({ page }) => {
     await stubTurnstile(page);

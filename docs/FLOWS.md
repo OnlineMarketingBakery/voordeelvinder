@@ -104,12 +104,15 @@ with `client:load`. Both are indexable (brief §11: only the thank-you pages and
   forward, with nothing answered in between, is ignored (`isRepeatSubmit`): a double click or
   double tap moves one step, and never validates or submits the next step unseen.
 - **Submit:** "Verstuur" validates, builds the submission (`buildSubmission`), locks the button
-  and posts it to `POST /api/lead` (`sendLead` in `src/lib/form/submit.ts`): JSON, the
+  and the answers (text inputs read-only, keeping focus; every change is ignored until a failure
+  unlocks them, so nothing typed during the send is lost without a word) and posts it to
+  `POST /api/lead` (`sendLead` in `src/lib/form/submit.ts`): JSON, the
   submission plus `website` (the honeypot, a hidden text input on the last step, not a flow
   field) and `turnstile_token`; 15 s timeout per attempt; one automatic retry after 1.5 s on a
   503 (or 502/504) or a network failure, with the same `lead_id` and a new Turnstile token (a
   token is good for one check). On `{ ok: true, redirect }` it clears every form session, saves
-  `voordeelvinder:lead-safe` = `{ event_id, product }` (brief §9.1 step 9) and the morph marker,
+  `voordeelvinder:lead-safe` = `{ event_id, product }` (brief §9.1 step 9; not after a filled
+  honeypot, whose OK is pretend: `honeypotFilled`, the server's own test) and the morph marker,
   and goes to the redirect (`/bedankt/<product>`: same copy for every product, noindex, nothing
   personal on it). The thank-you page celebrates only with that flag for its product and removes
   it (`src/scripts/celebrate.ts`), so a direct visit or a reload doesn't; Phase 6 pushes
@@ -126,8 +129,11 @@ with `client:load`. Both are indexable (brief §11: only the thank-you pages and
   (`appearance: interaction-only`, action `lead`) renders above the buttons with
   `PUBLIC_TURNSTILE_SITE_KEY`, else (never on production: the build fails) Cloudflare's test key.
   Each token is taken once, so a retry or a second "Verstuur" gets a fresh one. "Verstuur" waits
-  up to 5 s for a token; without the script (blocked, offline) the lead is sent without one and
-  the server decides.
+  up to 15 s for the widget's first token (the script's 10 s plus the challenge), 5 s for later
+  ones. A widget whose script failed to load or took too long renders again, with a new load, on
+  the next "Verstuur" (`createRecoveringTurnstileWidget`; a script still loading is waited for
+  again, never loaded twice). Without the script (blocked, offline) the lead is sent without a
+  token and the server decides.
 - **Test mode** (brief §9.4, `src/lib/test-mode.ts`): an inline script in `Base.astro` stores
   `voordeelvinder:test` = `1` in sessionStorage on `?test=1` (removes it on `?test=0`) and shows
   the "TESTMODUS" badge (`site.json` `testMode.badge`) on every page while it is set; the

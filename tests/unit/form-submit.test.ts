@@ -1,6 +1,6 @@
 // Sending the lead from the form (brief §9.1, §9.4): sendLead's request and its answer per
 // response, the one retry, the timeout; the test-mode flag; the lead-safe flag the thank-you page
-// reads. The Turnstile widget is in turnstile-client.test.ts.
+// reads (never after a filled honeypot). The Turnstile widget is in turnstile-client.test.ts.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Submission } from '../../src/lib/flow/engine';
@@ -12,6 +12,7 @@ import {
   thanksProduct,
 } from '../../src/lib/form/lead-safe';
 import {
+  honeypotFilled,
   LEAD_ENDPOINT,
   RETRY_DELAY_MS,
   retryAfterSeconds,
@@ -27,6 +28,8 @@ import {
   testModeScript,
   testParam,
 } from '../../src/lib/test-mode';
+import { HONEYPOT_FIELD, parseLeadRequest } from '../../src/server/lead/validate';
+import { body, energyAnswers, flows } from './lead-fixtures';
 
 const LEAD = '0b7f8a3e-2c1d-4e5f-8a9b-1c2d3e4f5a6b';
 const EVENT = '9c8b7a6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d';
@@ -352,6 +355,21 @@ describe('the lead-safe flag (brief §9.1 step 9)', () => {
     expect(thanksProduct('/bedankt/thuisbatterij/')).toBe('thuisbatterij');
     expect(thanksProduct('/bedankt/')).toBeNull();
     expect(thanksProduct('/vergelijken/energie')).toBeNull();
+  });
+
+  it("is not for a filled honeypot, by the endpoint's own test (only spaces are empty)", () => {
+    // A filled honeypot gets the endpoint's pretend OK: no flag, no cheer, no counted lead.
+    expect(honeypotFilled('')).toBe(false);
+    expect(honeypotFilled('   ')).toBe(false);
+    expect(honeypotFilled('https://spam.example')).toBe(true);
+    for (const value of ['', ' ', '\t\n ', 'x', ' spam ', 'https://spam.example']) {
+      const parsed = parseLeadRequest(
+        body('energie', energyAnswers, { [HONEYPOT_FIELD]: value }),
+        flows,
+      );
+      if (!parsed.ok) throw new Error('expected the fixture to be valid');
+      expect(honeypotFilled(value), JSON.stringify(value)).toBe(parsed.honeypot);
+    }
   });
 
   it('is taken once, and only for its own product', () => {

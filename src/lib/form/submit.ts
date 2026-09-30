@@ -113,6 +113,14 @@ export type SendOptions = {
   sleep?: (ms: number) => Promise<void>;
 };
 
+/**
+ * Whether the honeypot was filled, by the endpoint's own test (src/server/lead/validate.ts): a
+ * filled one gets a pretend OK and nothing is stored; only spaces count as empty, a real lead.
+ */
+export function honeypotFilled(value: string): boolean {
+  return value.trim() !== '';
+}
+
 type Attempt = SendResult & { retry: boolean };
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));

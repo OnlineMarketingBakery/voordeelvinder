@@ -75,6 +75,7 @@ import {
 } from '../../lib/form/storage';
 import {
   firstStepBack,
+  honeypotFilled,
   isRepeatSubmit,
   sendLead,
   submissionContext,
@@ -371,6 +372,9 @@ export default function FormIsland({
   };
 
   const onChange = (field: Field, value: AnswerValue | undefined) => {
+    // Nothing changes while the lead is being sent: the submission is built, so a change would
+    // be lost without a word (text inputs are read-only then). A failed send unlocks again.
+    if (submitting.current) return;
     advancedAt.current = null;
     setState((current) => {
       const answers = withAnswer(current.answers, field.id, value);
@@ -411,6 +415,7 @@ export default function FormIsland({
   };
 
   const onApplySuggestion = (field: Field, value: string) => {
+    if (submitting.current) return;
     onChange(field, value);
     document.getElementById(domId.field(field.id))?.focus();
   };
@@ -452,10 +457,8 @@ export default function FormIsland({
       }
       return;
     }
-    const result = await sendLead(submission, {
-      turnstileToken,
-      honeypot: honeypotRef.current?.value ?? '',
-    });
+    const honeypot = honeypotRef.current?.value ?? '';
+    const result = await sendLead(submission, { turnstileToken, honeypot });
     if (!result.ok) {
       // The answers stay; the message shows above the buttons and is announced. Only the kind
       // is logged, never the submission.
@@ -476,11 +479,14 @@ export default function FormIsland({
     clearAllSessions(store);
     try {
       // The thank-you page celebrates (and, Phase 6, fires generate_lead) only with this flag
-      // for its product (brief §9.1 step 9, §10; src/scripts/celebrate.ts).
-      store?.setItem(
-        LEAD_SAFE_KEY,
-        serializeLeadSafe({ event_id: submission.event_id, product: submission.product }),
-      );
+      // for its product (brief §9.1 step 9, §10; src/scripts/celebrate.ts). Never after a filled
+      // honeypot: that OK is the endpoint's pretence, nothing was stored.
+      if (!honeypotFilled(honeypot)) {
+        store?.setItem(
+          LEAD_SAFE_KEY,
+          serializeLeadSafe({ event_id: submission.event_id, product: submission.product }),
+        );
+      }
       store?.setItem(MORPH_MARKER, 'form-card');
     } catch {
       // No storage: the thank-you page shows without the cheer and falls back to the referrer.
@@ -642,6 +648,7 @@ export default function FormIsland({
                   shake={state.shake}
                   onPointerPick={onPointerPick}
                   onPick={onPick}
+                  readOnly={state.submitting}
                 />
               </StepStage>
               {isLast && (

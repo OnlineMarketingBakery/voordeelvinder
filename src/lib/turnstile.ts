@@ -1,7 +1,8 @@
 // Cloudflare Turnstile on the client (brief §9.1 step 4, §11), shared by the form's contact step
 // (src/components/form/useTurnstile.ts) and the footer newsletter (src/scripts/newsletter-form.ts):
 // which site key a build uses, the one script URL, a loader that fetches Cloudflare's script on
-// demand (never with the page) and an explicitly rendered widget that hands out fresh tokens.
+// demand (never with the page) and an explicitly rendered widget that hands out fresh tokens
+// (the form's renders again after the script failed: createRecoveringTurnstileWidget).
 // The server verifies them (src/server/lead/turnstile.ts). No secrets here (src/server/env.ts).
 //
 // Nothing in the browser part throws: when the script can't load, take() answers undefined and
@@ -43,10 +44,15 @@ export function turnstileSiteKey(configured: string | undefined, siteEnv: string
 export const TURNSTILE_SCRIPT_SRC =
   'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 
-/** How long take() waits for a token by default. */
+/** How long take() waits for a token by default once the widget had one (the challenge only). */
 export const TOKEN_WAIT_MS = 5_000;
 /** How long the script may take to load before callers stop waiting for it. */
 export const SCRIPT_TIMEOUT_MS = 10_000;
+/**
+ * How long take() waits by default for a widget's first token: the script's budget plus the
+ * challenge (after a quick autofill or on a slow network, the first send comes before either).
+ */
+export const FIRST_TOKEN_WAIT_MS = SCRIPT_TIMEOUT_MS + TOKEN_WAIT_MS;
 
 /** The part of window.turnstile the site uses. */
 export type TurnstileApi = {
@@ -65,8 +71,10 @@ let loading: Promise<TurnstileApi | null> | undefined;
 
 /**
  * Loads the Turnstile script once per page and resolves with window.turnstile, or null when it
- * fails or takes longer than SCRIPT_TIMEOUT_MS (blocked by an extension, offline, a CSP). After
- * a failed load, the next call tries again.
+ * fails or this call waited `timeoutMs` for it (blocked by an extension, offline, a CSP). A
+ * script still loading by then is not given up: a later call waits for that same script again
+ * (Turnstile warns when api.js loads twice), and once it is there window.turnstile serves every
+ * call. After a failed load, the next call tries again.
  */
 export function loadTurnstile(
   doc: Document = document,
@@ -76,23 +84,27 @@ export function loadTurnstile(
   if (win?.turnstile) return Promise.resolve(win.turnstile);
   loading ??= new Promise<TurnstileApi | null>((resolve) => {
     const script = doc.createElement('script');
+    script.src = TURNSTILE_SCRIPT_SRC;
+    script.async = true;
+    script.addEventListener('load', () => resolve(win?.turnstile ?? null));
+    script.addEventListener('error', () => {
+      // A later call may try again (the network may be back).
+      loading = undefined;
+      script.remove();
+      resolve(null);
+    });
+    doc.head.append(script);
+  });
+  const pending = loading;
+  // Each call waits for the script at most `timeoutMs`, counted from that call.
+  return new Promise((resolve) => {
     const timer = setTimeout(() => resolve(null), timeoutMs);
     const done = (api: TurnstileApi | null) => {
       clearTimeout(timer);
       resolve(api);
     };
-    script.src = TURNSTILE_SCRIPT_SRC;
-    script.async = true;
-    script.addEventListener('load', () => done(win?.turnstile ?? null));
-    script.addEventListener('error', () => {
-      // A later call may try again (the network may be back).
-      loading = undefined;
-      script.remove();
-      done(null);
-    });
-    doc.head.append(script);
+    void pending.then(done, () => done(null));
   });
-  return loading;
 }
 
 /** For tests: forget the loaded script. */
@@ -103,14 +115,24 @@ export function resetTurnstileLoader(): void {
 export type TurnstileWidget = {
   /**
    * The current token, waiting up to `waitMs` for one; undefined when there is none by then or
-   * the widget is unusable. A token is good for one server check, so taking it resets the
-   * widget: the next take (a retry, another send) gets a new one.
+   * the widget is unusable. The wait is FIRST_TOKEN_WAIT_MS by default until the widget's first
+   * token (the script may still be loading), TOKEN_WAIT_MS after. A token is good for one server
+   * check, so taking it resets the widget: the next take (a retry, another send) gets a new one.
    */
   take(waitMs?: number): Promise<string | undefined>;
   /** True once the script failed to load or the widget could not render. */
   readonly broken: boolean;
   /** Removes the widget. */
   remove(): void;
+};
+
+export type TurnstileWidgetOptions = {
+  container: HTMLElement;
+  siteKey: string;
+  /** Shown in Cloudflare's analytics (`lead`, `newsletter`). */
+  action?: string;
+  size?: 'normal' | 'flexible' | 'compact';
+  api?: Promise<TurnstileApi | null>;
 };
 
 /** Renders a widget into `container` (explicitly, invisible unless Cloudflare needs a click). */
@@ -120,20 +142,15 @@ export function createTurnstileWidget({
   action,
   size,
   api = loadTurnstile(),
-}: {
-  container: HTMLElement;
-  siteKey: string;
-  /** Shown in Cloudflare's analytics (`lead`, `newsletter`). */
-  action?: string;
-  size?: 'normal' | 'flexible' | 'compact';
-  api?: Promise<TurnstileApi | null>;
-}): TurnstileWidget {
+}: TurnstileWidgetOptions): TurnstileWidget {
   let token: string | undefined;
   let widgetId: string | undefined;
   let turnstile: TurnstileApi | null = null;
   // Until the script has loaded (or failed), take() waits for it too.
   let settled = false;
   let removed = false;
+  // Until the first token, take() waits longer by default: the script may still be loading.
+  let hadToken = false;
   const waiters = new Set<(value: string | undefined) => void>();
 
   const flush = (value: string | undefined) => {
@@ -162,6 +179,7 @@ export function createTurnstileWidget({
           'response-field': false,
           callback: (value: string) => {
             token = value;
+            hadToken = true;
             flush(value);
           },
           // Turnstile refreshes an expired token by itself ('refresh-expired': auto).
@@ -185,7 +203,7 @@ export function createTurnstileWidget({
   });
 
   return {
-    async take(waitMs = TOKEN_WAIT_MS) {
+    async take(waitMs = hadToken ? TOKEN_WAIT_MS : FIRST_TOKEN_WAIT_MS) {
       if (removed || unusable()) return undefined;
       const value =
         token ??
@@ -222,6 +240,42 @@ export function createTurnstileWidget({
         // Already gone.
       }
       widgetId = undefined;
+    },
+  };
+}
+
+/**
+ * A widget that renders again once it broke (the script failed to load or took too long, or
+ * render failed): the next take() removes it and renders a new one into the same container,
+ * with a new loadTurnstile(), so a visitor whose network is back gets a token without a reload.
+ * remove() removes whichever widget is current. The form's contact step uses it
+ * (src/components/form/useTurnstile.ts).
+ */
+export function createRecoveringTurnstileWidget({
+  load = () => loadTurnstile(),
+  ...options
+}: Omit<TurnstileWidgetOptions, 'api'> & {
+  /** The script loader, called for every widget it renders (tests pass their own). */
+  load?: () => Promise<TurnstileApi | null>;
+}): TurnstileWidget {
+  const render = () => createTurnstileWidget({ ...options, api: load() });
+  let current = render();
+  let removed = false;
+  return {
+    async take(waitMs) {
+      if (removed) return undefined;
+      if (current.broken) {
+        current.remove();
+        current = render();
+      }
+      return current.take(waitMs);
+    },
+    get broken() {
+      return current.broken;
+    },
+    remove() {
+      removed = true;
+      current.remove();
     },
   };
 }

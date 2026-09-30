@@ -39,6 +39,11 @@ export type StepViewProps = {
   /** Answer cards: a pointer went down on a card, and a radio was clicked (auto-advance). */
   onPointerPick?: (field: Field, code: string) => void;
   onPick?: (field: Field, code: string) => void;
+  /**
+   * While the lead is being sent: text inputs are read-only (focus stays where it is); the
+   * island ignores every change then, also of cards, chips, checkboxes and selects.
+   */
+  readOnly?: boolean;
 };
 
 export const STEP_TITLE_ID = 'formulier-stap-titel';
@@ -60,6 +65,7 @@ export function StepView({
   shake,
   onPointerPick,
   onPick,
+  readOnly = false,
 }: StepViewProps) {
   // The last shake each field played on this step (the step view mounts again for every step),
   // so a revealed field that collapses and comes back doesn't replay it. One mutable map for
@@ -103,6 +109,7 @@ export function StepView({
             suggestion={suggestions[field.id]}
             onApplySuggestion={(value) => onApplySuggestion(field, value)}
             flag={flag}
+            readOnly={readOnly}
           />
         );
     }

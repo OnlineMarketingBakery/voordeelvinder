@@ -1,5 +1,6 @@
 // The "lead is safe" flag (brief §9.1 step 9, §10): once POST /api/lead has answered OK, the form
-// saves { event_id, product } in sessionStorage and goes to /bedankt/<product>. The thank-you page
+// saves { event_id, product } in sessionStorage and goes to /bedankt/<product> (no flag after a
+// filled honeypot, whose OK is pretend: honeypotFilled in submit.ts). The thank-you page
 // celebrates only when the flag is there for its own product, and removes it, so a direct visit
 // or a reload shows the page without the cheer. Phase 6 pushes `generate_lead` from the same
 // read (a direct visit never fires a lead).
