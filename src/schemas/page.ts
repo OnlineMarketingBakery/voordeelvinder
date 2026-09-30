@@ -3,10 +3,16 @@
 // src/schemas/blocks; add new types to the union below and to AGENTS.md.
 import { z } from 'astro/zod';
 
+import { benefitsBlock } from './blocks/benefits';
 import { comparisonTableBlock } from './blocks/comparisonTable';
+import { ctaBandBlock } from './blocks/ctaBand';
+import { ctaMascotBlock } from './blocks/ctaMascot';
+import { faqBlock } from './blocks/faq';
 import { featuresBlock } from './blocks/features';
 import { heroBlock } from './blocks/hero';
+import { productSpotlightBlock } from './blocks/productSpotlight';
 import { stepsBlock } from './blocks/steps';
+import { testimonialsBlock } from './blocks/testimonials';
 import { text } from './primitives';
 
 export const section = z.discriminatedUnion('type', [
@@ -14,6 +20,12 @@ export const section = z.discriminatedUnion('type', [
   featuresBlock,
   stepsBlock,
   comparisonTableBlock,
+  productSpotlightBlock,
+  benefitsBlock,
+  ctaBandBlock,
+  faqBlock,
+  testimonialsBlock,
+  ctaMascotBlock,
 ]);
 
 export type Section = z.infer<typeof section>;

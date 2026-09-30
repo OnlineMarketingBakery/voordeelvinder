@@ -1,0 +1,104 @@
+---
+// CTA band (Figma 60:49 home, 81:3582 solar, 81:3830 battery): a centred h2, body and button
+// on a rounded band, with three concentric rings behind the text. `purple` (home) is white
+// text with the lime button; `lime` (product pages) dark text with the white button. The
+// rings keep their designed 930×366 size at every width; the band clips them.
+import Rings from '../../assets/images/decor/cta-band-rings.svg';
+import type { CtaBandBlock } from '../../schemas/blocks/ctaBand';
+import Button from '../ui/Button.astro';
+import Container from '../ui/Container.astro';
+import CopyText from '../ui/CopyText.astro';
+
+type Props = CtaBandBlock;
+
+const { id, tone, title, body, cta } = Astro.props;
+const headingId = `${id ?? 'cta-band'}-title`;
+
+const tones = {
+  purple: {
+    band: 'surface-dark bg-purple-600 py-12 md:py-16 lg:py-[82px]',
+    title: 'max-w-[667px] text-white md:text-h3 lg:text-h2',
+    body: 'mt-4 max-w-[721px] text-white md:text-body-lg lg:mt-7',
+    button: 'mt-6 lg:mt-4',
+    rings: 'text-white',
+  },
+  lime: {
+    band: 'bg-lime-300 pt-12 pb-10 md:pt-16 md:pb-12 lg:pt-[82px] lg:pb-[59px]',
+    title: 'max-w-[641px] text-ink-900 md:text-h3',
+    body: 'mt-3 max-w-[626px] text-ink-900',
+    button: 'mt-6',
+    // The product frames add a .67 group opacity to the rings.
+    rings: 'text-ink-900 opacity-67',
+  },
+}[tone];
+---
+
+<section {id} aria-labelledby={headingId} class="relative z-10 pt-16 md:pt-24 lg:pt-32">
+  <Container>
+    <div
+      class:list={[
+        'cta-band relative isolate flex flex-col items-center overflow-hidden rounded-2xl px-5 text-center md:rounded-3xl md:px-12',
+        tones.band,
+      ]}
+      data-reveal
+    >
+      <div
+        class:list={[
+          'cta-band-rings pointer-events-none absolute top-0 left-1/2 -z-10 w-[930px] -translate-x-1/2',
+          tones.rings,
+        ]}
+        aria-hidden="true"
+      >
+        <Rings class="block h-[366px] w-[930px]" />
+      </div>
+      <h2 id={headingId} class:list={['text-h4 text-balance', tones.title]}>
+        {title}
+      </h2>
+      {body && <CopyText copy={body} class:list={['text-body', tones.body]} />}
+      <Button
+        href={cta.href}
+        variant={tone === 'purple' ? 'lime' : 'white'}
+        size="lg"
+        icon="arrow-up-right"
+        class:list={[
+          // Below sm the large label and arrow don't fit the band: the md type size, and the
+          // label may wrap instead of overflowing the band.
+          'max-w-full max-sm:h-auto max-sm:min-h-[54px] max-sm:px-6 max-sm:py-3 max-sm:text-button max-sm:whitespace-normal',
+          tones.button,
+        ]}
+      >
+        {cta.label}
+      </Button>
+    </div>
+  </Container>
+</section>
+
+<style>
+  /*
+   * When the band rises in (src/scripts/reveal.ts, which does nothing with reduced motion),
+   * the rings scale in once, inner ring first. The SVG lists them outer to inner.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    .cta-band.is-revealed .cta-band-rings :global(circle) {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation-name: ring-in;
+      animation-duration: var(--motion-duration-slow);
+      animation-timing-function: var(--ease-out);
+      animation-delay: calc(var(--motion-duration-fast) + var(--ring-order) * 80ms);
+      animation-fill-mode: both;
+    }
+
+    .cta-band-rings :global(circle:nth-of-type(1)) {
+      --ring-order: 2;
+    }
+
+    .cta-band-rings :global(circle:nth-of-type(2)) {
+      --ring-order: 1;
+    }
+
+    .cta-band-rings :global(circle:nth-of-type(3)) {
+      --ring-order: 0;
+    }
+  }
+</style>

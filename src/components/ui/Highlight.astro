@@ -1,22 +1,39 @@
 ---
 // The lime chip behind a word in a heading (Figma 60:10/60:11, 60:499/60:501). A plain span,
 // so screen readers don't announce "highlighted".
+import Sparkle from '../../assets/images/decor/sparkle.svg';
+
 interface Props {
   text: string;
-  /** Final CTA: slightly tilted chip. */
+  /** Final CTA: slightly tilted chip, padding in em so it scales with the heading. */
   tilt?: boolean;
+  /** Final CTA: three lime strokes at the chip's top-right (Figma 60:507), em-sized. */
+  sparkle?: boolean;
   class?: string;
+  sparkleClass?: string;
 }
 
-const { text, tilt = false, class: className } = Astro.props;
+const { text, tilt = false, sparkle = false, class: className, sparkleClass } = Astro.props;
 ---
 
 <span
   class:list={[
-    'rounded-md bg-lime-300 px-3 text-ink-900 box-decoration-clone',
-    tilt && 'inline-block -rotate-[1.35deg]',
+    'rounded-md bg-lime-300 text-ink-900 box-decoration-clone',
+    tilt ? 'inline-block -rotate-[1.35deg] px-[0.175em]' : 'px-3',
+    sparkle && 'relative',
     className,
   ]}
 >
   {text}
+  {sparkle && (
+    <Sparkle
+      class={[
+        'pointer-events-none absolute top-[-0.43em] right-[-0.44em] h-[0.704em] w-[0.51em] text-lime-300',
+        sparkleClass,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      aria-hidden="true"
+    />
+  )}
 </span>

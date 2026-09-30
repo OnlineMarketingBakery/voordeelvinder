@@ -1,0 +1,93 @@
+---
+// FAQ (Figma home 60:3/60:14/60:50/60:57–60:60, solar 69:947/69:983/69:990, battery
+// 80:2880/80:2907/80:2908): the heading and a contact card on the left, the questions on the
+// right (from lg). Only answered questions render (CONTENT-TODO 2.1); the page's FAQPage
+// JSON-LD is built from the same items (src/lib/faq.ts). `lavender` (home) sits on a tinted
+// panel that can start under the CTA band above it (`extendsBehindPrevious`); `white` (product
+// pages) is a plain section with lavender-50 items and card.
+import type { FaqBlock } from '../../schemas/blocks/faq';
+import { answeredItems } from '../../lib/faq';
+import { getSite } from '../../lib/site';
+import Container from '../ui/Container.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+import AccordionItem from './parts/AccordionItem.astro';
+import ContactCard from './parts/ContactCard.astro';
+
+type Props = FaqBlock;
+
+const { id, tone, extendsBehindPrevious = false, eyebrow, title, items, contact } = Astro.props;
+const site = await getSite();
+
+const headingId = `${id ?? 'faq'}-title`;
+const questions = answeredItems(items);
+const card = { ...site.faq.contact, ...contact };
+const lavender = tone === 'lavender';
+const behind = lavender && extendsBehindPrevious;
+
+// --faq-overlap: how far the panel reaches up behind the previous block (Figma 191 at 1440).
+// The content starts that far plus the designed 108 px below the section top, and a negative
+// scroll margin makes an anchor jump land where the band above ends.
+const spacing = behind
+  ? 'faq-behind -mt-(--faq-overlap) pt-[calc(var(--faq-overlap)+3.5rem)] pb-14 [--faq-overlap:120px] scroll-mt-[calc(-1*var(--faq-overlap))] md:pt-[calc(var(--faq-overlap)+5rem)] md:pb-20 md:[--faq-overlap:160px] lg:pt-[calc(var(--faq-overlap)+108px)] lg:pb-[111px] lg:[--faq-overlap:191px]'
+  : lavender
+    ? 'mt-16 pt-14 pb-14 md:mt-24 md:pt-20 md:pb-20 lg:mt-32 lg:pt-[108px] lg:pb-[111px]'
+    : 'pt-16 md:pt-24 lg:pt-32';
+---
+
+<section {id} aria-labelledby={headingId} class:list={['relative isolate', spacing]}>
+  {lavender && (
+    <div
+      class:list={[
+        'absolute inset-x-0 inset-y-0 -z-10 bg-linear-to-b from-lavender-100/40 to-purple-500/15 md:inset-x-4 xl:inset-x-[25px]',
+        behind ? 'rounded-b-3xl' : 'rounded-3xl',
+      ]}
+      aria-hidden="true"
+    ></div>
+  )}
+  <Container>
+    <div class="grid gap-y-8 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:gap-x-8 lg:gap-y-[21px] xl:grid-cols-[458px_minmax(0,1fr)] xl:gap-x-10">
+      <SectionHeading
+        id={headingId}
+        {eyebrow}
+        pillTone="purple"
+        {title}
+        class="lg:col-start-1 lg:row-start-1"
+      />
+      <ul
+        role="list"
+        class="grid gap-3 self-start md:gap-5 lg:col-start-2 lg:row-span-2 lg:row-start-1"
+        data-reveal-stagger
+      >
+        {questions.map((item) => (
+          <li>
+            <AccordionItem
+              question={item.question}
+              answer={item.answer}
+              open={item.open}
+              answerLabel={site.faq.answerLabel}
+              {tone}
+            />
+          </li>
+        ))}
+      </ul>
+      <div class="self-start lg:col-start-1 lg:row-start-2" data-reveal>
+        <ContactCard
+          title={card.title}
+          body={card.body}
+          cta={card.cta}
+          ctaHint={card.ctaHint}
+          href={`mailto:${site.contact.email.value}`}
+          surface={lavender ? 'white' : 'lavender-50'}
+        />
+      </div>
+    </div>
+  </Container>
+</section>
+
+<style>
+  /* The block above (the CTA band) stays on top of the panel that starts behind it. */
+  :global(:has(+ .faq-behind)) {
+    position: relative;
+    z-index: 10;
+  }
+</style>

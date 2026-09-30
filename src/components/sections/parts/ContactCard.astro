@@ -1,0 +1,52 @@
+---
+// The FAQ contact card (Figma 60:50, 69:983, 80:2907): title, body and a mailto button, with
+// the laptop fox on a purple gradient circle. The circle sits in a clipped inner layer (the
+// card's rounded corner cuts it off); the fox is outside it, so its laptop base hangs 16 px
+// over the bottom edge as designed. Below md the art sits under the text.
+import Button from '../../ui/Button.astro';
+import Illustration from '../../ui/Illustration.astro';
+
+interface Props {
+  title: string;
+  body: string;
+  /** Button label. */
+  cta: string;
+  /** Visually hidden after the label, e.g. "(opent je e-mailprogramma)". */
+  ctaHint: string;
+  /** mailto: link to the site's contact address. */
+  href: string;
+  surface: 'white' | 'lavender-50';
+  class?: string;
+}
+
+const { title, body, cta, ctaHint, href, surface, class: className } = Astro.props;
+---
+
+<div
+  class:list={[
+    'relative isolate flex flex-col rounded-2xl p-7 pb-0 md:min-h-[300px] md:p-10 lg:min-h-[429px] xl:p-[42px]',
+    surface === 'white' ? 'bg-white' : 'bg-lavender-50',
+    className,
+  ]}
+>
+  <div class="absolute inset-0 -z-10 overflow-hidden rounded-[inherit]" aria-hidden="true">
+    <div class="absolute -right-2 -bottom-[63px] size-[230px] rounded-full bg-linear-to-b from-purple-500 to-white/0 md:-right-[13px] md:-bottom-[72px] md:size-[274px]"></div>
+  </div>
+  <div class="relative z-10 md:max-w-[345px]">
+    <h3 class="max-w-[260px] text-h4 text-ink-900 md:text-h3">{title}</h3>
+    <p class="mt-3 text-body text-ink-600 md:mt-[19px]">{body}</p>
+    <Button {href} variant="lime" size="sm" glow="none" icon="arrow-up-right" class="mt-5 md:mt-2">
+      {cta}
+      <span class="sr-only">{` ${ctaHint}`}</span>
+    </Button>
+  </div>
+  <div class="pointer-events-none relative mt-2 h-[190px] md:static md:mt-0 md:h-auto">
+    <Illustration
+      src="mascot/fox-laptop"
+      alt=""
+      widths={[240, 285, 480, 570]}
+      sizes="(min-width: 768px) 285px, 240px"
+      class="absolute -right-[11px] -bottom-4 h-auto w-[240px] md:right-[17px] md:w-[285px]"
+    />
+  </div>
+</div>
