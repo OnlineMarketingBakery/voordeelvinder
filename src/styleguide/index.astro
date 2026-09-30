@@ -1,0 +1,137 @@
+---
+// Internal overview of the design tokens (and, later, components) for review on staging.
+// Injected by astro.config.ts on non-production builds only; noindex and not in the sitemap.
+// Labels here are token names, not site copy, so they don't live in content files.
+import globalCss from '../styles/global.css?raw';
+
+import Base from '../layouts/Base.astro';
+import { contrastRatio } from '../lib/design/contrast';
+import { readTokens, tokenValue } from '../lib/design/tokens';
+
+const colors = readTokens(globalCss, '--color-');
+
+// Literal values, not var(): Tailwind only emits theme variables that something uses.
+const textTokens = readTokens(globalCss, '--text-');
+const textProp = (name: string, fallback: string) =>
+  textTokens.find((t) => t.name === name)?.value ?? fallback;
+const text = textTokens
+  .filter((t) => !t.name.includes('--', 2))
+  .map((t) => ({
+    ...t,
+    style: [
+      `font-size:${t.value}`,
+      `line-height:${textProp(`${t.name}--line-height`, 'normal')}`,
+      `letter-spacing:${textProp(`${t.name}--letter-spacing`, 'normal')}`,
+      `font-weight:${textProp(`${t.name}--font-weight`, '400')}`,
+    ].join(';'),
+  }));
+const radii = readTokens(globalCss, '--radius-');
+const shadows = [
+  ...readTokens(globalCss, '--shadow-'),
+  ...readTokens(globalCss, '--inset-shadow-'),
+];
+
+const white = tokenValue(globalCss, '--color-white');
+const ink = tokenValue(globalCss, '--color-ink-900');
+const purple = tokenValue(globalCss, '--color-purple-600');
+const lime = tokenValue(globalCss, '--color-lime-300');
+// Translucent "on-purple" colours are foregrounds for purple surfaces.
+const surfaceFor = (name: string) => (name.startsWith('--color-on-purple') ? purple : white);
+// Preview each shadow on the surface it is designed for.
+const shadowSurface = (name: string) =>
+  name.includes('on-purple')
+    ? purple
+    : name.includes('gloss') || name.includes('glow-lime')
+      ? lime
+      : white;
+const ratio = (value: string, bg: string) => contrastRatio(value, bg).toFixed(2);
+const sample = 'Betaal jij te veel voor energie?';
+---
+
+<Base title="Styleguide — VoordeelVinder" noindex>
+  <main class="mx-auto max-w-content px-4 py-12 md:px-6">
+    <h1 class="text-h2 text-ink-900">Styleguide</h1>
+    <p class="mt-2 text-body text-ink-600">
+      Tokens from <code>src/styles/global.css</code>. "NEW" entries are proposals to confirm with
+      the designer.
+    </p>
+
+    <section class="mt-12" aria-labelledby="colors">
+      <h2 id="colors" class="text-h4">
+        Colours
+      </h2>
+      <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {colors.map((c) => (
+          <li class="overflow-hidden rounded-xl border border-lavender-300">
+            <div style={`background:${surfaceFor(c.name)}`}>
+              <div class="h-20" style={`background:${c.value}`} />
+            </div>
+            <div class="p-3 text-sm">
+              <p class="font-semibold text-ink-900">{c.name.replace('--color-', '')}</p>
+              <p class="text-ink-600">{c.value}</p>
+              <p class="text-ink-600">
+                {surfaceFor(c.name) === white
+                  ? `on white ${ratio(c.value, white)} · ink on it ${ratio(ink, c.value)}`
+                  : `on purple-600 ${ratio(c.value, purple)}`}
+              </p>
+              {c.note && <p class="mt-1 text-ink-600">{c.note}</p>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="mt-16" aria-labelledby="type">
+      <h2 id="type" class="text-h4">
+        Type
+      </h2>
+      <ul class="mt-6 space-y-6">
+        {text.map((t) => (
+          <li>
+            <p class="text-sm text-ink-600">
+              text-{t.name.replace('--text-', '')} · {t.value} {t.note}
+            </p>
+            <p class="text-ink-900" style={t.style}>
+              {sample}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="mt-16" aria-labelledby="radii">
+      <h2 id="radii" class="text-h4">
+        Radius
+      </h2>
+      <ul class="mt-6 flex flex-wrap gap-6">
+        {radii.map((r) => (
+          <li class="text-center text-sm text-ink-600">
+            <div
+              class="size-24 border-2 border-purple-500 bg-lavender-50"
+              style={`border-radius:${r.value}`}
+            />
+            <p class="mt-2">{r.name.replace('--radius-', 'rounded-')}</p>
+            <p>{r.value}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="mt-16" aria-labelledby="shadows">
+      <h2 id="shadows" class="text-h4">
+        Shadows
+      </h2>
+      <ul class="mt-6 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        {shadows.map((s) => (
+          <li class="text-sm text-ink-600">
+            <div class="rounded-3xl p-6" style={`background:${shadowSurface(s.name)}`}>
+              <div class="h-24 rounded-2xl bg-white" style={`box-shadow:${s.value}`} />
+            </div>
+            <p class="mt-3 font-semibold text-ink-900">{s.name.replace('--', '')}</p>
+            {s.note && <p>{s.note}</p>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  </main>
+</Base>

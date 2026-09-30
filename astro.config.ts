@@ -4,10 +4,24 @@ import node from '@astrojs/node';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'astro/config';
+import type { AstroIntegration } from 'astro';
+import { defineConfig, fontProviders } from 'astro/config';
 import { loadEnv } from 'vite';
 
-import { parseServerEnv } from './src/server/env';
+import { parseServerEnv, type SiteEnv } from './src/server/env';
+
+/** Internal token/component overview at /styleguide. Never part of a production build. */
+function styleguide(siteEnv: SiteEnv): AstroIntegration {
+  return {
+    name: 'voordeelvinder:styleguide',
+    hooks: {
+      'astro:config:setup': ({ injectRoute }) => {
+        if (siteEnv === 'production') return;
+        injectRoute({ pattern: '/styleguide', entrypoint: './src/styleguide/index.astro' });
+      },
+    },
+  };
+}
 
 // Astro evaluates this file before it loads .env, so read it ourselves.
 // Values already set in the process environment (CI) take precedence.
@@ -38,7 +52,38 @@ export default defineConfig({
   }),
   // No server-side sessions: the adapter would otherwise enable filesystem sessions.
   session: false,
-  integrations: [react(), sitemap()],
+  integrations: [
+    react(),
+    sitemap({ filter: (page) => !new URL(page).pathname.startsWith('/styleguide') }),
+    styleguide(env.SITE_ENV),
+  ],
+  // Bricolage Grotesque (SIL OFL 1.1), self-hosted from the installed Fontsource package; no
+  // network at build time. The wght-only file matches Figma, which pins opsz at its default 14.
+  // Only the Latin subset: it covers Dutch and French. Astro generates metric-matched fallbacks
+  // to keep layout shift down while the font loads.
+  fonts: [
+    {
+      provider: fontProviders.local(),
+      name: 'Bricolage Grotesque',
+      cssVariable: '--font-bricolage',
+      fallbacks: ['ui-sans-serif', 'system-ui', 'sans-serif'],
+      options: {
+        variants: [
+          {
+            src: [
+              '@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wght-normal.woff2',
+            ],
+            weight: '200 800',
+            style: 'normal',
+            display: 'swap',
+            unicodeRange: [
+              'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD',
+            ],
+          },
+        ],
+      },
+    },
+  ],
   // Real page loads with native view transitions, never <ClientRouter /> (brief §6.1).
   prefetch: { prefetchAll: true, defaultStrategy: 'viewport' },
   security: {

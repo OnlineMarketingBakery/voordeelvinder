@@ -2,7 +2,10 @@ import { test } from '@playwright/test';
 
 // Full-page screenshots for PR descriptions (brief §4.6). Saved per project under
 // test-results/screenshots/ and uploaded as a CI artifact.
-const PAGES = [{ name: 'home', path: '/' }];
+const PAGES = [
+  { name: 'home', path: '/' },
+  { name: 'styleguide', path: '/styleguide' },
+];
 
 for (const { name, path } of PAGES) {
   test(`screenshot: ${name}`, async ({ page }, testInfo) => {
