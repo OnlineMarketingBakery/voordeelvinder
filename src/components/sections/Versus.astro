@@ -1,6 +1,7 @@
 ---
-// "Niet zomaar een vergelijker" (About us 113:1009–113:1066): what others do (purple tint,
-// crosses) beside what we do (lime tint, ticks).
+// "Niet zomaar een vergelijker" (About us 113:1009–113:1066): two 573×500 panels, a 61 px title
+// bar (24 px), then rows 71 apart with a 37 px ringed mark (a cross on purple, a tick on lime)
+// and 18 px text between hairlines.
 import type { VersusBlock } from '../../schemas/blocks/versus';
 import Container from '../ui/Container.astro';
 import SectionHeading from '../ui/SectionHeading.astro';
@@ -13,38 +14,47 @@ const panels = [
   {
     side: others,
     panel: 'bg-lavender-50',
-    head: 'bg-purple-500 text-white',
-    mark: 'bg-purple-500 text-white',
-    glyph: '✕',
+    head: 'bg-purple-600 text-white',
+    mark: 'bg-purple-600 text-white',
+    path: 'M6 6l8 8M14 6l-8 8',
   },
   {
     side: us,
     panel: 'bg-lime-50',
-    head: 'bg-lime-300 text-ink-900',
+    head: 'bg-lime-400 text-ink-900',
     mark: 'bg-lime-400 text-ink-900',
-    glyph: '✓',
+    path: 'M5 10.5l3.2 3.2L15 7',
   },
 ];
 ---
 
-<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-32">
+<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-[147px]">
   <Container>
-    <SectionHeading id={headingId} title={title} intro={intro} align="center" />
-    <div class="mt-10 grid gap-6 md:grid-cols-2 lg:mt-14" data-reveal-stagger>
-      {panels.map(({ side, panel, head, mark, glyph }) => (
-        <div class:list={['rounded-2xl p-4 md:p-6', panel]}>
-          <h3 class:list={['rounded-xl px-4 py-3 text-title-sm', head]}>{side.title}</h3>
-          <ul role="list" class="mt-2">
+    <SectionHeading id={headingId} title={title} intro={intro} align="center" introClass="mt-4" />
+    <div class="mt-10 grid gap-6 md:grid-cols-2 lg:mt-[51px]" data-reveal-stagger>
+      {panels.map(({ side, panel, head, mark, path }) => (
+        <div class:list={['rounded-3xl p-4 md:px-[30px] md:pt-[30px] md:pb-[34px]', panel]}>
+          <h3 class:list={['rounded-xl px-[26px] py-[17px] text-title-lg', head]}>{side.title}</h3>
+          <ul role="list" class="mt-[17px] md:px-1">
             {side.items.map((item) => (
-              <li class="flex items-center gap-3 border-b border-lavender-400 px-2 py-4 text-sm text-ink-800 last:border-b-0">
+              <li class="flex min-h-[71px] items-center gap-[7px] border-b border-lavender-300 py-2 text-body-lg text-ink-900 last:border-b-0">
                 <span
                   aria-hidden="true"
-                  class:list={[
-                    'grid size-6 shrink-0 place-items-center rounded-full text-xs',
-                    mark,
-                  ]}
+                  class="grid size-[37px] shrink-0 place-items-center rounded-full bg-white"
                 >
-                  {glyph}
+                  <span class:list={['grid size-[31px] place-items-center rounded-full', mark]}>
+                    <svg
+                      viewBox="0 0 20 20"
+                      class="size-5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d={path} />
+                    </svg>
+                  </span>
                 </span>
                 {item}
               </li>

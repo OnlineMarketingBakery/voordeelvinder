@@ -100,7 +100,10 @@ describe('CtaBand component', () => {
   it('renders the home band as a section labelled by its h2, with one link', async () => {
     const html = await render(homeBand);
     expect(html).toMatch(/<section aria-labelledby="cta-band-title"/);
-    expect(html).toMatch(/<h2 id="cta-band-title"[^>]*>Klaar om te zien wat jij betaalt\?<\/h2>/);
+    // Each "\n"-separated part of the title is a line of its own (one here).
+    expect(html).toMatch(
+      /<h2 id="cta-band-title"[^>]*><span[^>]*>Klaar om te zien wat jij betaalt\?<\/span><\/h2>/,
+    );
     expect(count(html, /<h[1-6] /g)).toBe(1);
     expect(html).toContain(`>${homeBand.body as string}</p>`);
     expect(count(html, /<a /g)).toBe(1);

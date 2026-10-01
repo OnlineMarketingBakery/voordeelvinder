@@ -62,7 +62,10 @@ const tones = {
         <Rings class="block h-[366px] w-[930px]" />
       </div>
       <h2 id={headingId} class:list={['text-h4 text-balance', tones.title]}>
-        {title}
+        {/* "\n" in the title is a designed line break (About us 100:595). */}
+        {title.split('\n').map((line, index) => (
+          <span class="block">{`${index > 0 ? ' ' : ''}${line}`}</span>
+        ))}
       </h2>
       {body && <CopyText copy={body} class:list={['text-body', tones.body]} />}
       <Button

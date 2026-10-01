@@ -38,6 +38,8 @@ interface Props {
 
 const { id, variant, eyebrow, title, body, cta, art, usps } = Astro.props;
 const isHome = variant === 'home';
+// About us (100:2): a wider text column (651) beside the mascot alone.
+const about = art.preset === 'about';
 
 // Supporting elements rise in after first paint; delays in ms.
 const enter = {
@@ -65,8 +67,8 @@ const preset = {
   },
   // About us (100:2): the mascot alone in its circles.
   about: {
-    padding: 'xl:pt-[120px] xl:pb-[110px]',
-    art: 'lg:w-[clamp(22rem,30vw,27rem)]',
+    padding: 'xl:pt-[124px] xl:pb-[104px]',
+    art: 'lg:w-[clamp(24rem,34vw,31.0625rem)]',
   },
   home: { padding: '', art: '' },
 }[art.preset];
@@ -85,7 +87,11 @@ const spacing = isHome
           : ['pb-14 lg:pb-24', preset.padding],
       ]}
     >
-      <div class:list={[isHome ? 'max-w-[574px] xl:pt-[13px]' : 'max-w-[580px]']}>
+      <div
+        class:list={[
+          isHome ? 'max-w-[574px] xl:pt-[13px]' : about ? 'max-w-[651px]' : 'max-w-[580px]',
+        ]}
+      >
         {eyebrow && (
           <p class:list={['text-body-lg md:text-lead', enter[0]]}>
             {eyebrow.emoji && (
@@ -108,7 +114,7 @@ const spacing = isHome
             isHome ? 'text-balance' : 'text-pretty',
             eyebrow && 'mt-3 md:mt-4 lg:mt-4.5',
             // Product: the h1 may use the column (battery 80:3141 is 573 wide: "Gebruik het wanneer").
-            isHome ? 'max-w-[29rem]' : 'max-w-[574px]',
+            isHome ? 'max-w-[29rem]' : about ? 'max-w-[651px]' : 'max-w-[574px]',
           ]}
         >
           {/* "\n" in the title is a designed line break (battery 80:3141). */}
@@ -120,7 +126,7 @@ const spacing = isHome
           copy={body}
           class:list={[
             'text-body md:max-w-[36rem] lg:leading-[1.625]',
-            isHome ? 'lg:max-w-[32rem]' : 'lg:max-w-none',
+            isHome ? 'lg:max-w-[32rem]' : about ? 'lg:max-w-[583px]' : 'lg:max-w-none',
             spacing.body,
             rise,
           ]}
@@ -145,7 +151,7 @@ const spacing = isHome
           art.preset === 'battery' && 'max-md:mt-12',
           isHome
             ? 'md:max-w-[34rem] lg:-ml-10 lg:w-[clamp(34rem,52vw,48.625rem)] xl:-mr-[min(111px,calc(50vw-585px))] xl:-ml-17 xl:w-[48.625rem]'
-            : ['md:max-w-[30rem] lg:ml-10', preset.art],
+            : ['md:max-w-[30rem]', !about && 'lg:ml-10', preset.art],
         ]}
       >
         <HeroArt preset={art.preset} product={art.product} mascot={art.mascot} />

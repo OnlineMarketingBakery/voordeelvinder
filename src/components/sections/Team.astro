@@ -1,6 +1,6 @@
 ---
-// "De mensen achter VoordeelVinder" (About us 113:944–113:1006): photo cards on purple and lime
-// gradients with a name and a role. Placeholder people fail a production build (pages.ts).
+// "De mensen achter VoordeelVinder" (About us 113:944–113:1006): three 374×428 cards, the photo on a gradient from purple (lime on the middle card) to white, then the name
+// (24/27) and the role (16).
 import type { TeamBlock } from '../../schemas/blocks/team';
 import Container from '../ui/Container.astro';
 import Illustration from '../ui/Illustration.astro';
@@ -10,37 +10,41 @@ type Props = TeamBlock;
 
 const { id, title, intro, members } = Astro.props;
 const headingId = `${id ?? 'team'}-title`;
-const gradients = ['from-purple-500 to-lavender-100', 'from-lime-300 to-lime-50'];
+const tones = [{ fill: 'from-purple-600 to-white' }, { fill: 'from-lime-400 to-white' }];
 ---
 
-<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-32">
+<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-[122px]">
   <Container>
-    <SectionHeading id={headingId} title={title} intro={intro} align="center" />
-    <ul
-      role="list"
-      class="mx-auto mt-10 grid max-w-[920px] gap-6 sm:grid-cols-3 lg:mt-14"
-      data-reveal-stagger
-    >
-      {members.map((member, index) => (
-        <li class="text-center">
-          <div
-            class:list={[
-              'overflow-hidden rounded-2xl bg-linear-to-b',
-              gradients[index % gradients.length],
-            ]}
-          >
-            <Illustration
-              src={member.photo.src}
-              alt={member.photo.alt}
-              widths={[280, 420]}
-              sizes="(min-width: 640px) 280px, 90vw"
-              class="aspect-[4/5] h-auto w-full object-cover object-top"
-            />
-          </div>
-          <p class="mt-4 text-title-sm text-ink-900">{member.name}</p>
-          <p class="mt-1 text-sm text-ink-600">{member.role}</p>
-        </li>
-      ))}
+    <SectionHeading id={headingId} title={title} intro={intro} align="center" introClass="mt-4" />
+    <ul role="list" class="mt-10 grid gap-6 sm:grid-cols-3 lg:mt-[62px]" data-reveal-stagger>
+      {members.map((member, index) => {
+        const tone = tones[index % tones.length]!;
+        return (
+          <li class="text-center">
+            <div
+              class:list={[
+                'relative h-[428px] overflow-hidden rounded-3xl bg-linear-to-b',
+                tone.fill,
+              ]}
+            >
+              <Illustration
+                src={member.photo.src}
+                alt={member.photo.alt}
+                widths={[302, 604]}
+                sizes="302px"
+                class="absolute inset-x-9 top-[39px] h-[calc(100%-39px)] w-[calc(100%-72px)] object-cover object-top"
+              />
+              {/* The photo fades into the card's white bottom, as designed. */}
+              <div
+                class="absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-white"
+                aria-hidden="true"
+              />
+            </div>
+            <p class="mt-[22px] text-title-lg text-ink-900">{member.name}</p>
+            <p class="mt-2 text-body text-ink-600">{member.role}</p>
+          </li>
+        );
+      })}
     </ul>
   </Container>
 </section>

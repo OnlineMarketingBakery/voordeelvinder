@@ -1,5 +1,8 @@
 ---
-// "Is VoordeelVinder iets voor mij?" (About us 111:895–111:940): persona cards on a purple panel.
+// "Is VoordeelVinder iets voor mij?" (About us 111:895–111:940): a 1378 px purple panel (31 px
+// from the window edges), the 48/65 h2, and three 374 px white cards on a 10 px lime lip: a
+// purple badge, a 24/31 statement, the occasion, a lavender quote box, a purple benefit line
+// and a full-width lime button.
 import type { PersonasBlock } from '../../schemas/blocks/personas';
 import Button from '../ui/Button.astro';
 import Container from '../ui/Container.astro';
@@ -11,30 +14,48 @@ const { id, title, intro, items } = Astro.props;
 const headingId = `${id ?? 'personas'}-title`;
 ---
 
-<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-32">
-  <Container>
-    <div class="surface-dark rounded-3xl bg-purple-600 px-4 py-12 md:px-8 lg:px-10 lg:py-16">
-      <SectionHeading id={headingId} title={title} intro={intro} align="center" onDark />
-      <div class="mt-10 grid gap-5 md:grid-cols-3 lg:mt-12" data-reveal-stagger>
+<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-[95px]">
+  <div class="surface-dark mx-auto max-w-[1378px] rounded-3xl bg-purple-600 py-12 md:mx-4 md:rounded-3xl lg:mx-[31px] lg:pt-[107px] lg:pb-[125px] min-[1440px]:mx-auto">
+    <Container>
+      <SectionHeading
+        id={headingId}
+        title={title}
+        intro={intro}
+        align="center"
+        onDark
+        titleClass="text-h3 md:text-h2"
+        introClass="mt-3"
+      />
+      <div class="mt-10 grid gap-6 md:grid-cols-3 lg:mt-[46px]" data-reveal-stagger>
         {items.map((item) => (
-          <article class="flex flex-col rounded-2xl bg-white p-5 text-ink-900 shadow-[0_6px_0_var(--color-lime-400)] md:p-6">
-            <span class="self-start rounded-full bg-purple-500 px-3 py-1 text-label-sm text-white">
-              {item.badge}
-            </span>
-            <h3 class="mt-4 text-title-sm">{item.statement}</h3>
-            <p class="mt-3 text-sm text-ink-600">{item.occasion}</p>
-            <blockquote class="mt-5 rounded-xl bg-lavender-50 p-4 text-sm text-ink-800">
+          <article class="flex flex-col rounded-3xl bg-white px-6 pt-9 pb-6 text-ink-900 shadow-[0_10px_0_var(--color-lime-400)]">
+            <div class="px-[13px]">
+              <span class="inline-block rounded-full bg-purple-500 px-[11px] py-[5px] text-body text-white">
+                {item.badge}
+              </span>
+              <h3 class="mt-[18px] text-title-lg text-ink-900">{item.statement}</h3>
+              <p class="mt-[18px] text-body text-ink-600">{item.occasion}</p>
+            </div>
+            <blockquote class="mt-6 rounded-2xl bg-lavender-100 px-[26px] py-6 text-body font-semibold text-ink-600">
               {item.quote}
             </blockquote>
-            <p class="mt-5 text-sm text-purple-700">{item.benefit}</p>
+            <p class="mt-6 px-[13px] text-body font-semibold text-purple-500">{item.benefit}</p>
             <div class="mt-auto pt-6">
-              <Button href={item.cta.href} size="sm" icon="arrow-up-right" fullWidth>
+              <Button
+                href={item.cta.href}
+                variant="newsletter"
+                size="md"
+                icon="arrow-up-right"
+                fullWidth
+                flat
+                class="h-[52px] font-medium"
+              >
                 {item.cta.label}
               </Button>
             </div>
           </article>
         ))}
       </div>
-    </div>
-  </Container>
+    </Container>
+  </div>
 </section>
