@@ -14,8 +14,9 @@ const { id, title, intro, items } = Astro.props;
 const headingId = `${id ?? 'personas'}-title`;
 ---
 
-<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-[95px]">
-  <div class="surface-dark mx-auto max-w-[1378px] rounded-3xl bg-purple-600 py-12 md:mx-4 md:rounded-3xl lg:mx-[31px] lg:pt-[107px] lg:pb-[125px] min-[1440px]:mx-auto">
+<section {id} aria-labelledby={headingId} class="pt-16 md:px-4 md:pt-24 lg:px-[31px] lg:pt-[95px]">
+  {/* The gutters live on the section, so the 1378 px panel is centred on any screen width. */}
+  <div class="surface-dark mx-auto max-w-[1378px] rounded-3xl bg-purple-600 py-12 lg:pt-[107px] lg:pb-[125px]">
     <Container>
       <SectionHeading
         id={headingId}
