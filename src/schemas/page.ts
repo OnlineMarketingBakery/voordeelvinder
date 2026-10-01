@@ -11,10 +11,17 @@ import { faqBlock } from './blocks/faq';
 import { featuresBlock } from './blocks/features';
 import { heroBlock } from './blocks/hero';
 import { notFoundBlock } from './blocks/notFound';
+import { personasBlock } from './blocks/personas';
 import { productSpotlightBlock } from './blocks/productSpotlight';
+import { promisesBlock } from './blocks/promises';
+import { statementBlock } from './blocks/statement';
 import { stepsBlock } from './blocks/steps';
+import { storyBlock } from './blocks/story';
+import { teamBlock } from './blocks/team';
 import { testimonialsBlock } from './blocks/testimonials';
 import { thankYouBlock } from './blocks/thankYou';
+import { valuesBlock } from './blocks/values';
+import { versusBlock } from './blocks/versus';
 import { text } from './primitives';
 
 export const section = z.discriminatedUnion('type', [
@@ -30,6 +37,13 @@ export const section = z.discriminatedUnion('type', [
   ctaMascotBlock,
   notFoundBlock,
   thankYouBlock,
+  storyBlock,
+  statementBlock,
+  valuesBlock,
+  promisesBlock,
+  personasBlock,
+  teamBlock,
+  versusBlock,
 ]);
 
 export type Section = z.infer<typeof section>;

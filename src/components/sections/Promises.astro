@@ -1,0 +1,51 @@
+---
+// "Wat we nooit doen." (About us 108:754–109:799): rows with the same lime badge, an h3 and a body,
+// beside a purple card with the waving fox.
+import type { PromisesBlock } from '../../schemas/blocks/promises';
+import Container from '../ui/Container.astro';
+import Illustration from '../ui/Illustration.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+
+type Props = PromisesBlock;
+
+const { id, title, intro, badge, items, image } = Astro.props;
+const headingId = `${id ?? 'promises'}-title`;
+---
+
+<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-32">
+  <Container>
+    <SectionHeading id={headingId} title={title} intro={intro} class="max-w-[640px]" />
+    <div class="mt-8 grid gap-10 lg:mt-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-center lg:gap-16">
+      <ul
+        role="list"
+        class="divide-y divide-lavender-400 border-y border-lavender-400"
+        data-reveal-stagger
+      >
+        {items.map((item) => (
+          <li class="flex flex-col gap-2 py-5 sm:flex-row sm:gap-4 md:py-6">
+            <span class="inline-flex shrink-0 items-center gap-1 self-start rounded-full bg-lime-300 px-2.5 py-0.5 text-label-sm text-ink-900">
+              <span aria-hidden="true">✕</span>
+              {badge}
+            </span>
+            <div>
+              <h3 class="text-title-sm text-ink-900">{item.title}</h3>
+              <p class="mt-2 text-sm text-ink-600 md:text-body">{item.body}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div
+        class="mx-auto grid w-full max-w-[300px] place-items-center rounded-3xl bg-purple-600 p-8 shadow-[0_6px_0_var(--color-purple-700)]"
+        data-reveal
+      >
+        <Illustration
+          src={image.src}
+          alt={image.alt}
+          widths={[220, 440]}
+          sizes="220px"
+          class="h-auto w-[220px]"
+        />
+      </div>
+    </div>
+  </Container>
+</section>

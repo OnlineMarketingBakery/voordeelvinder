@@ -23,8 +23,8 @@ interface Props {
   body: Copy;
   cta: { label: string; href: string };
   art: {
-    preset: 'home' | 'solar' | 'battery';
-    product: ImageRef;
+    preset: 'home' | 'solar' | 'battery' | 'about';
+    product?: ImageRef | undefined;
     mascot: ImageRef & { mirror?: boolean | undefined };
   };
   usps?:
@@ -62,6 +62,11 @@ const preset = {
   battery: {
     padding: 'xl:pt-[116px] xl:pb-[91px]',
     art: 'lg:w-[clamp(26rem,36vw,32.6875rem)]',
+  },
+  // About us (100:2): the mascot alone in its circles.
+  about: {
+    padding: 'xl:pt-[120px] xl:pb-[110px]',
+    art: 'lg:w-[clamp(22rem,30vw,27rem)]',
   },
   home: { padding: '', art: '' },
 }[art.preset];

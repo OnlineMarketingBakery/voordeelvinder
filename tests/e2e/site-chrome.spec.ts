@@ -83,7 +83,7 @@ const stopSampling = (page: Page) =>
   });
 
 test.describe('header', () => {
-  test('desktop: logo, centred nav and CTA; "Blogs" hidden until there are posts', async ({
+  test('desktop: logo, centred nav and CTA; "Blogs" shows with posts (the sample drafts here)', async ({
     page,
     isMobile,
   }) => {
@@ -95,7 +95,8 @@ test.describe('header', () => {
     for (const link of visibleNav) {
       await expect(nav.getByRole('link', { name: link.label })).toHaveAttribute('href', link.href);
     }
-    await expect(nav.getByRole('link', { name: 'Blogs' })).toHaveCount(0);
+    // Outside production the designer's sample posts (drafts) make "Blogs" show.
+    await expect(nav.getByRole('link', { name: 'Blogs' })).toHaveCount(1);
     await expect(header.getByRole('link', { name: site.header.cta.label })).toHaveAttribute(
       'href',
       site.header.cta.href,

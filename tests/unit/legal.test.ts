@@ -27,12 +27,10 @@ describe('legal pages', () => {
     expect(missingLegalPages(['/disclaimer'], [])).toEqual(['/disclaimer']);
   });
 
-  it('are neutral placeholders until the lawyer’s text arrives (CONTENT-TODO 3.1, 3.2)', () => {
-    for (const page of pages) {
-      expect(page.head, page.id).toMatch(/^placeholder: true$/m);
-      // No legal statements: no headings, one short paragraph.
-      expect(page.body.trim(), page.id).toBe('Deze tekst volgt binnenkort.');
-    }
+  it('stay placeholders until the lawyer’s text arrives (CONTENT-TODO 3.1, 3.2)', () => {
+    // Terms and privacy carry the designer's text (Figma 134:2705, 140:3318), the cookie
+    // policy a neutral line; none of it is the lawyer's text yet.
+    for (const page of pages) expect(page.head, page.id).toMatch(/^placeholder: true$/m);
   });
 
   it('report placeholders, so a production build fails on them', () => {

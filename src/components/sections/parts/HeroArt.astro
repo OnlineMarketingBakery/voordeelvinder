@@ -10,8 +10,9 @@ interface ImageRef {
 }
 
 interface Props {
-  preset: 'home' | 'solar' | 'battery';
-  product: ImageRef;
+  preset: 'home' | 'solar' | 'battery' | 'about';
+  /** Not on `about` (the mascot alone). */
+  product?: ImageRef | undefined;
   mascot: ImageRef & { mirror?: boolean | undefined };
 }
 
@@ -50,6 +51,18 @@ const layouts = {
     mascot: 'left-[45.5%] top-[26.6%] w-[50.5%]',
     vectorMascot: 'left-[45.5%] top-[26.6%] w-[50.5%]',
   },
+  // About us (100:2): two circles and the mascot with its laptop, no product.
+  about: {
+    box: 'aspect-square',
+    rings: [
+      'left-1/2 top-1/2 w-full aspect-square -translate-x-1/2 -translate-y-1/2',
+      'left-1/2 top-1/2 w-[78%] aspect-square -translate-x-1/2 -translate-y-1/2',
+    ],
+    shadow: 'left-[20%] top-[84%] w-[60%] h-[7%]',
+    product: '',
+    mascot: 'left-[6%] top-[12%] w-[88%]',
+    vectorMascot: 'left-[6%] top-[12%] w-[88%]',
+  },
 } as const;
 
 const layout = layouts[preset];
@@ -72,8 +85,10 @@ const productImage = {
     widths: [358, 523, 716, 1046],
     sizes: '(min-width: 1280px) 523px, (min-width: 1024px) 36vw, (min-width: 768px) 480px, 358px',
   },
+  about: null,
 }[preset];
-const productIsLcp = preset !== 'home';
+// The product is the likely LCP image where it is the bigger layer (solar, battery).
+const productIsLcp = preset === 'solar' || preset === 'battery';
 const ringEntrance =
   'motion-safe:animate-[ring-in_var(--motion-duration-slow)_var(--ease-out)_120ms_both]';
 ---
@@ -95,17 +110,19 @@ const ringEntrance =
       layout.shadow,
     ]}
   ></div>
-  <div class:list={['absolute', layout.product]}>
-    <Illustration
-      src={product.src}
-      alt={product.alt}
-      widths={productImage.widths}
-      sizes={productImage.sizes}
-      eager
-      priority={productIsLcp}
-      class="h-auto w-full"
-    />
-  </div>
+  {product && productImage && (
+    <div class:list={['absolute', layout.product]}>
+      <Illustration
+        src={product.src}
+        alt={product.alt}
+        widths={productImage.widths}
+        sizes={productImage.sizes}
+        eager
+        priority={productIsLcp}
+        class="h-auto w-full"
+      />
+    </div>
+  )}
   <div
     class:list={[
       'absolute',

@@ -1,0 +1,37 @@
+---
+// A statement band (About us 104:718–104:724): the lines are the h2, one of them on a tilted lime
+// chip, on a purple band with rings, with a line of body text below.
+import Rings from '../../assets/images/decor/cta-band-rings.svg';
+import type { StatementBlock } from '../../schemas/blocks/statement';
+import Container from '../ui/Container.astro';
+import Highlight from '../ui/Highlight.astro';
+
+type Props = StatementBlock;
+
+const { id, lines, highlight, body } = Astro.props;
+const headingId = `${id ?? 'statement'}-title`;
+---
+
+<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-32">
+  <Container>
+    <div
+      class="surface-dark relative isolate overflow-hidden rounded-2xl bg-purple-600 px-5 py-14 text-center text-white md:rounded-3xl md:py-20 lg:py-24"
+      data-reveal
+    >
+      <div
+        class="pointer-events-none absolute top-1/2 left-1/2 -z-10 w-[930px] -translate-1/2 text-white"
+        aria-hidden="true"
+      >
+        <Rings class="block h-[366px] w-[930px]" />
+      </div>
+      <h2 id={headingId} class="text-h3 leading-tight md:text-h2 lg:text-display">
+        {lines.map((line) => (
+          <span class="block">
+            {line === highlight ? <Highlight text={line} tilt class="text-ink-900" /> : line}
+          </span>
+        ))}
+      </h2>
+      {body && <p class="mx-auto mt-6 max-w-[640px] text-body md:text-body-lg">{body}</p>}
+    </div>
+  </Container>
+</section>
