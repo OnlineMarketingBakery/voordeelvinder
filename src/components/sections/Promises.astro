@@ -1,6 +1,7 @@
 ---
-// "Wat we nooit doen." (About us 108:754–109:799): rows with the same lime badge, an h3 and a body,
-// beside a purple card with the waving fox.
+// "Wat we nooit doen." (About us 108:754–109:799): full-width rows between hairlines (145 apart),
+// each with the lime badge (a white circle with a cross + "Nooit"), a 24/31 h3 and 16/24 body at
+// x+108; a tilted purple card with the waving fox overlaps the rows on the right.
 import type { PromisesBlock } from '../../schemas/blocks/promises';
 import Container from '../ui/Container.astro';
 import Illustration from '../ui/Illustration.astro';
@@ -12,38 +13,46 @@ const { id, title, intro, badge, items, image } = Astro.props;
 const headingId = `${id ?? 'promises'}-title`;
 ---
 
-<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-32">
-  <Container>
-    <SectionHeading id={headingId} title={title} intro={intro} class="max-w-[640px]" />
-    <div class="mt-8 grid gap-10 lg:mt-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-center lg:gap-16">
-      <ul
-        role="list"
-        class="divide-y divide-lavender-400 border-y border-lavender-400"
-        data-reveal-stagger
-      >
-        {items.map((item) => (
-          <li class="flex flex-col gap-2 py-5 sm:flex-row sm:gap-4 md:py-6">
-            <span class="inline-flex shrink-0 items-center gap-1 self-start rounded-full bg-lime-300 px-2.5 py-0.5 text-label-sm text-ink-900">
-              <span aria-hidden="true">✕</span>
-              {badge}
+<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-[133px]">
+  <Container class="relative">
+    <SectionHeading id={headingId} title={title} intro={intro} introClass="mt-5 max-w-[772px]" />
+    <ul role="list" class="mt-8 border-t border-lavender-400 lg:mt-12" data-reveal-stagger>
+      {items.map((item) => (
+        <li class="flex flex-col gap-3 border-b border-lavender-400 py-6 sm:flex-row sm:gap-0 lg:min-h-[145px] lg:pt-[30px] lg:pb-0">
+          <span class="inline-flex h-7 w-[87px] shrink-0 items-center gap-[5px] self-start rounded-full bg-lime-400 pl-1 text-body text-ink-900 sm:mt-0.5">
+            <span class="grid size-5 place-items-center rounded-full bg-white" aria-hidden="true">
+              <svg
+                viewBox="0 0 8 8"
+                class="size-2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+              >
+                <path d="M1 1l6 6M7 1L1 7" />
+              </svg>
             </span>
-            <div>
-              <h3 class="text-title-sm text-ink-900">{item.title}</h3>
-              <p class="mt-2 text-sm text-ink-600 md:text-body">{item.body}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
-      <div
-        class="mx-auto grid w-full max-w-[300px] place-items-center rounded-3xl bg-purple-600 p-8 shadow-[0_6px_0_var(--color-purple-700)]"
-        data-reveal
-      >
+            {badge}
+          </span>
+          <div class="sm:pl-[21px]">
+            <h3 class="text-title-lg text-ink-900">{item.title}</h3>
+            <p class="mt-3 max-w-[661px] text-body text-ink-600 lg:mt-[17px]">{item.body}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+    <div
+      class="mx-auto mt-10 w-[300px] rotate-[3deg] rounded-3xl bg-lavender-300 p-3 shadow-card lg:absolute lg:top-[368px] lg:right-[-35px] lg:mt-0 lg:w-[334px]"
+      data-reveal
+    >
+      <div class="grid place-items-center overflow-hidden rounded-2xl bg-purple-600 px-4 pt-8 pb-2 lg:h-[343px]">
         <Illustration
           src={image.src}
           alt={image.alt}
-          widths={[220, 440]}
-          sizes="220px"
-          class="h-auto w-[220px]"
+          widths={[276, 552]}
+          sizes="276px"
+          mirror
+          class="h-auto w-[240px] lg:w-[276px]"
         />
       </div>
     </div>

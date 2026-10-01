@@ -1,6 +1,7 @@
 ---
-// "Waar we voor staan" (About us 100:303–104:741): header and mascot on the left, badge cards on
-// the right, over the cloud background.
+// "Waar we voor staan" (About us 100:303–104:741): over the cloud background, the header and a
+// 584 px mascot on the left, 624 px white cards on the right on a 10 px coloured lip (lime, then
+// purple), each with a badge (lime, then purple), a 24 px h3 and 16/24 body.
 import type { ValuesBlock } from '../../schemas/blocks/values';
 import Container from '../ui/Container.astro';
 import Illustration from '../ui/Illustration.astro';
@@ -11,35 +12,49 @@ type Props = ValuesBlock;
 
 const { id, title, intro, image, items } = Astro.props;
 const headingId = `${id ?? 'values'}-title`;
+const tones = [
+  { lip: 'shadow-[0_10px_0_var(--color-lime-400)]', badge: 'bg-lime-400 text-ink-900' },
+  { lip: 'shadow-[0_10px_0_var(--color-purple-600)]', badge: 'bg-purple-600 text-white' },
+];
 ---
 
 <section
   {id}
   aria-labelledby={headingId}
-  class="relative isolate mt-16 py-16 md:mt-24 lg:mt-32 lg:py-24"
+  class="relative isolate mt-6 pt-16 pb-20 md:pt-24 lg:-mt-[42px] lg:pt-[202px] lg:pb-[112px]"
 >
   <CloudsBackground />
-  <Container class="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-center lg:gap-16">
-    <div>
-      <SectionHeading id={headingId} title={title} intro={intro} />
+  <Container class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_624px] lg:gap-0">
+    <div class="lg:pr-8">
+      <SectionHeading id={headingId} title={title} intro={intro} introClass="mt-5 max-w-[427px]" />
       <Illustration
         src={image.src}
         alt={image.alt}
-        widths={[280, 420, 560]}
-        sizes="(min-width: 1024px) 420px, 280px"
-        class="mx-auto mt-8 h-auto w-[280px] lg:mt-12 lg:w-[420px]"
+        widths={[320, 584, 1168]}
+        sizes="(min-width: 1024px) 584px, 320px"
+        class="mx-auto mt-8 h-auto w-[320px] lg:-ml-[38px] lg:mt-[49px] lg:w-[584px] lg:max-w-none"
       />
     </div>
-    <div class="grid gap-6" data-reveal-stagger>
-      {items.map((item) => (
-        <article class="lift rounded-2xl bg-white p-6 shadow-[0_6px_0_var(--color-purple-500)] md:p-8">
-          <span class="inline-block rounded-full bg-lime-300 px-3 py-1 text-label-sm text-ink-900">
-            {item.badge}
-          </span>
-          <h3 class="mt-4 text-title text-ink-900">{item.title}</h3>
-          <p class="mt-3 text-sm text-ink-600 md:text-body">{item.body}</p>
-        </article>
-      ))}
+    <div class="grid content-start gap-[38px] lg:pt-[5px]" data-reveal-stagger>
+      {items.map((item, index) => {
+        const tone = tones[index % tones.length]!;
+        return (
+          <article
+            class:list={[
+              'lift rounded-3xl border border-lavender-300 bg-white px-6 py-8 md:px-12 md:pt-[46px] md:pb-[62px]',
+              tone.lip,
+            ]}
+          >
+            <span
+              class:list={['inline-block rounded-full px-[13px] py-[5px] text-body', tone.badge]}
+            >
+              {item.badge}
+            </span>
+            <h3 class="mt-[18px] max-w-[334px] text-title-lg text-ink-900">{item.title}</h3>
+            <p class="mt-[18px] max-w-[507px] text-body text-ink-600">{item.body}</p>
+          </article>
+        );
+      })}
     </div>
   </Container>
 </section>

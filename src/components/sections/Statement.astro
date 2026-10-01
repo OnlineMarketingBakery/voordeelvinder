@@ -1,6 +1,6 @@
 ---
-// A statement band (About us 104:718–104:724): the lines are the h2, one of them on a tilted lime
-// chip, on a purple band with rings, with a line of body text below.
+// A statement band (About us 104:718–104:724): 1170×503 purple band with the three CTA rings,
+// the lines as the h2 at 84/99 with one on the tilted lime chip, and a 24/28 line below.
 import Rings from '../../assets/images/decor/cta-band-rings.svg';
 import type { StatementBlock } from '../../schemas/blocks/statement';
 import Container from '../ui/Container.astro';
@@ -12,26 +12,28 @@ const { id, lines, highlight, body } = Astro.props;
 const headingId = `${id ?? 'statement'}-title`;
 ---
 
-<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-32">
+<section {id} aria-labelledby={headingId} class="relative z-10 pt-16 md:pt-24 lg:pt-[132px]">
   <Container>
     <div
-      class="surface-dark relative isolate overflow-hidden rounded-2xl bg-purple-600 px-5 py-14 text-center text-white md:rounded-3xl md:py-20 lg:py-24"
+      class="surface-dark relative isolate overflow-hidden rounded-3xl bg-purple-600 px-5 pt-14 pb-14 text-center text-white md:pt-16 lg:min-h-[503px] lg:pt-[68px] lg:pb-[95px]"
       data-reveal
     >
       <div
-        class="pointer-events-none absolute top-1/2 left-1/2 -z-10 w-[930px] -translate-1/2 text-white"
+        class="pointer-events-none absolute top-[-29px] left-1/2 -z-10 w-[930px] -translate-x-1/2 text-white"
         aria-hidden="true"
       >
         <Rings class="block h-[366px] w-[930px]" />
       </div>
-      <h2 id={headingId} class="text-h3 leading-tight md:text-h2 lg:text-display">
+      <h2 id={headingId} class="text-h2 md:text-h1 lg:text-display">
         {lines.map((line) => (
           <span class="block">
             {line === highlight ? <Highlight text={line} tilt class="text-ink-900" /> : line}
           </span>
         ))}
       </h2>
-      {body && <p class="mx-auto mt-6 max-w-[640px] text-body md:text-body-lg">{body}</p>}
+      {body && (
+        <p class="mx-auto mt-6 max-w-[651px] text-body-lg md:text-lead lg:mt-[27px]">{body}</p>
+      )}
     </div>
   </Container>
 </section>

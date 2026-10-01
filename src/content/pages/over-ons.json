@@ -7,7 +7,7 @@
     {
       "type": "hero",
       "variant": "product",
-      "title": "Wij geloven dat besparen voor iedereen makkelijk moet zijn.",
+      "title": "Wij geloven dat\nbesparen voor iedereen\nmakkelijk moet zijn.",
       "body": "VoordeelVinder werd gebouwd omdat te veel Belgen te veel betalen voor energie. Niet uit onwil — maar omdat de bestaande tools traag, verwarrend en partijdig zijn. Dat doen wij anders.",
       "cta": {
         "label": "Ontdek jouw voordeel",
@@ -205,7 +205,7 @@
     {
       "type": "ctaBand",
       "tone": "lime",
-      "title": "Overtuigd? Zie zelf wat je kan besparen.",
+      "title": "Overtuigd? Zie zelf wat je\nkan besparen.",
       "body": "In een paar minuten weet je of je te veel betaalt voor energie — en welk contract beter bij jou past. Gratis, vrijblijvend en volledig op jouw tempo.",
       "cta": {
         "label": "Start je vergelijking",
