@@ -1,0 +1,47 @@
+---
+// Story cards (About us 100:11–104:717): a centred header and two tinted cards, each with an
+// icon tile, an h3, paragraphs and one paragraph in the card's accent colour.
+import type { StoryBlock } from '../../schemas/blocks/story';
+import Container from '../ui/Container.astro';
+import Icon from '../ui/Icon.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+
+type Props = StoryBlock;
+
+const { id, title, intro, items } = Astro.props;
+const headingId = `${id ?? 'story'}-title`;
+const tones = {
+  purple: {
+    card: 'bg-lavender-50 shadow-[0_6px_0_var(--color-purple-500)]',
+    tile: 'bg-purple-500 text-white',
+    accent: 'text-purple-700',
+  },
+  lime: {
+    card: 'bg-lime-50 shadow-[0_6px_0_var(--color-lime-400)]',
+    tile: 'bg-lime-300 text-ink-900',
+    accent: 'text-lime-700',
+  },
+};
+---
+
+<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-32">
+  <Container>
+    <SectionHeading id={headingId} title={title} intro={intro} align="center" />
+    <div class="mt-10 grid gap-6 md:grid-cols-2 lg:mt-14 lg:gap-8" data-reveal-stagger>
+      {items.map((item) => (
+        <article class:list={['lift rounded-2xl p-6 md:p-8 lg:p-10', tones[item.tone].card]}>
+          <div class:list={['grid size-12 place-items-center rounded-xl', tones[item.tone].tile]}>
+            <Icon name={item.icon} class="size-7" />
+          </div>
+          <h3 class="mt-6 text-title text-ink-900 lg:mt-8">{item.title}</h3>
+          <div class="mt-4 space-y-4 text-sm text-ink-600 md:text-body">
+            {item.paragraphs.map((paragraph) => (
+              <p>{paragraph}</p>
+            ))}
+            {item.accent && <p class={tones[item.tone].accent}>{item.accent}</p>}
+          </div>
+        </article>
+      ))}
+    </div>
+  </Container>
+</section>

@@ -1,0 +1,57 @@
+---
+// "Niet zomaar een vergelijker" (About us 113:1009–113:1066): what others do (purple tint,
+// crosses) beside what we do (lime tint, ticks).
+import type { VersusBlock } from '../../schemas/blocks/versus';
+import Container from '../ui/Container.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+
+type Props = VersusBlock;
+
+const { id, title, intro, others, us } = Astro.props;
+const headingId = `${id ?? 'versus'}-title`;
+const panels = [
+  {
+    side: others,
+    panel: 'bg-lavender-50',
+    head: 'bg-purple-500 text-white',
+    mark: 'bg-purple-500 text-white',
+    glyph: '✕',
+  },
+  {
+    side: us,
+    panel: 'bg-lime-50',
+    head: 'bg-lime-300 text-ink-900',
+    mark: 'bg-lime-400 text-ink-900',
+    glyph: '✓',
+  },
+];
+---
+
+<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-32">
+  <Container>
+    <SectionHeading id={headingId} title={title} intro={intro} align="center" />
+    <div class="mt-10 grid gap-6 md:grid-cols-2 lg:mt-14" data-reveal-stagger>
+      {panels.map(({ side, panel, head, mark, glyph }) => (
+        <div class:list={['rounded-2xl p-4 md:p-6', panel]}>
+          <h3 class:list={['rounded-xl px-4 py-3 text-title-sm', head]}>{side.title}</h3>
+          <ul role="list" class="mt-2">
+            {side.items.map((item) => (
+              <li class="flex items-center gap-3 border-b border-lavender-400 px-2 py-4 text-sm text-ink-800 last:border-b-0">
+                <span
+                  aria-hidden="true"
+                  class:list={[
+                    'grid size-6 shrink-0 place-items-center rounded-full text-xs',
+                    mark,
+                  ]}
+                >
+                  {glyph}
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </Container>
+</section>

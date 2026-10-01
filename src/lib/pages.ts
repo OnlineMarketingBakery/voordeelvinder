@@ -13,7 +13,8 @@ export function overlapsFooter(sections: Section[]): boolean {
 
 /**
  * Placeholder content that must never reach production (brief §2): a hero image marked
- * `todo` and dummy testimonials (CONTENT-TODO 1.11). Hidden blocks are skipped.
+ * `todo`, dummy testimonials (CONTENT-TODO 1.11) and the About us sample team (CONTENT-TODO
+ * 1.15). Hidden blocks are skipped.
  */
 export function pagePlaceholderProblems(id: string, page: PageData): string[] {
   const problems: string[] = [];
@@ -21,6 +22,9 @@ export function pagePlaceholderProblems(id: string, page: PageData): string[] {
     if (block.hidden) continue;
     if (block.type === 'hero' && block.art.mascot.todo) {
       problems.push(`${id}: hero image "${block.art.mascot.src}" is a placeholder`);
+    }
+    if (block.type === 'team' && block.placeholder) {
+      problems.push(`${id}: the team section shows the designer's sample people`);
     }
     if (block.type === 'testimonials') {
       block.items.forEach((item, index) => {

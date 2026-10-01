@@ -8,10 +8,17 @@ import Faq from './Faq.astro';
 import Features from './Features.astro';
 import Hero from './Hero.astro';
 import NotFound from './NotFound.astro';
+import Personas from './Personas.astro';
 import ProductSpotlight from './ProductSpotlight.astro';
+import Promises from './Promises.astro';
+import Statement from './Statement.astro';
 import Steps from './Steps.astro';
+import Story from './Story.astro';
+import Team from './Team.astro';
 import Testimonials from './Testimonials.astro';
 import ThankYou from './ThankYou.astro';
+import Values from './Values.astro';
+import Versus from './Versus.astro';
 
 interface Props {
   sections: Section[];
@@ -51,6 +58,20 @@ const sections = Astro.props.sections
       return <NotFound {...section} />;
     case 'thankYou':
       return <ThankYou {...section} />;
+    case 'story':
+      return <Story {...section} />;
+    case 'statement':
+      return <Statement {...section} />;
+    case 'values':
+      return <Values {...section} />;
+    case 'promises':
+      return <Promises {...section} />;
+    case 'personas':
+      return <Personas {...section} />;
+    case 'team':
+      return <Team {...section} />;
+    case 'versus':
+      return <Versus {...section} />;
     default: {
       // A schema type without a component fails astro check here instead of rendering nothing.
       const unhandled: never = section;

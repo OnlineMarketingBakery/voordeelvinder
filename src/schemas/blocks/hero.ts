@@ -22,8 +22,9 @@ export const heroBlock = z
     cta: link,
     art: z.strictObject({
       /** Layer geometry per preset lives in HeroArt.astro. */
-      preset: z.enum(['home', 'solar', 'battery']),
-      product: imageRef,
+      preset: z.enum(['home', 'solar', 'battery', 'about']),
+      /** Every preset but `about` (the mascot alone) shows a product. */
+      product: imageRef.optional(),
       mascot: imageRef.extend({ mirror: z.boolean().optional(), todo }),
     }),
     /** Hidden until real numbers exist (brief §2, CONTENT-TODO 1.10); never rendered yet. */
@@ -50,6 +51,13 @@ export const heroBlock = z
         code: 'custom',
         path: ['art', 'preset'],
         message: `preset "${hero.art.preset}" does not fit the ${hero.variant} hero`,
+      });
+    }
+    if ((hero.art.preset === 'about') === (hero.art.product !== undefined)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['art', 'product'],
+        message: 'a product image on every preset but "about"',
       });
     }
     if ((hero.usps ?? []).filter((u) => u.highlight).length > 1) {

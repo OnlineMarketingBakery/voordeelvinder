@@ -37,12 +37,20 @@ for (const { label, href } of site.footer.legal.items) {
   });
 }
 
-// No posts ship (CONTENT-TODO 2.14): nothing under /blog is built.
-test('the blog is not built while there are no posts', async ({ page, request }) => {
-  expect((await request.get('/blog')).status()).toBe(404);
+// No real posts yet (CONTENT-TODO 2.14): only the designer's sample posts, drafts that a
+// non-production build (like this one) shows and production leaves out.
+test('the blog shows the sample posts outside production', async ({ page, request }) => {
   expect((await request.get('/blog/pagina/2')).status()).toBe(404);
+  await page.goto('/blog');
+  await expect(
+    page
+      .getByRole('main')
+      .getByRole('heading', { name: 'Betaal jij te veel voor energie? Zo ontdek je het' })
+      .first(),
+  ).toBeVisible();
+  // The header links to it (on a phone inside the closed menu drawer).
   await page.goto('/');
-  await expect(page.getByRole('link', { name: site.blog.listing.title, exact: true })).toHaveCount(
-    0,
-  );
+  expect(
+    await page.locator('header a[href="/blog"], header a[href="/blog/"]').count(),
+  ).toBeGreaterThan(0);
 });
