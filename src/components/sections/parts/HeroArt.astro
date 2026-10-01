@@ -106,7 +106,15 @@ const ringEntrance =
       class="h-auto w-full"
     />
   </div>
-  <div class:list={['absolute', vector ? layout.vectorMascot : layout.mascot]}>
+  <div
+    class:list={[
+      'absolute',
+      vector ? layout.vectorMascot : layout.mascot,
+      // Lands with a small squash, then waves once (transform only: it can be the LCP image,
+      // so never its opacity). Reduced motion: still.
+      'origin-bottom motion-safe:animate-[hero-land_var(--motion-duration-slow)_var(--ease-out)_160ms_both,hero-wave_900ms_var(--ease-in-out)_700ms_1]',
+    ]}
+  >
     <Illustration
       src={mascot.src}
       alt={mascot.alt}

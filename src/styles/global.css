@@ -350,6 +350,29 @@
   }
 }
 
+/* The hero mascot lands (a short drop with a squash) and then sways once, a wave. Transform
+   only, so it composes with the translate/rotate utilities on the same box. */
+@keyframes hero-land {
+  0% {
+    transform: translateY(calc(-1 * var(--motion-distance-3))) scale(0.97, 1.03);
+  }
+  70% {
+    transform: translateY(0) scale(1.03, 0.97);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes hero-wave {
+  25% {
+    transform: rotate(-3deg);
+  }
+  60% {
+    transform: rotate(2deg);
+  }
+}
+
 /* One-shot wave for the eyebrow emoji (no loop). */
 @keyframes wave {
   20%,
