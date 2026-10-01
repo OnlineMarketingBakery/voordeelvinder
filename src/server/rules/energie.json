@@ -1,0 +1,31 @@
+{
+  "$comment": "Energy qualification (brief §8 draft, TO CONFIRM with the client; ADR 0010). A lead is no_promo when any rule holds (each adds its code to outcome_reasons), promo otherwise. Conditions use the form's JSONLogic subset (ADR 0006) on { answers, derived }.",
+  "reasons": [
+    {
+      "code": "region_not_flanders",
+      "when": { "!=": [{ "var": "derived.region" }, "flanders"] }
+    },
+    {
+      "code": "social_tariff",
+      "when": { "==": [{ "var": "answers.social_tariff" }, "yes"] }
+    },
+    {
+      "code": "budget_meter",
+      "when": { "==": [{ "var": "answers.budget_meter" }, "yes"] }
+    },
+    {
+      "code": "business_over_100k",
+      "when": {
+        "and": [
+          { "==": [{ "var": "answers.is_business" }, true] },
+          {
+            "or": [
+              { "==": [{ "var": "answers.business_electricity_band" }, "over_100k"] },
+              { "==": [{ "var": "answers.business_gas_band" }, "over_100k"] }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

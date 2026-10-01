@@ -1,17 +1,15 @@
 # Lead payload contract (`schema_version: 1`)
 
-> **Tanjil, 2026-09-30:** qualification (promo / no_promo / pending) happens in n8n; the site
-> sends every lead and never classifies it (ADR 0009). The brief's `outcome` and
-> `outcome_reasons` are therefore not part of the payload. What n8n applies is described in
-> [n8n-qualification.md](n8n-qualification.md).
+> **Tanjil, 2026-10-01 (ADR 0010, superseding 0009):** the site decides each lead's outcome
+> (`promo` / `no_promo` / `pending`, with `outcome_reasons`) and still sends **every** lead; n8n
+> routes on the outcome and never re-classifies. The rules: [qualification.md](qualification.md).
 
 The JSON the lead endpoint (`POST /api/lead`, Phase 5) sends to n8n. It is the contract with n8n,
 the lead sheet and the Meta integration: **change it only with explicit approval in the PR**
 (AGENTS.md), and bump `schema_version` for any change that isn't purely additive.
 
-Source: build brief §9.2, transcribed as is except for the two outcome fields removed by
-ADR 0009. The only additions are the notes under "Where each part comes from", which describe
-the implementation.
+Source: build brief §9.2, transcribed as is. The only additions are the notes under "Where each
+part comes from", which describe the implementation.
 
 ## Example
 
@@ -25,6 +23,8 @@ the implementation.
   "submitted_at": "2026-10-01T09:30:00.000Z",
   "product": "energie",
   "flow_version": 1,
+  "outcome": "promo",
+  "outcome_reasons": [],
   "answers": {
     "energy_type": "both",
     "is_business": false,
@@ -89,8 +89,9 @@ the implementation.
 
 ## Related rules elsewhere in the brief
 
-- The brief's `outcome` / `outcome_reasons` (§8) are decided in n8n, not sent by the site
-  (ADR 0009). The visitor never sees them.
+- `outcome` / `outcome_reasons` (§8) are decided on the site from the rules in
+  `src/server/rules/<product>.json` ([qualification.md](qualification.md), ADR 0010). Every lead
+  is sent, whatever its outcome. The visitor never sees it.
 - `is_test` is true unless `SITE_ENV=production`, or when the visitor arrived with `?test=1`
   (§9.4, ADR 0004).
 - `event_id` is shared by the browser `Lead` event and the server-side Meta events, so each lead
@@ -114,7 +115,8 @@ without storing, forwarding or checking Turnstile again (the first token is spen
 ## Untrusted fields
 
 **Every string in the payload is visitor-controlled** except `schema_version`, `brand`,
-`lead_id`/`event_id` (UUIDs), `is_test`, `submitted_at`, `product`, `labels` (the site's own
+`lead_id`/`event_id` (UUIDs), `is_test`, `submitted_at`, `product`, `outcome`,
+`outcome_reasons`, `labels` (the site's own
 copy), the option codes in `answers`, `derived` and `meta.site_env`. That includes
 `contact.first_name`/`last_name`, `contact.email`, every `tracking.*` value, `meta.page` and
 `meta.user_agent`. A value starting with `=`, `+`, `-`, `@`, a tab or a carriage return can
@@ -156,6 +158,7 @@ request body's extra keys never reach n8n: the payload below is built by the ser
 | `consent`                               | `terms`, `newsletter` and the cookie banner's `cookies` state                                                                                                                     |                                                                                                                                                                                                                      |
 | `tracking`                              | every key, `""` when unknown                                                                                                                                                      | cleaned: trimmed, cut to 512 characters, `""` when it starts with `=` or `@` or has a character outside letters, digits, dashes, the space and URL punctuation (no quotes, parentheses, angle brackets, backslashes) |
 | `meta`                                  | `page`, and `test` (the visitor arrived with `?test=1`)                                                                                                                           | `user_agent`, `ip`, `site_env`                                                                                                                                                                                       |
+| `outcome`, `outcome_reasons`            | no                                                                                                                                                                                | from the answers and `derived` (`qualify` in `src/server/lead/qualify.ts`, rules in `src/server/rules/`)                                                                                                             |
 | `brand`, `is_test`                      | no                                                                                                                                                                                | yes                                                                                                                                                                                                                  |
 
 # Newsletter sign-up (`type: "newsletter"`, `schema_version: 1`)

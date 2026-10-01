@@ -34,4 +34,4 @@ reject a typo before the build.
   an operator means adding it to `OPERATORS`, the evaluator and the tests together.
 - Phase 5 qualification rules (`src/server/rules/`) can use the same evaluator on the server.
   If they need an operator the form doesn't, it is added here, with a test. (Superseded by
-  ADR 0009: qualification lives in n8n, so there are no rules on the site.)
+  ADR 0009 moved qualification to n8n; ADR 0010 brought it back: `src/server/rules/`.)

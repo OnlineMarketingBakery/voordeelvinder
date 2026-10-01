@@ -144,12 +144,12 @@ describe('toPayload: the docs/PAYLOAD.md contract', () => {
 });
 
 describe('toPayload: no qualification, and test mode', () => {
-  it('sends every lead unqualified: n8n decides promo / no_promo / pending (ADR 0009)', () => {
+  it('sends every lead with the outcome the site decided; n8n only routes (ADR 0010)', () => {
     const outsideFlanders = payloadFor(
       body('energie', { ...energyAnswers, postcode: '1000', social_tariff: 'yes' }),
     );
-    expect(outsideFlanders).not.toHaveProperty('outcome');
-    expect(outsideFlanders).not.toHaveProperty('outcome_reasons');
+    expect(outsideFlanders.outcome).toBe('no_promo');
+    expect(outsideFlanders.outcome_reasons).toEqual(['region_not_flanders', 'social_tariff']);
     expect(outsideFlanders.answers).toMatchObject({ social_tariff: 'yes' });
     expect(outsideFlanders.derived).toEqual({
       postcode: '1000',
@@ -158,7 +158,8 @@ describe('toPayload: no qualification, and test mode', () => {
     });
     const solar = payloadFor(body('zonnepanelen', solarAnswers));
     expect(solar.product).toBe('zonnepanelen');
-    expect(solar).not.toHaveProperty('outcome');
+    expect(solar.outcome).toBe('pending');
+    expect(solar.outcome_reasons).toEqual([]);
   });
 
   it('is a test lead unless production, and on production with ?test=1 or isTest', () => {

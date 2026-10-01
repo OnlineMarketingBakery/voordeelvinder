@@ -18,7 +18,7 @@
   (`timeout-or-duplicate`). Nothing is stored or forwarded again. `submitted_at` is set from
   the server's clock (the browser's value is ignored). `is_test` is decided on the server:
   `SITE_ENV !== "production"` or the submission's `meta.test` (`?test=1`). There is no
-  classify step: every valid lead goes to n8n, which qualifies it (ADR 0009).
+  classify step: every valid lead goes to n8n, which qualifies it (ADR 0009; superseded by ADR 0010: the site classifies, still without filtering).
 - **Responses to the browser** are `{ ok: false, error: <code> }` with a stable code the form
   maps to copy: `invalid_request` 400, `verification_failed` 403, `method_not_allowed` 405,
   `payload_too_large` 413, `unsupported_media_type` 415 (JSON only), `rate_limited` 429 (with
@@ -96,7 +96,7 @@
 - Delivery is at least once: a crash between a successful forward and its status line, a
   status line that can't be written, or a very slow n8n can make the retry job send a record
   again. n8n **must** deduplicate on `lead_id` (and `signup_id`); this is in the handover
-  (`docs/n8n-qualification.md`) and `docs/PAYLOAD.md`, with the other n8n requirements: write
+  (`docs/qualification.md`) and `docs/PAYLOAD.md`, with the other n8n requirements: write
   every string RAW to the sheet (all string fields are visitor-controlled), and send Meta
   events only with `consent.cookies.marketing: true`.
 - Names starting with `=` or `@` are refused (`text_invalid`), and tracking values are cleaned

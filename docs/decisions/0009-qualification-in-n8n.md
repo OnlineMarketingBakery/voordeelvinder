@@ -1,7 +1,7 @@
 # 0009 — Qualification happens in n8n, not on the site
 
 - **Date:** 2026-09-30
-- **Status:** Accepted (Tanjil, 2026-09-30)
+- **Status:** Superseded by [0010](0010-qualification-on-the-site.md) (2026-10-01); accepted 2026-09-30
 - **Brief:** §8 (qualification rules, server-side), §9.2 (payload: `outcome`,
   `outcome_reasons`), §9.3 (n8n routing, Meta `QualifiedLead`).
 - **Supersedes:** the rules part of ADR 0006 ("Phase 5 qualification rules can use the same

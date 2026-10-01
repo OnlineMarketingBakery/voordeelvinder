@@ -112,8 +112,8 @@ fields, next }`; `next` is an ordered list of `{ if?, goto }` whose last entry h
   new path.
 - **Add a product** (Phase 4/5): a flow file, a page JSON (its route `src/pages/<product>.astro`
   renders `<ContentPage id="<product>" />`), a `/vergelijken/<product>` and
-  `/bedankt/<product>` route. Qualification is not the site's job: the new product's rules (or
-  `pending`) are set up in n8n (ADR 0009, `docs/n8n-qualification.md`).
+  `/bedankt/<product>` route. Its qualification rules go in `src/server/rules/<product>.json`
+  (without one, every lead is `pending`; ADR 0010, `docs/qualification.md`).
 - **Add a blog post:** a Markdown file `src/content/blog/<slug>.md`, served at `/blog/<slug>`
   (frontmatter schema: `src/schemas/blog.ts`). Required: `title`, `excerpt` (card text and
   meta description), `date` (`2026-09-29`). Optional: `cover` (`{ src: <image key>, alt }`;
@@ -158,8 +158,8 @@ fields, next }`; `next` is an ordered list of `{ if?, goto }` whose last entry h
 ## Never, without explicit approval in the PR
 
 - Change option codes, the lead payload contract (`docs/PAYLOAD.md`) or tracking.
-  Qualification lives in n8n, not in this repo (ADR 0009): never add promo / no_promo logic to
-  the site.
+  The site decides promo / no_promo (ADR 0010, `docs/qualification.md`) but never filters:
+  every valid lead goes to n8n, which routes on the outcome.
 - Send a real lead from local, CI or staging, or point any non-production environment at a
   real n8n webhook. Staging's only webhook is a separate, always-active **test workflow**
   (its `/webhook/<path>` URL, writing only to the test tab), never the production workflow and
