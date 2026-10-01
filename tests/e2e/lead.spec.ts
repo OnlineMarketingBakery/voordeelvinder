@@ -22,8 +22,8 @@ import { FAKE_TURNSTILE_TOKEN, stubTurnstile } from '../support/form-submit';
 import type { ReceivedRequest } from '../support/mock-n8n';
 
 /**
- * The top-level keys of the lead payload contract (docs/PAYLOAD.md, brief §9.2). No `outcome`
- * or `outcome_reasons`: n8n qualifies the leads, not the site (ADR 0009).
+ * The top-level keys of the lead payload contract (docs/PAYLOAD.md, brief §9.2), including the
+ * site's `outcome` and `outcome_reasons` (ADR 0010).
  */
 const PAYLOAD_KEYS = [
   'answers',
@@ -38,6 +38,8 @@ const PAYLOAD_KEYS = [
   'labels',
   'lead_id',
   'meta',
+  'outcome',
+  'outcome_reasons',
   'product',
   'schema_version',
   'submitted_at',

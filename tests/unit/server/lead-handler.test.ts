@@ -76,7 +76,7 @@ describe('POST /api/lead (handler)', () => {
 
   const body = (extra: Record<string, unknown> = {}) => ({ turnstile_token: 'ok-token', ...extra });
 
-  it('backs up, forwards and redirects to the thank-you page, without qualifying', async () => {
+  it('backs up, forwards and redirects to the thank-you page, with the outcome', async () => {
     const { post, log } = setup();
     const response = await post(body());
     expect(response.status).toBe(200);
@@ -102,8 +102,9 @@ describe('POST /api/lead (handler)', () => {
     expect(await listPending(dir)).toEqual([]);
 
     // The site never qualifies a lead (ADR 0009): n8n does.
-    expect(payload).not.toHaveProperty('outcome');
-    expect(payload).not.toHaveProperty('outcome_reasons');
+    // Every lead is forwarded, whatever its outcome (ADR 0010).
+    expect(payload).toHaveProperty('outcome');
+    expect(payload).toHaveProperty('outcome_reasons');
 
     // Logs: the lead id and delivery status, nothing personal.
     expect(log.entries).toEqual([

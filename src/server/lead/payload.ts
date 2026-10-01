@@ -17,6 +17,7 @@ import type { Flow, FlowCopy } from '../../lib/flow/schema';
 import type { Product } from '../../lib/flow/types';
 import { isTestEnvironment, type SiteEnv } from '../env';
 import { serverFlowCopy, serverFlows } from './flows';
+import { qualify, type Outcome } from './qualify';
 
 export const BRAND = 'voordeelvinder';
 
@@ -32,6 +33,9 @@ export type LeadPayload = {
   submitted_at: string;
   product: Product;
   flow_version: number;
+  /** Decided on the site (qualify.ts, ADR 0010); n8n routes on it. */
+  outcome: Outcome;
+  outcome_reasons: string[];
   answers: Record<string, SubmittedValue>;
   labels: Record<string, string>;
   derived: Record<string, string>;
@@ -107,6 +111,7 @@ export function toPayload(submission: Submission, meta: PayloadMeta): LeadPayloa
     submitted_at: meta.receivedAt.toISOString(),
     product: submission.product,
     flow_version: submission.flow_version,
+    ...qualify(submission.product, submission.answers, submission.derived),
     answers: { ...submission.answers },
     labels: payloadLabels(flow, submission.answers, serverFlowCopy().yesNo),
     derived: { ...submission.derived },

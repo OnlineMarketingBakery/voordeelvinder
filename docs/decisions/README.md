@@ -14,4 +14,5 @@ rewriting history.
 | 0006 | [A small JSONLogic subset instead of json-logic-js](0006-jsonlogic-subset.md)                | Accepted                   |
 | 0007 | [Form flow content: gas switch, energy preselect, interface copy](0007-form-flow-content.md) | Proposed                   |
 | 0008 | [The lead pipeline: endpoint, backups, forwarding, retry](0008-lead-pipeline.md)             | Proposed                   |
-| 0009 | [Qualification happens in n8n, not on the site](0009-qualification-in-n8n.md)                | Accepted                   |
+| 0009 | [Qualification happens in n8n, not on the site](0009-qualification-in-n8n.md)                | Superseded by 0010         |
+| 0010 | [The site decides promo / no_promo; n8n routes](0010-qualification-on-the-site.md)           | Accepted                   |

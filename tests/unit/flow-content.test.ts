@@ -507,7 +507,7 @@ describe('real flows: the submission matches docs/PAYLOAD.md', () => {
     expect(keys(submission.tracking)).toEqual(keys(example.tracking));
     expect(Object.keys(submission.tracking)).toEqual([...TRACKING_KEYS]);
     // Top level: what the server adds (docs/PAYLOAD.md "Where each part comes from").
-    const serverOnly = ['brand', 'is_test', 'labels'];
+    const serverOnly = ['brand', 'is_test', 'labels', 'outcome', 'outcome_reasons'];
     expect(keys(submission)).toEqual(
       keys(example)
         .filter((key) => !serverOnly.includes(key))

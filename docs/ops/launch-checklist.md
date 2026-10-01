@@ -29,7 +29,7 @@ Last checked: 2026-10-01 (staging `c289b31`).
 | [ ]  | Cloudflare Turnstile: `PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` for the production domain (test keys are refused) | **[gate]**                |
 | [ ]  | `LEAD_BACKUP_DIR`: an absolute path outside the site directory                                                               | **[gate]**                |
 | [ ]  | `PUBLIC_SITE_URL`: the final domain (canonical URLs, sitemap)                                                                | review                    |
-| [ ]  | n8n: dedupe on `lead_id`, write sheet values as RAW, qualification rules set up (ADR 0009, `docs/n8n-qualification.md`)      | review                    |
+| [ ]  | n8n: dedupe on `lead_id`, write sheet values as RAW, qualification rules set up (ADR 0009, `docs/qualification.md`)          | review                    |
 | [ ]  | An alert channel for leads stuck in `pending_forward` (the `leads:retry` cron)                                               | review                    |
 
 ## 3. Server and domain
