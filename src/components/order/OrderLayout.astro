@@ -1,0 +1,71 @@
+---
+// The frame of the results and ordering screens (Figma 221:5711–250:12053): a purple band with
+// the h1 (one word lime) and, while ordering, the three-step progress bar; the island's cards
+// overlap the band. Off in production (orderPreview): the page answers 404 there.
+import Page from '../../layouts/Page.astro';
+import { fill, orderCopy } from '../../lib/comparison/copy';
+
+interface Props {
+  title: string;
+  highlight: string;
+  subtitle?: string | undefined;
+  /** 0–2 while ordering: the progress bar's current step. */
+  step?: number | undefined;
+  /** The page title when the band has no h1 (the thank-you page has its own). */
+  pageTitle?: string | undefined;
+}
+
+const { title, highlight, subtitle, step, pageTitle } = Astro.props;
+const [before, after] = title.includes(highlight) ? title.split(highlight, 2) : [title, ''];
+const steps = orderCopy.order.steps;
+---
+
+<Page title={pageTitle ?? title} noindex>
+  <div class="bg-lavender-50">
+    <div class="surface-dark bg-purple-600 text-white">
+      <div class="mx-auto w-full max-w-content px-4 pt-10 pb-36 md:px-6 md:pt-14 md:pb-40 xl:px-0">
+        {step !== undefined && (
+          <ol
+            class="mb-8 grid grid-cols-3 gap-3"
+            aria-label={fill(orderCopy.order.progress, { step: step + 1, total: steps.length })}
+          >
+            {steps.map((name, index) => (
+              <li aria-current={index === step ? 'step' : undefined}>
+                <span
+                  class:list={[
+                    'block h-1 rounded-full',
+                    index <= step ? 'bg-white' : 'bg-white/30',
+                  ]}
+                />
+                <span
+                  class:list={[
+                    'mt-2 flex items-center gap-2 text-sm',
+                    index <= step ? 'text-white' : 'text-on-purple-muted',
+                  ]}
+                >
+                  <span class="grid size-5 place-items-center rounded-full bg-lime-400 text-xs text-ink-900">
+                    {index + 1}
+                  </span>
+                  {name}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+        {title && (
+          <>
+            <h1 class="text-h3 md:text-h2">
+              {before}
+              {title.includes(highlight) && <span class="text-lime-300">{highlight}</span>}
+              {after}
+            </h1>
+            {subtitle && <p class="mt-2 text-body-lg text-on-purple-muted">{subtitle}</p>}
+          </>
+        )}
+      </div>
+    </div>
+    <div class="mx-auto -mt-28 w-full max-w-content px-4 pb-16 md:-mt-32 md:px-6 md:pb-24 xl:px-0">
+      <slot />
+    </div>
+  </div>
+</Page>

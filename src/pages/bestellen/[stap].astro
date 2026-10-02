@@ -1,0 +1,49 @@
+---
+// Screens 3–6, ordering (Figma 241:7189, 249:10051, 250:12053, 254:14001; ADR 0013): your
+// details, the connection, check and confirm, and the thank-you page. Placeholder data, nothing
+// is sent, off in production.
+import OrderLayout from '../../components/order/OrderLayout.astro';
+import OrderIsland, { type OrderStep } from '../../components/order/OrderIsland';
+import ThanksIsland from '../../components/order/ThanksIsland';
+import { orderPageData } from '../../lib/comparison/page-data';
+import { orderPreview } from '../../lib/comparison/preview';
+
+export const prerender = false;
+
+const STEPS: Record<string, OrderStep | 'thanks'> = {
+  gegevens: 'details',
+  aansluiting: 'connection',
+  controle: 'review',
+  bedankt: 'thanks',
+};
+const step = STEPS[Astro.params.stap ?? ''];
+if (!step || !orderPreview(__SITE_ENV__)) return new Response(null, { status: 404 });
+const { copy, comparison, labels, icons } = await orderPageData();
+const o = copy.order;
+const heading =
+  step === 'details'
+    ? o.details
+    : step === 'connection'
+      ? o.connection
+      : step === 'review'
+        ? o.review
+        : null;
+const index = { details: 0, connection: 1, review: 2 } as const;
+---
+
+{step === 'thanks' ? (
+  <OrderLayout title="" highlight="" pageTitle={o.thanks.seo.title}>
+    <ThanksIsland client:load copy={copy} comparison={comparison} />
+  </OrderLayout>
+) : (
+  <OrderLayout title={heading!.title} highlight={heading!.highlight} step={index[step]}>
+    <OrderIsland
+      client:load
+      step={step}
+      copy={copy}
+      comparison={comparison}
+      labels={labels}
+      icons={icons}
+    />
+  </OrderLayout>
+)}
