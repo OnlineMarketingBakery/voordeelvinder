@@ -101,6 +101,15 @@ part comes from", which describe the implementation.
   (brief §9.3), both with the lead's `event_id`.
 - Option codes never change once live (AGENTS.md rule 4); labels may.
 
+## Two energy forms
+
+`/vergelijken/energie` (the single-page form, flow `energie_vergelijker`) and
+`/vergelijken/energie/stappen` (the step form, flow `energie`) send the same payload. The
+single-page form's `answers` can also hold `inverter_kw` (a number with one decimal),
+`solar_panel_count`, `injection_day_kwh`, `injection_night_kwh`, `home_battery`,
+`contract_type` and `compare_promotions` (docs/FLOWS.md); additive, so `schema_version` stays 1.
+`meta.page` says which form it came from.
+
 ## Delivery: at least once
 
 The site forwards a lead **at least once**, not exactly once: a crash between n8n's answer and

@@ -5,7 +5,7 @@
 // or blocked (private mode, some in-app browsers), and the form then simply doesn't persist.
 import type { Flow } from '../flow/schema';
 import { PRODUCTS, type AnswerValue, type Product } from '../flow/types';
-import type { FormEntry, OwnAnswers } from './types';
+import type { OwnAnswers } from './types';
 
 /** Bump when the record's shape changes; older records are then ignored. */
 export const STORAGE_VERSION = 2;
@@ -54,7 +54,7 @@ export type StoredSession = {
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'>;
 
-export function storageKey(entry: FormEntry): string {
+export function storageKey(entry: string): string {
   return `${STORAGE_PREFIX}:${entry}`;
 }
 
@@ -137,7 +137,7 @@ export function parseSession(
 
 export function readSession(
   store: StorageLike | null,
-  entry: FormEntry,
+  entry: string,
   fingerprints: Partial<Record<Product, string>>,
 ): StoredSession | null {
   if (!store) return null;
@@ -151,7 +151,7 @@ export function readSession(
 /** Writes the record; false when storage refused it (full, blocked). */
 export function writeSession(
   store: StorageLike | null,
-  entry: FormEntry,
+  entry: string,
   session: StoredSession,
 ): boolean {
   if (!store) return false;
@@ -163,7 +163,7 @@ export function writeSession(
   }
 }
 
-export function clearSession(store: StorageLike | null, entry: FormEntry): void {
+export function clearSession(store: StorageLike | null, entry: string): void {
   try {
     store?.removeItem(storageKey(entry));
   } catch {

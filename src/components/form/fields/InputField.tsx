@@ -6,13 +6,14 @@
 import type { Field } from '../../../lib/flow/schema';
 import { domId, fieldLabel } from '../../../lib/form/labels';
 import { suggestionLabel } from '../../../lib/form/messages';
+import { useFormLayout } from '../layout';
 import { cx } from '../ui';
 import {
   describedBy,
   FieldHint,
   FieldMessage,
   FocusRing,
-  labelClass,
+  useLabelClass,
   type FieldProps,
 } from './shared';
 
@@ -31,7 +32,10 @@ type Props = FieldProps<InputFieldType> & {
 function inputAttributes(field: InputFieldType) {
   switch (field.type) {
     case 'number':
-      return { type: 'text', inputMode: 'numeric', autoComplete: 'off' } as const;
+      // A decimal field (kW) needs the comma on a phone keyboard.
+      return field.decimals
+        ? ({ type: 'text', inputMode: 'decimal', autoComplete: 'off' } as const)
+        : ({ type: 'text', inputMode: 'numeric', autoComplete: 'off' } as const);
     case 'postcode':
       return { type: 'text', inputMode: 'numeric', autoComplete: 'postal-code' } as const;
     case 'phone':
@@ -67,12 +71,14 @@ export function InputField({
   readOnly = false,
 }: Props) {
   const label = fieldLabel(step, field);
+  const labelClass = useLabelClass();
   const id = domId.field(field.id);
   const chipId = `${id}-prefix`;
   const suggestionId = `${id}-suggestie`;
   const isPhone = field.type === 'phone';
   // Single inputs are 74 px high (postcode, kWh), the contact grid 60 px (Figma 89:7941, 91:11420).
-  const tall = field.type === 'postcode' || field.type === 'number';
+  const page = useFormLayout() === 'page';
+  const tall = !page && (field.type === 'postcode' || field.type === 'number');
   const unit = field.type === 'number' ? field.unit : undefined;
 
   return (
@@ -80,6 +86,7 @@ export function InputField({
       {!label.byTitle && (
         <label htmlFor={id} className={labelClass}>
           {label.text}
+          {page && field.required && <span aria-hidden="true"> *</span>}
         </label>
       )}
       <div className="relative">
@@ -123,7 +130,11 @@ export function InputField({
             'peer w-full min-w-0 rounded-lg border bg-lavender-50 text-ink-900 placeholder:text-ink-placeholder focus-visible:outline-hidden',
             'transition-[border-color] duration-(--motion-duration-fast) ease-out',
             error ? 'border-danger' : 'border-control-border',
-            tall ? 'h-[74px] px-6 text-body-lg' : 'h-[60px] px-5 text-body',
+            tall
+              ? 'h-[74px] px-6 text-body-lg'
+              : page
+                ? 'h-12 px-4 text-body'
+                : 'h-[60px] px-5 text-body',
             isPhone && 'pl-[112px]',
             unit && 'pr-20',
           )}
@@ -132,7 +143,10 @@ export function InputField({
         {unit && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 right-6 flex items-center text-body-lg text-ink-900"
+            className={cx(
+              'pointer-events-none absolute inset-y-0 flex items-center text-ink-900',
+              page ? 'right-4 text-sm text-ink-600' : 'right-6 text-body-lg',
+            )}
           >
             {unit}
           </span>

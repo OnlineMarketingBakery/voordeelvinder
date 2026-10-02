@@ -10,6 +10,7 @@ const PAGES = [
   '/over-ons',
   '/vergelijken',
   '/vergelijken/energie',
+  '/vergelijken/energie/stappen',
   '/vergelijken/zonnepanelen',
   '/vergelijken/thuisbatterij',
   '/bedankt/energie',

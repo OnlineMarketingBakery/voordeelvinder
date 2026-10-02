@@ -199,7 +199,7 @@ test.describe('form motion: auto-advance', () => {
   test('a step with two questions moves on once both are tapped (digital meter + solar)', async ({
     page,
   }) => {
-    await open(page, '/vergelijken/energie?energie=both');
+    await open(page, '/vergelijken/energie/stappen?energie=both');
     await control(page, 'Wat is je postcode?').fill('9000');
     await next(page).click();
     await expect(heading(page)).toHaveText('Wie is je huidige energieleverancier?');

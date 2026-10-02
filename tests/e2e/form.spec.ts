@@ -101,9 +101,9 @@ async function fillContact(page: Page) {
   await tick(page, /Ik ga akkoord/);
 }
 
-/** From /vergelijken/energie?energie=both to the contact step, "Nee" path. */
+/** From /vergelijken/energie/stappen?energie=both to the contact step, "Nee" path. */
 async function toContact(page: Page) {
-  await open(page, '/vergelijken/energie?energie=both');
+  await open(page, '/vergelijken/energie/stappen?energie=both');
   await control(page, 'Wat is je postcode?').fill('9000');
   await goNext(page, 'Wie is je huidige energieleverancier?');
   await control(page, 'Wie is je huidige energieleverancier?').selectOption('luminus');
@@ -230,8 +230,10 @@ test.describe('form: energy flow', () => {
     expect(pageErrors).toEqual([]);
   });
 
-  test('/vergelijken/energie without ?energie= asks only the energy type', async ({ page }) => {
-    await open(page, '/vergelijken/energie');
+  test('/vergelijken/energie/stappen without ?energie= asks only the energy type', async ({
+    page,
+  }) => {
+    await open(page, '/vergelijken/energie/stappen');
     await expect(heading(page)).toHaveText('Wat wil je vergelijken?');
     await expect(progressLine(page)).toHaveText(progress(1, 10));
     await expect(page.getByRole('radio')).toHaveCount(3);
@@ -244,7 +246,7 @@ test.describe('form: energy flow', () => {
   });
 
   test('?energie=gas skips the electricity questions', async ({ page }) => {
-    await open(page, '/vergelijken/energie?energie=gas');
+    await open(page, '/vergelijken/energie/stappen?energie=gas');
     await expect(heading(page)).toHaveText('Wat is je postcode?');
     await expect(progressLine(page)).toHaveText(progress(1, 8));
     await control(page, 'Wat is je postcode?').fill('2000');
@@ -266,7 +268,7 @@ test.describe('form: energy flow', () => {
   });
 
   test('the business checkbox reveals the consumption bands', async ({ page }) => {
-    await open(page, '/vergelijken/energie?energie=both');
+    await open(page, '/vergelijken/energie/stappen?energie=both');
     await expect(page.getByRole('radiogroup')).toHaveCount(0);
     await tick(page, 'Dit is een zakelijk adres.');
     await expect(page.getByRole('radiogroup')).toHaveCount(2);
@@ -340,13 +342,13 @@ test.describe('form: validation', () => {
       requiredByType.day_slot,
     );
     await expect(errorText(page, requiredByType.consent)).toBeVisible();
-    expect(page.url()).toContain('/vergelijken/energie');
+    expect(page.url()).toContain('/vergelijken/energie/stappen');
   });
 });
 
 test.describe('form: navigation and persistence', () => {
   test('"Terug" keeps the answers', async ({ page }) => {
-    await open(page, '/vergelijken/energie?energie=both');
+    await open(page, '/vergelijken/energie/stappen?energie=both');
     await control(page, 'Wat is je postcode?').fill('9000');
     await goNext(page, 'Wie is je huidige energieleverancier?');
     await control(page, 'Wie is je huidige energieleverancier?').selectOption('luminus');
@@ -509,7 +511,7 @@ test.describe('form: submit', () => {
 
 test.describe('form: double clicks', () => {
   test('a double click on "Volgende" moves one step, without errors', async ({ page }) => {
-    await open(page, '/vergelijken/energie?energie=both');
+    await open(page, '/vergelijken/energie/stappen?energie=both');
     await control(page, 'Wat is je postcode?').fill('9000');
     await next(page).dblclick();
     await expect(heading(page)).toHaveText('Wie is je huidige energieleverancier?');
@@ -527,17 +529,19 @@ test.describe('form: double clicks', () => {
     await next(page).dblclick();
     await expect(heading(page)).toHaveText('Jouw gegevens');
     await page.waitForTimeout(STEP_GUARD_MS + 250);
-    expect(new URL(page.url()).pathname).toBe('/vergelijken/energie');
+    expect(new URL(page.url()).pathname).toBe('/vergelijken/energie/stappen');
     await expect(submit(page)).toBeVisible();
   });
 });
 
 test.describe('form: server render and before hydration', () => {
-  test('/vergelijken/energie renders the ?energie= start on the server', async ({ request }) => {
+  test('/vergelijken/energie/stappen renders the ?energie= start on the server', async ({
+    request,
+  }) => {
     // The progress numbers are separate spans (they roll): compare it as text.
     const text = (html: string) => html.replace(/<[^>]+>/g, '');
     const both = await (
-      await request.get('/vergelijken/energie?energie=both&utm_source=meta')
+      await request.get('/vergelijken/energie/stappen?energie=both&utm_source=meta')
     ).text();
     expect(both).toContain('>Wat is je postcode?</h2>');
     expect(text(both)).toContain(progress(1, 9));
@@ -546,11 +550,11 @@ test.describe('form: server render and before hydration', () => {
     expect(both).toContain('<link rel="canonical" href="');
     expect(both).toMatch(/<link rel="canonical" href="[^"]*\/vergelijken\/energie\/">/);
 
-    const plain = await (await request.get('/vergelijken/energie')).text();
+    const plain = await (await request.get('/vergelijken/energie/stappen')).text();
     expect(plain).toContain('>Wat wil je vergelijken?</h2>');
     expect(text(plain)).toContain(progress(1, 10));
     // An unknown value is dropped, like in the island.
-    const unknown = await (await request.get('/vergelijken/energie?energie=water')).text();
+    const unknown = await (await request.get('/vergelijken/energie/stappen?energie=water')).text();
     expect(unknown).toContain('>Wat wil je vergelijken?</h2>');
 
     expect((await request.get('/vergelijken/water')).status()).toBe(404);
@@ -568,7 +572,7 @@ test.describe('form: server render and before hydration', () => {
       if (release) return route.continue();
       held.push(route);
     });
-    const path = '/vergelijken/energie?energie=both&utm_source=meta&test=1';
+    const path = '/vergelijken/energie/stappen?energie=both&utm_source=meta&test=1';
     await page.goto(path, { waitUntil: 'commit' });
     await expect(heading(page)).toHaveText('Wat is je postcode?');
     await expect(progressLine(page)).toHaveText(progress(1, 9));
@@ -607,7 +611,7 @@ test.describe('form: server render and before hydration', () => {
         failed.push(`${response.status()} ${response.url()}`);
       }
     });
-    await open(page, '/vergelijken/energie?energie=both');
+    await open(page, '/vergelijken/energie/stappen?energie=both');
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForLoadState('networkidle');
     const broken = await page.evaluate(() =>
@@ -713,7 +717,7 @@ test.describe('form: accessibility and layout', () => {
     await noScroll('contact with errors');
     // Start over: the same page would otherwise resume at the contact step (brief §7.6).
     await page.evaluate(() => sessionStorage.clear());
-    await open(page, '/vergelijken/energie?energie=both');
+    await open(page, '/vergelijken/energie/stappen?energie=both');
     await control(page, 'Wat is je postcode?').fill('9000');
     await goNext(page, 'Wie is je huidige energieleverancier?');
     await noScroll('select');

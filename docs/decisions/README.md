@@ -17,3 +17,4 @@ rewriting history.
 | 0009 | [Qualification happens in n8n, not on the site](0009-qualification-in-n8n.md)                      | Superseded by 0010         |
 | 0010 | [The site decides promo / no_promo; n8n routes](0010-qualification-on-the-site.md)                 | Accepted                   |
 | 0011 | [One n8n workflow for staging and production](0011-one-n8n-workflow-for-staging-and-production.md) | Accepted                   |
+| 0012 | [Single-page energy form; the step form stays](0012-single-page-energy-form.md)                    | Accepted                   |

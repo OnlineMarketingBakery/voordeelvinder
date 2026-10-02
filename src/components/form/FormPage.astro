@@ -1,0 +1,63 @@
+---
+// The single-page energy form (Figma 193:2095) on /vergelijken/energie: a purple band with the
+// h1, then the energie_vergelijker flow's sections as cards that overlap it (FormPageIsland).
+// Rendered on the server with every section (client:load); ?energie= is applied there already.
+import flagBe from '../../assets/images/flags/be.png';
+import { iconUrl } from '../../lib/assets';
+import { loadFormContent } from '../../lib/form-content';
+import { urlPreselects } from '../../lib/form/initial';
+import { formIconKeys } from '../../lib/form/labels';
+import { turnstileSiteKey } from '../../lib/turnstile';
+import FormPageIsland from './FormPageIsland';
+
+interface Props {
+  /** The request's query: ?energie= preselects the energy type. */
+  search?: string;
+}
+
+const { search = '' } = Astro.props;
+const { byId, copy } = await loadFormContent();
+const flow = byId.energie_vergelijker;
+if (!flow) throw new Error('src/content/flows/nl/energie_vergelijker.json is missing');
+const preselect = urlPreselects(flow, search, true);
+const icons = Object.fromEntries(formIconKeys({ energie: flow }).map((key) => [key, iconUrl(key)]));
+const { panel: _panel, pages: _pages, ...formCopy } = copy;
+const { title, highlight, subtitle } = copy.singlePage;
+const [before, after] = title.includes(highlight) ? title.split(highlight, 2) : [title, ''];
+const flag = { src: flagBe.src, width: flagBe.width, height: flagBe.height };
+const siteKey = turnstileSiteKey(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY, __SITE_ENV__);
+---
+
+<div class="bg-lavender-50">
+  <div class="surface-dark bg-purple-600 text-white">
+    <div class="mx-auto w-full max-w-240 px-4 pt-10 pb-36 md:px-6 md:pt-16 md:pb-44 xl:px-0">
+      <h1 class="text-h3 md:text-h2">
+        {before}
+        {title.includes(highlight) && <span class="text-lime-300">{highlight}</span>}
+        {after}
+      </h1>
+      <p class="mt-2 text-body-lg text-on-purple-muted">{subtitle}</p>
+    </div>
+  </div>
+  <div class="mx-auto -mt-28 w-full max-w-240 px-4 pb-16 md:-mt-36 md:px-6 md:pb-24 xl:px-0">
+    <FormPageIsland
+      client:load
+      flow={flow}
+      preselect={preselect}
+      copy={formCopy}
+      icons={icons}
+      flag={flag}
+      turnstileSiteKey={siteKey}
+    />
+    {/* Before hydration a native submit would put the answers in the URL: cancel it. */}
+    <script is:inline>
+      document.currentScript.parentElement.addEventListener(
+        'submit',
+        function (event) {
+          event.preventDefault();
+        },
+        true,
+      );
+    </script>
+  </div>
+</div>

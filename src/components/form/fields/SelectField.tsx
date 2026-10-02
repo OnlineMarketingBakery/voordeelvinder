@@ -3,13 +3,14 @@
 // the inputs' (FocusRing).
 import type { Field } from '../../../lib/flow/schema';
 import { domId, fieldLabel, UI_ICONS } from '../../../lib/form/labels';
+import { useFormLayout } from '../layout';
 import { cx, MaskIcon } from '../ui';
 import {
   describedBy,
   FieldHint,
   FieldMessage,
   FocusRing,
-  labelClass,
+  useLabelClass,
   type FieldProps,
 } from './shared';
 
@@ -26,6 +27,8 @@ export function SelectField({
   icons,
 }: FieldProps<SelectFieldType>) {
   const label = fieldLabel(step, field);
+  const labelClass = useLabelClass();
+  const page = useFormLayout() === 'page';
   const id = domId.field(field.id);
   const selected = typeof value === 'string' ? value : '';
 
@@ -34,6 +37,7 @@ export function SelectField({
       {!label.byTitle && (
         <label htmlFor={id} className={labelClass}>
           {label.text}
+          {page && field.required && <span aria-hidden="true"> *</span>}
         </label>
       )}
       <div className="relative">
@@ -47,7 +51,8 @@ export function SelectField({
           aria-invalid={error ? 'true' : undefined}
           aria-required={field.required ? 'true' : undefined}
           className={cx(
-            'peer h-[74px] w-full min-w-0 cursor-pointer appearance-none truncate rounded-lg border bg-lavender-50 pr-14 pl-6 text-body-lg focus-visible:outline-hidden',
+            'peer w-full min-w-0 cursor-pointer appearance-none truncate rounded-lg border bg-lavender-50 focus-visible:outline-hidden',
+            page ? 'h-12 pr-12 pl-4 text-body' : 'h-[74px] pr-14 pl-6 text-body-lg',
             'transition-[border-color] duration-(--motion-duration-fast) ease-out',
             error ? 'border-danger' : 'border-control-border',
             selected === '' ? 'text-ink-placeholder' : 'text-ink-900',
@@ -65,7 +70,10 @@ export function SelectField({
         <FocusRing />
         <MaskIcon
           src={icons[UI_ICONS.next]}
-          className="pointer-events-none absolute top-1/2 right-6 size-6 -translate-y-1/2 rotate-90 text-purple-600"
+          className={cx(
+            'pointer-events-none absolute top-1/2 -translate-y-1/2 rotate-90 text-purple-600',
+            page ? 'right-4 size-5' : 'right-6 size-6',
+          )}
         />
       </div>
       <FieldHint field={field} />
