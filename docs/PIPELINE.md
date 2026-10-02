@@ -20,13 +20,14 @@ Built 2026-10-01/02 from the n8n master-sheet brief, with the deviations listed 
 
 ## Workflows
 
-| Workflow                                  | ID                 | State    | What it does                                                                                      |
-| ----------------------------------------- | ------------------ | -------- | ------------------------------------------------------------------------------------------------- |
-| `VoordeelVinder - Leads`                  | `KrEuNcLVmA6u6Og7` | active   | Webhook for leads: validate, dedupe, answer, write the sheet, then (live leads only) the partners |
-| `VoordeelVinder - Newsletter`             | `JFaO1kPzpH9iKmv2` | active   | Webhook for footer sign-ups: validate, dedupe, answer, Nieuwsbrief tab, (live only) Mailchimp     |
-| `VoordeelVinder - Error handler`          | `7XlPIwDbX8VizFVf` | n/a      | Error workflow of the three others: an alert with ids only (the send node is disabled, see below) |
-| `VoordeelVinder - Daily check`            | `3sD5KrTcLr2OHC7r` | inactive | 09:00 Brussels: alerts when `vv_leads` has no live lead in the last 24 h. Activate at launch      |
-| `VoordeelVinder - SETUP sheets (one-off)` | `U2fdmQgLXz7xBinV` | archived | Created the spreadsheets' tabs, headers and formats once                                          |
+| Workflow                                                    | ID                 | State    | What it does                                                                                      |
+| ----------------------------------------------------------- | ------------------ | -------- | ------------------------------------------------------------------------------------------------- |
+| `VoordeelVinder - Leads`                                    | `KrEuNcLVmA6u6Og7` | active   | Webhook for leads: validate, dedupe, answer, write the sheet, then (live leads only) the partners |
+| `VoordeelVinder - Newsletter`                               | `JFaO1kPzpH9iKmv2` | active   | Webhook for footer sign-ups: validate, dedupe, answer, Nieuwsbrief tab, (live only) Mailchimp     |
+| `VoordeelVinder - Error handler`                            | `7XlPIwDbX8VizFVf` | n/a      | Error workflow of the three others: an alert with ids only (the send node is disabled, see below) |
+| `VoordeelVinder - Daily check`                              | `3sD5KrTcLr2OHC7r` | inactive | 09:00 Brussels: alerts when `vv_leads` has no live lead in the last 24 h. Activate at launch      |
+| `VoordeelVinder - SETUP sheets (one-off)`                   | `U2fdmQgLXz7xBinV` | archived | Created the spreadsheets' tabs, headers and formats once                                          |
+| `VoordeelVinder - SETUP columns single-page form (one-off)` | `r4y6DKKI4kSXU5jc` | archived | Inserted the single-page form's 7 columns in both Energie tabs once                               |
 
 n8n data tables (dedupe memory): `vv_leads` (`lead_id`, `received_at`, `is_test`, `product`,
 `outcome`) and `vv_signups` (`signup_id`, `received_at`, `is_test`).
@@ -88,7 +89,7 @@ Two Google spreadsheets in the Drive folder `VoordeelVinder` (owner: OMB Tanjil)
 | 5   | `Nieuwsbrief`        | sign-ups: Datum, Signup ID, E-mail, Consent, Pagina, Test                                        |
 | 6   | `Fouten`             | refused payloads and leads without a tab (e.g. `energie` + `pending`): Ontvangen, Reden, Payload |
 
-Product tabs, in order (energy: 62 columns, solar: 58, battery: 57):
+Product tabs, in order (energy: 69 columns, solar: 58, battery: 57):
 
 - **Lead:** Datum, Lead ID, Event ID, Product, Outcome, Redenen, Flow versie
 - **Contact:** Voornaam, Achternaam, Telefoon, Telefoon (weergave), E-mail, Postcode, Regio, Provincie
@@ -96,7 +97,9 @@ Product tabs, in order (energy: 62 columns, solar: 58, battery: 57):
   elektriciteit (zakelijk), Verbruik gas (zakelijk), then per product:
   - energie: Energietype, Leverancier, Metertype, Digitale meter, Zonnepanelen, Sociaal tarief,
     Budgetmeter, Kent verbruik, Elektriciteit (kWh), Gas (kWh), Personen, Woningtype, Warmtepomp,
-    Elektrische wagen
+    Elektrische wagen, then from the single-page form (ADR 0012): Omvormer (kW),
+    Aantal zonnepanelen, Injectie dag (kWh), Injectie nacht (kWh), Thuisbatterij, Contracttype,
+    Promoties vergelijken (empty for the step form)
   - zonnepanelen: Eigenaar/huurder, Daktype, Dakrichting, Kent verbruik, Elektriciteit (kWh),
     Personen, Woningtype, Warmtepomp, Elektrische wagen, Interesse thuisbatterij
   - thuisbatterij: Zonnepanelen, Aantal panelen, Digitale meter, Kent verbruik, Elektriciteit
@@ -159,12 +162,13 @@ A failing partner doesn't stop the others: its error output is noted, and `Check
 
 ## Change log
 
-| Date       | Change                                                                                                        | Executions  |
-| ---------- | ------------------------------------------------------------------------------------------------------------- | ----------- |
-| 2026-10-01 | Spreadsheets (LIVE, TEST) set up; Leads workflow with test routing; tests 1–9 by direct POSTs                 | 22807–22816 |
-| 2026-10-01 | Staging env set (`N8N_LEAD_WEBHOOK_URL`, `N8N_WEBHOOK_SECRET`); test 10: one staging lead per path, TEST only | 22818–22821 |
-| 2026-10-02 | Newsletter, Error handler, Daily check; staging `N8N_NEWSLETTER_WEBHOOK_URL`; Leads' error workflow set       | 22835–22843 |
-| 2026-10-02 | Partner stages added to Leads, all disabled; routing tested with pinned data; a real test lead still stops    | 22846–22850 |
+| Date       | Change                                                                                                              | Executions           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| 2026-10-01 | Spreadsheets (LIVE, TEST) set up; Leads workflow with test routing; tests 1–9 by direct POSTs                       | 22807–22816          |
+| 2026-10-01 | Staging env set (`N8N_LEAD_WEBHOOK_URL`, `N8N_WEBHOOK_SECRET`); test 10: one staging lead per path, TEST only       | 22818–22821          |
+| 2026-10-02 | Newsletter, Error handler, Daily check; staging `N8N_NEWSLETTER_WEBHOOK_URL`; Leads' error workflow set             | 22835–22843          |
+| 2026-10-02 | Partner stages added to Leads, all disabled; routing tested with pinned data; a real test lead still stops          | 22846–22850          |
+| 2026-10-02 | Energie tabs (TEST and LIVE): 7 columns for the single-page form after Elektrische wagen; `FIELD`/`COLUMNS` updated | 22853 (setup), 22854 |
 
 ## Deviations from the brief
 
