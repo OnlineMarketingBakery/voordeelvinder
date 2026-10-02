@@ -28,7 +28,7 @@ deviate from it are recorded in `docs/decisions/`.
 | `scripts/`                             | `deploy.sh` (run by Ploi), `validate-flows.ts`, cron jobs `leads-retry.ts`, `backups-prune.ts`                                                                                                                                         |
 | `tests/unit`, `tests/e2e`              | Vitest and Playwright (+ axe)                                                                                                                                                                                                          |
 | `server.mjs`, `ecosystem.config.cjs`   | Production entry (loads `.env`) and its PM2 definition                                                                                                                                                                                 |
-| `docs/`                                | Brief, decisions (ADRs), content to-do list, design review, ops runbook                                                                                                                                                                |
+| `docs/`                                | Brief, decisions (ADRs), content to-do list, design review, ops runbook, n8n pipeline (`PIPELINE.md`)                                                                                                                                  |
 
 ## Commands
 
@@ -160,10 +160,10 @@ fields, next }`; `next` is an ordered list of `{ if?, goto }` whose last entry h
 - Change option codes, the lead payload contract (`docs/PAYLOAD.md`) or tracking.
   The site decides promo / no_promo (ADR 0010, `docs/qualification.md`) but never filters:
   every valid lead goes to n8n, which routes on the outcome.
-- Send a real lead from local, CI or staging, or point any non-production environment at a
-  real n8n webhook. Staging's only webhook is a separate, always-active **test workflow**
-  (its `/webhook/<path>` URL, writing only to the test tab), never the production workflow and
-  never n8n's `/webhook-test/` editor URL (docs/ops/ploi-staging.md).
+- Send a real lead from local, CI or staging, or point local or CI at a real n8n webhook.
+  Staging uses the `VoordeelVinder - Leads` / `- Newsletter`
+  webhooks (`/webhook/<path>`), which route `is_test` leads to the TEST spreadsheet and stop
+  before every partner (ADR 0011, `docs/PIPELINE.md`); never n8n's `/webhook-test/` editor URL.
 - Push directly to `main` or `production` (the ruleset blocks it anyway), or merge anything into
   `production`. Promoting a release to production is Tanjil's call.
 - Add `<ClientRouter />` or Speculation Rules `prerender` (brief §6.1).

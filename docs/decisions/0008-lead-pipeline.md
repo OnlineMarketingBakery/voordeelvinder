@@ -86,7 +86,9 @@
   always-active test workflow** reached through its production-style `/webhook/<path>` URL,
   writing only to the test tab; not n8n's `/webhook-test/` URL, which only answers while
   someone listens in the editor. The code can't tell the test workflow from the production
-  one; pointing staging at the test workflow is an ops rule (runbook, AGENTS.md).
+  one; pointing staging at the test workflow is an ops rule (runbook, AGENTS.md). **Since ADR 0011
+  (2026-10-02)** there is no separate test workflow: staging and production use the same n8n
+  workflows, which route on `is_test` (`docs/PIPELINE.md`).
   `TURNSTILE_VERIFY_URL` (local and CI only) points siteverify at the e2e stand-in.
 - **Logs** are JSON lines (`src/server/log.ts`) with the `lead_id`, product, `is_test` and
   delivery status only: never an answer, a name, an e-mail address, a phone number or an IP.
