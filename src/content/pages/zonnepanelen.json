@@ -1,14 +1,14 @@
 {
   "seo": {
     "title": "Zonnepanelen vergelijken",
-    "description": "Zonnepanelen zijn een slimme investering — maar de prijzen en installateurs variëren sterk. VoordeelVinder vergelijkt de beste opties voor jouw dak en verbruik."
+    "description": "Zonnepanelen zijn een slimme investering, maar de prijzen en installateurs variëren sterk. VoordeelVinder vergelijkt de beste opties voor jouw dak en verbruik."
   },
   "sections": [
     {
       "type": "hero",
       "variant": "product",
       "title": "Betaal minder. Produceer zelf.",
-      "body": "Zonnepanelen zijn een slimme investering — maar de prijzen en installateurs variëren sterk. VoordeelVinder vergelijkt de beste opties voor jouw dak en verbruik. In een paar minuten weet je wat het kost en wat je bespaart.",
+      "body": "Zonnepanelen zijn een slimme investering, maar de prijzen en installateurs variëren sterk. VoordeelVinder vergelijkt de beste opties voor jouw dak en verbruik. In een paar minuten weet je wat het kost en wat je bespaart.",
       "cta": {
         "label": "Bereken je besparing",
         "href": "/vergelijken/zonnepanelen"
@@ -87,7 +87,7 @@
           "label": "Stap 03",
           "icon": "decision-making",
           "title": "Jij kiest, wij regelen",
-          "body": "Je ontvangt een helder overzicht met kosten en besparing. Beslis zelf wanneer je de stap zet — wij begeleiden je van A tot Z.",
+          "body": "Je ontvangt een helder overzicht met kosten en besparing. Beslis zelf wanneer je de stap zet, wij begeleiden je van A tot Z.",
           "tone": "purple"
         }
       ]

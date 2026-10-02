@@ -230,12 +230,12 @@ const columnHeading = 'text-title-lg lg:text-h3';
   </div>
 
   <div class="bg-white">
-    <Container class="flex min-h-[70px] flex-col justify-center gap-1 py-4">
+    <Container class="flex min-h-[70px] items-center py-4">
       <p class="text-sm text-ink-900 lg:text-body">
         <strong class="font-semibold">{withYear(footer.copyright.holder)}</strong>
         {footer.copyright.rights}
+        {footer.copyright.company}
       </p>
-      {footer.copyright.company && <p class="text-sm text-ink-900">{footer.copyright.company}</p>}
     </Container>
   </div>
 </footer>

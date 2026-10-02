@@ -44,9 +44,9 @@ We delen cookies in volgens de categorieën die overeenstemmen met de toestemmin
 
 Deze cookies zijn essentieel om de Website te laten werken (bv. laden van pagina’s, beveiliging, load balancing, onthouden van je cookievoorkeuren). Zonder deze cookies functioneert de Website niet naar behoren. Ze worden steeds geplaatst, ongeacht je cookievoorkeuren, op basis van ons gerechtvaardigd belang.
 
-- **Sessie- en beveiligingscookie** — doel: sessiebeheer en beveiliging — bewaartermijn: sessie tot enkele uren.
+- **Sessie- en beveiligingscookie**. Doel: sessiebeheer en beveiliging. Bewaartermijn: sessie tot enkele uren.
 
-- **Cookievoorkeuren (consent-cookie)** — doel: onthouden van je cookiekeuzes — bewaartermijn: 6 tot 12 maanden.
+- **Cookievoorkeuren (consent-cookie)**. Doel: onthouden van je cookiekeuzes. Bewaartermijn: 6 tot 12 maanden.
 
 ### 4.2 Functionele cookies
 
@@ -56,19 +56,19 @@ Maken extra functionaliteit en personalisatie mogelijk (bv. onthouden van je voo
 
 Gebruikt om bezoekersaantallen en gebruik van de Website te meten, bijvoorbeeld via Google Analytics. Deze gegevens worden zoveel mogelijk anoniem of geaggregeerd verwerkt en helpen ons de Website te verbeteren.
 
-- **\_ga, _ga_*** (Google Analytics) — doel: bezoekers onderscheiden en statistieken opbouwen — bewaartermijn: tot 14 maanden.
+- **\_ga, _ga_*** (Google Analytics): doel: bezoekers onderscheiden en statistieken opbouwen. Bewaartermijn: tot 14 maanden.
 
-- **\_gid** (Google Analytics) — doel: bezoekers onderscheiden — bewaartermijn: 24 uur.
+- **\_gid** (Google Analytics): doel: bezoekers onderscheiden. Bewaartermijn: 24 uur.
 
 ### 4.4 Advertentie- en trackingcookies (ad_storage, ad_user_data, ad_personalization)
 
 Gebruikt om advertenties af te stemmen op je interesses, de frequentie ervan te beperken en de doeltreffendheid van campagnes te meten (bv. Google Ads, Meta/Facebook Pixel). Ook affiliate- en partnertrackingcookies vallen hieronder: wanneer je via de Website naar een handelaar doorklikt om gebruik te maken van een promotie of kortingscode, kan een cookie worden geplaatst zodat de handelaar of het affiliatenetwerk (bv. Awin, TradeTracker, Daisycon) kan vaststellen dat je via voordeelvinder.be bent gekomen.
 
-- **_gcl_*** (Google Ads) — doel: conversiemeting van advertenties — bewaartermijn: tot 90 dagen.
+- **_gcl_*** (Google Ads): doel: conversiemeting van advertenties. Bewaartermijn: tot 90 dagen.
 
-- **fr** (Meta/Facebook) — doel: gepersonaliseerde advertenties — bewaartermijn: tot 90 dagen.
+- **fr** (Meta/Facebook): doel: gepersonaliseerde advertenties. Bewaartermijn: tot 90 dagen.
 
-- **Affiliate-trackingcookie** (affiliatenetwerk of handelaar) — doel: verwijzingen toewijzen aan voordeelvinder.be — bewaartermijn: 30 tot 90 dagen.
+- **Affiliate-trackingcookie** (affiliatenetwerk of handelaar): doel: verwijzingen toewijzen aan voordeelvinder.be. Bewaartermijn: 30 tot 90 dagen.
 
 ### 4.5 Social media-cookies
 
@@ -90,13 +90,13 @@ Bij je eerste bezoek aan de Website tonen we een cookiebanner waarin je jouw voo
 
 We maken gebruik van Google Consent Mode v2. Dit betekent dat Google-tags (zoals Google Analytics en Google Ads) pas volledig cookies plaatsen en gegevens verzamelen nadat je hiervoor toestemming hebt gegeven. Je keuze wordt vertaald naar de volgende toestemmingssignalen, die aan Google worden doorgegeven:
 
-- **ad_storage** — toestemming om advertentiegerelateerde cookies en opslag te gebruiken (gekoppeld aan de advertentie- en trackingcookies in 4.4).
+- **ad_storage**: toestemming om advertentiegerelateerde cookies en opslag te gebruiken (gekoppeld aan de advertentie- en trackingcookies in 4.4).
 
-- **ad_user_data** — toestemming om gebruikersgegevens te delen met Google voor advertentiedoeleinden (gekoppeld aan 4.4).
+- **ad_user_data**: toestemming om gebruikersgegevens te delen met Google voor advertentiedoeleinden (gekoppeld aan 4.4).
 
-- **ad_personalization** — toestemming om gepersonaliseerde advertenties te tonen, o.a. remarketing (gekoppeld aan 4.4).
+- **ad_personalization**: toestemming om gepersonaliseerde advertenties te tonen, o.a. remarketing (gekoppeld aan 4.4).
 
-- **analytics_storage** — toestemming om analytische en statistische cookies te gebruiken (gekoppeld aan de analytische cookies in 4.3).
+- **analytics_storage**: toestemming om analytische en statistische cookies te gebruiken (gekoppeld aan de analytische cookies in 4.3).
 
 Zolang je geen toestemming geeft, staan deze signalen standaard op “geweigerd” (“denied”) en verzamelt Google enkel geanonimiseerde, cookievrije basisgegevens (“cookieless pings”) om geaggregeerde modellering mogelijk te maken, zonder dat dit gekoppeld wordt aan een individuele cookie-ID. Zodra je toestemming geeft, worden de bijhorende cookies actief en worden volledige gegevens verzameld.
 
@@ -130,7 +130,7 @@ Je kan je ook (gedeeltelijk) afmelden voor gepersonaliseerde advertenties via:
 
 ## 9. Verwerking van persoonsgegevens
 
-Voor zover cookies persoonsgegevens verwerken (bv. een online identifier of IP-adres), gebeurt dit in overeenstemming met de Algemene Verordening Gegevensbescherming (AVG/GDPR) en onze [Privacyverklaring](/privacy-policy). Daarin lees je meer over welke gegevens we verwerken, met welk doel, hoe lang we ze bewaren en welke rechten je hebt (inzage, verbetering, verwijdering, bezwaar, overdraagbaarheid, klacht bij de Gegevensbeschermingsautoriteit — [gegevensbeschermingsautoriteit.be](https://www.gegevensbeschermingsautoriteit.be)).
+Voor zover cookies persoonsgegevens verwerken (bv. een online identifier of IP-adres), gebeurt dit in overeenstemming met de Algemene Verordening Gegevensbescherming (AVG/GDPR) en onze [Privacyverklaring](/privacy-policy). Daarin lees je meer over welke gegevens we verwerken, met welk doel, hoe lang we ze bewaren en welke rechten je hebt (inzage, verbetering, verwijdering, bezwaar, overdraagbaarheid, klacht bij de Gegevensbeschermingsautoriteit, [gegevensbeschermingsautoriteit.be](https://www.gegevensbeschermingsautoriteit.be)).
 
 ## 10. Wijzigingen aan deze cookiepolicy
 
