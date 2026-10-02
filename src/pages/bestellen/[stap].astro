@@ -7,6 +7,7 @@ import OrderIsland, { type OrderStep } from '../../components/order/OrderIsland'
 import ThanksIsland from '../../components/order/ThanksIsland';
 import { orderPageData } from '../../lib/comparison/page-data';
 import { orderPreview } from '../../lib/comparison/preview';
+import { getSite } from '../../lib/site';
 
 export const prerender = false;
 
@@ -20,6 +21,7 @@ const step = STEPS[Astro.params.stap ?? ''];
 if (!step || !orderPreview(__SITE_ENV__)) return new Response(null, { status: 404 });
 const { copy, comparison, labels, icons } = await orderPageData();
 const o = copy.order;
+const site = await getSite();
 const heading =
   step === 'details'
     ? o.details
@@ -33,7 +35,12 @@ const index = { details: 0, connection: 1, review: 2 } as const;
 
 {step === 'thanks' ? (
   <OrderLayout title="" highlight="" pageTitle={o.thanks.seo.title}>
-    <ThanksIsland client:load copy={copy} comparison={comparison} />
+    <ThanksIsland
+      client:load
+      copy={copy}
+      comparison={comparison}
+      contactEmail={site.contact.email.value}
+    />
   </OrderLayout>
 ) : (
   <OrderLayout title={heading!.title} highlight={heading!.highlight} step={index[step]}>

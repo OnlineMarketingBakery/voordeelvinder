@@ -13,10 +13,12 @@ test('About us renders every section as designed', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(hero.title);
   for (const title of [
     'Hoe VoordeelVinder ontstond',
+    'Maak kennis met Foxy, onze speurneus',
+    'Jij vult in. Wij vergelijken. Jij bespaart.',
     'Waar we voor staan',
     'Wat we nooit doen.',
-    'Is VoordeelVinder iets voor mij?',
-    'Niet zomaar een vergelijker',
+    'Gratis? Waar zit dan het addertje?',
+    'Veelgestelde vragen',
   ]) {
     await expect(
       page.getByRole('main').getByRole('heading', { level: 2, name: title }),
@@ -42,4 +44,31 @@ test('About us has no serious accessibility violations', async ({ page }) => {
     (violation) => violation.impact === 'serious' || violation.impact === 'critical',
   );
   expect(serious, JSON.stringify(serious, null, 2)).toEqual([]);
+});
+
+test('the FAQ page shows every group and its questions as FAQPage data', async ({ page }) => {
+  await page.goto('/veelgestelde-vragen');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Veelgestelde vragen');
+  for (const group of [
+    'Overstappen van energieleverancier',
+    'Je energiefactuur en verbruik',
+    'Contracten en prijzen',
+    'Digitale meter en capaciteitstarief',
+    'Verhuizen, sociaal tarief en andere situaties',
+    'Over VoordeelVinder',
+  ]) {
+    await expect(page.getByRole('heading', { level: 2, name: group })).toBeVisible();
+  }
+  // The question that waits for the call-moment decision is not shown.
+  await expect(page.getByText('Wie belt mij, en wanneer?')).toHaveCount(0);
+  const ld = await page.locator('script[type="application/ld+json"]').allTextContents();
+  const faq = ld.map((text) => JSON.parse(text)).find((data) => data['@type'] === 'FAQPage');
+  expect(faq.mainEntity.length).toBeGreaterThan(40);
+});
+
+test('"Veelgestelde vragen" in the header leads to the FAQ page', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'the desktop header link');
+  await page.goto('/');
+  await page.getByRole('banner').getByRole('link', { name: 'Veelgestelde vragen' }).click();
+  await expect(page).toHaveURL(/\/veelgestelde-vragen\/?$/);
 });

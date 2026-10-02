@@ -18,6 +18,7 @@ import Team from './Team.astro';
 import Testimonials from './Testimonials.astro';
 import ThankYou from './ThankYou.astro';
 import Values from './Values.astro';
+import MascotIntro from './MascotIntro.astro';
 import Versus from './Versus.astro';
 
 interface Props {
@@ -64,6 +65,8 @@ const sections = Astro.props.sections
       return <Statement {...section} />;
     case 'values':
       return <Values {...section} />;
+    case 'mascotIntro':
+      return <MascotIntro {...section} />;
     case 'promises':
       return <Promises {...section} />;
     case 'personas':

@@ -12,9 +12,12 @@ import { OrderSummary } from './OrderIsland';
 export default function ThanksIsland({
   copy,
   comparison,
+  contactEmail,
 }: {
   copy: OrderCopy;
   comparison: Comparison;
+  /** site.json contact.email.value: the "Contact" button's address. */
+  contactEmail: string;
 }) {
   const t = copy.order.thanks;
   const [order, setOrder] = useState<OrderState | null>(null);
@@ -64,7 +67,7 @@ export default function ThanksIsland({
               {t.mail}
             </button>
             <a
-              href="mailto:privacy@voordeelvinder.be"
+              href={`mailto:${contactEmail}`}
               className="flex min-h-11 items-center rounded-full border border-purple-600 px-6 text-button text-ink-900"
             >
               {t.contact}

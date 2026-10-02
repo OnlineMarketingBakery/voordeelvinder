@@ -34,6 +34,11 @@ export const faqBlock = z
     title: text,
     items: z.array(faqItem).min(1),
     contact,
+    /**
+     * false: no contact card, the questions under the heading at full width (the FAQ page's
+     * groups; its last group keeps the card). Default true.
+     */
+    card: z.boolean().optional(),
   })
   .superRefine((block, ctx) => {
     if (!block.hidden && !block.items.some((item) => item.answer !== null)) {

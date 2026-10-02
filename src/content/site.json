@@ -22,7 +22,7 @@
       },
       {
         "label": "Veelgestelde vragen",
-        "href": "/#veelgestelde-vragen"
+        "href": "/veelgestelde-vragen"
       },
       {
         "label": "Over ons",
@@ -85,7 +85,7 @@
         },
         {
           "label": "Veelgestelde vragen",
-          "href": "/#veelgestelde-vragen"
+          "href": "/veelgestelde-vragen"
         },
         {
           "label": "Over ons",
@@ -132,7 +132,7 @@
   },
   "contact": {
     "email": {
-      "value": "privacy@voordeelvinder.be",
+      "value": "foxy@voordeelvinder.be",
       "todo": true
     },
     "phone": {

@@ -1,0 +1,261 @@
+{
+  "seo": {
+    "title": "Veelgestelde vragen over energie en VoordeelVinder",
+    "description": "Antwoorden op je vragen over overstappen van energieleverancier, je energiefactuur, contracten, de digitale meter, het capaciteitstarief en VoordeelVinder."
+  },
+  "sections": [
+    {
+      "type": "hero",
+      "variant": "product",
+      "title": "Veelgestelde vragen",
+      "body": "Alles over overstappen, je energiefactuur, contracten, de digitale meter en VoordeelVinder zelf.",
+      "cta": {
+        "label": "Start je vergelijking",
+        "href": "/vergelijken/energie"
+      },
+      "art": {
+        "preset": "about",
+        "mascot": {
+          "src": "mascot/fox-magnifier",
+          "alt": ""
+        }
+      }
+    },
+    {
+      "type": "faq",
+      "id": "overstappen-van-energieleverancier",
+      "tone": "white",
+      "title": "Overstappen van energieleverancier",
+      "items": [
+        {
+          "question": "Hoe stap ik over naar een andere energieleverancier in Vlaanderen?",
+          "answer": "Je kiest een nieuw contract en tekent het; je nieuwe leverancier regelt de rest. Het makkelijkst gaat dat via VoordeelVinder: je vult in een paar minuten je situatie in, en een partner belt je met een voorstel op maat. Heb je nog een klassieke meter, dan vraagt Fluvius je meterstanden op; een digitale meter geeft ze automatisch door."
+        },
+        {
+          "question": "Kost overstappen van energieleverancier iets?",
+          "answer": "Nee. Als gezin betaal je niets om een energiecontract stop te zetten, van leverancier te veranderen of je contract mee te nemen naar een nieuw adres. Ook vergelijken via VoordeelVinder is gratis."
+        },
+        {
+          "question": "Moet ik mijn oude energiecontract zelf opzeggen?",
+          "answer": "Nee, dat doet je nieuwe leverancier voor jou. Hij laat je oude leverancier weten dat je overstapt, dus zelf hoef je niets op te zeggen."
+        },
+        {
+          "question": "Hoelang duurt het om van energieleverancier te veranderen?",
+          "answer": "Reken op ongeveer drie weken. Bij een overstap geldt een opzegtermijn van drie weken, die je nieuwe leverancier voor jou in gang zet."
+        },
+        {
+          "question": "Zit ik zonder stroom of gas tijdens de overstap?",
+          "answer": "Nee. Je aansluiting, de kabels en je meter blijven dezelfde; alleen de leverancier die je factuur stuurt, verandert."
+        },
+        {
+          "question": "Hoeveel kan ik besparen door van energieleverancier te veranderen?",
+          "answer": "Dat hangt af van je huidige contract, maar het verschil kan oplopen tot honderden euro's per jaar. In 2025 liep het prijsverschil tussen variabele contracten op tot €191 per jaar voor elektriciteit en €327 voor aardgas. Wie nooit vergelijkt, zit dus mogelijk op een duurder contract dan nodig. Bij VoordeelVinder ontdek je gratis wat er voor jou in zit."
+        },
+        {
+          "question": "Hoe vaak vergelijk ik best mijn energiecontract?",
+          "answer": "Regelmatig, en zeker bij je jaarafrekening, een prijswijziging of een verhuis. Het aanbod verandert voortdurend: eind 2025 waren er 2.000 verschillende contracten voor elektriciteit en 1.421 voor aardgas. Met VoordeelVinder check je in een paar minuten of je nog goed zit."
+        },
+        {
+          "question": "Hoeveel energieleveranciers zijn er in Vlaanderen?",
+          "answer": "In juni 2026 hadden 40 leveranciers een vergunning om elektriciteit te leveren in Vlaanderen, en 31 voor aardgas. Die lijst omvat leveranciers voor gezinnen én voor bedrijven. Zie je door de bomen het bos niet meer? Foxy zoekt het voor je uit."
+        }
+      ],
+      "card": false
+    },
+    {
+      "type": "faq",
+      "id": "je-energiefactuur-en-verbruik",
+      "tone": "white",
+      "title": "Je energiefactuur en verbruik",
+      "items": [
+        {
+          "question": "Wat betaalt een gemiddeld Vlaams gezin voor elektriciteit en gas?",
+          "answer": "In 2025 betaalde een gemiddeld Vlaams gezin ongeveer €1.298 per jaar voor elektriciteit en €1.476 voor aardgas. Je eigen bedrag hangt af van je verbruik, je contract en je netgebied. Betaal jij meer? Dan loont het om te vergelijken via VoordeelVinder."
+        },
+        {
+          "question": "Waaruit bestaat mijn energiefactuur?",
+          "answer": "Je energiefactuur bestaat uit drie delen: de energiekost, de nettarieven en de heffingen. De energiekost gaat naar je leverancier; met de nettarieven, waaronder het capaciteitstarief, betaal je het transport van energie tot bij jou. De heffingen zijn belastingen van de federale en de Vlaamse overheid."
+        },
+        {
+          "question": "Wat is het verschil tussen een voorschotfactuur en een jaarafrekening?",
+          "answer": "Met voorschotfacturen betaal je elke maand een vast bedrag; de jaarafrekening rekent daarna af op wat je echt verbruikte. Je voorschot is gebaseerd op je verbruik van de voorbije jaren. Met een digitale meter kan je ook kiezen voor een maandafrekening op basis van je werkelijke verbruik van de vorige maand."
+        },
+        {
+          "question": "Waarom moet ik bijbetalen op mijn jaarafrekening?",
+          "answer": "Omdat je voorschotten lager waren dan wat je echt verbruikte of betaalde. Is je jaarafrekening hoger dan wat je al betaalde, dan betaal je het verschil bij; is ze lager, dan krijg je geld terug. Na de jaarafrekening worden je voorschotten meestal opnieuw berekend."
+        },
+        {
+          "question": "Kan ik mijn voorschotbedrag laten aanpassen?",
+          "answer": "Ja. Vraag het aan je leverancier, bijvoorbeeld als je woning een tijd leegstaat, je nieuwe toestellen hebt of zonnepanelen liet plaatsen. Weigert je leverancier, dan moet hij uitleggen waarom."
+        },
+        {
+          "question": "Waar vind ik mijn jaarverbruik?",
+          "answer": "Op je laatste jaarafrekening of in Mijn Fluvius. Met een digitale meter kan je daar ook je kwartierwaarden downloaden als csv-bestand. Ken je je verbruik niet, bijvoorbeeld na een verhuis? Bij VoordeelVinder volstaat een schatting op basis van je gezin en je woning."
+        },
+        {
+          "question": "Wat is een EAN-code en waar vind ik die?",
+          "answer": "De EAN-code is het unieke nummer van je aansluiting op het net, met een aparte code voor elektriciteit en voor aardgas. Je vindt hem op je energiefactuur. Met die code kan je onder meer bij Fluvius nagaan wanneer je een digitale meter krijgt."
+        }
+      ],
+      "card": false
+    },
+    {
+      "type": "faq",
+      "id": "contracten-en-prijzen",
+      "tone": "white",
+      "title": "Contracten en prijzen",
+      "items": [
+        {
+          "question": "Wat is het verschil tussen een vast, variabel en dynamisch energiecontract?",
+          "answer": "Bij een vast contract ligt je prijs per kWh vast zolang je contract loopt. Bij een variabel contract beweegt je prijs via een formule mee met de energiemarkt. Bij een dynamisch contract volgt je prijs de groothandelsprijs, die doorheen de dag verandert. Twijfel je wat bij jou past? VoordeelVinder zoekt uit welk contract het best bij jouw verbruik past."
+        },
+        {
+          "question": "Is een dynamisch energiecontract goedkoper?",
+          "answer": "In 2025 gemiddeld wel: gezinnen met een dynamisch contract betaalden ongeveer €1.203 per jaar voor elektriciteit, zo'n €62 minder dan met een variabel en €193 minder dan met een vast contract. Een garantie is het niet: verbruik je veel op momenten dat stroom duur is, dan betaal je meer. Een dynamisch contract loont vooral als je je verbruik kan verschuiven."
+        },
+        {
+          "question": "Heb ik een digitale meter nodig voor een dynamisch contract?",
+          "answer": "Ja, een dynamisch contract kan alleen met een digitale meter. Zonnepanelen heb je er niet voor nodig, maar met een exclusief nachttarief kan het niet."
+        },
+        {
+          "question": "Hoe wordt een variabele energieprijs berekend?",
+          "answer": "Met een formule van je leverancier: (a × X) + b. X is een marktprijs, de indexeringsparameter; a en b kiest de leverancier zelf. Daardoor kan je prijs elke maand of elk kwartaal veranderen."
+        },
+        {
+          "question": "Waarom verschillen energieprijzen zo sterk tussen leveranciers?",
+          "answer": "Omdat elke leverancier zijn eigen prijzen en voorwaarden bepaalt, en het aanbod enorm is: eind 2025 waren er in Vlaanderen 2.000 verschillende contracten voor elektriciteit en 1.421 voor aardgas. Ook de nettarieven verschillen, afhankelijk van je netgebied. Vergelijken is dus de beste manier om te weten of je goed zit, en met VoordeelVinder doe je dat gratis in een paar minuten."
+        }
+      ],
+      "card": false
+    },
+    {
+      "type": "faq",
+      "id": "digitale-meter-en-capaciteitstarief",
+      "tone": "white",
+      "title": "Digitale meter en capaciteitstarief",
+      "items": [
+        {
+          "question": "Wat is het capaciteitstarief?",
+          "answer": "Het capaciteitstarief is het deel van je nettarieven dat afhangt van je hoogste verbruikspiek, en niet alleen van hoeveel kWh je verbruikt. Het geldt sinds 1 januari 2023 voor alle Vlaamse gezinnen, behalve wie recht heeft op het sociaal tarief. Hoe meer toestellen je tegelijk gebruikt, hoe hoger je piek."
+        },
+        {
+          "question": "Hoe wordt het capaciteitstarief berekend?",
+          "answer": "Met een digitale meter telt per maand je hoogste kwartierpiek, in kilowatt (kW), met een minimum van 2,5 kW. Op je jaarafrekening is dat het gemiddelde van je maandpieken over twaalf maanden. Elke kW kost gemiddeld ongeveer €53,39 per jaar zonder btw; het exacte tarief hangt af van je netgebied. Met een klassieke meter betaal je een vast bedrag dat overeenkomt met 2,5 kW."
+        },
+        {
+          "question": "Hoe hoog is de gemiddelde maandpiek van een Vlaams gezin?",
+          "answer": "Gemiddeld 4,24 kW. Ligt je piek een pak hoger, bijvoorbeeld door een elektrische wagen of een warmtepomp, dan loont het om je verbruik te spreiden."
+        },
+        {
+          "question": "Hoe verlaag ik mijn capaciteitstarief?",
+          "answer": "Door zware toestellen niet tegelijk te laten draaien. Zet de wasmachine of droogkast bijvoorbeeld niet aan terwijl je kookt, gebruik de uitgestelde start van je toestellen en laad een elektrische wagen liefst dagelijks en met een lager vermogen. In Mijn Fluvius zie je wanneer je piek valt."
+        },
+        {
+          "question": "Is de digitale meter verplicht in Vlaanderen?",
+          "answer": "Ja. Volgens het Energiedecreet krijgt iedereen in Vlaanderen een digitale meter, en weigeren kan niet. Wie toch weigert, riskeert administratieve kosten en een gerechtelijke procedure."
+        },
+        {
+          "question": "Wat kost een digitale meter?",
+          "answer": "Niets extra: de plaatsing is gratis. De kosten van de meter zitten verrekend in de nettarieven. Wil je hem sneller dan gepland, dan kan je dat ook gratis aanvragen bij Fluvius."
+        },
+        {
+          "question": "Wat verandert er met een digitale meter?",
+          "answer": "Je meter geeft je verbruik automatisch door, dus meterstanden doorgeven hoeft niet meer. Je kan kiezen voor een maandafrekening, een dynamisch contract afsluiten en via de P1-poort je verbruik live opvolgen. Wanneer jij aan de beurt bent, check je met je EAN-code in de planningstool van Fluvius."
+        }
+      ],
+      "card": false
+    },
+    {
+      "type": "faq",
+      "id": "verhuizen-sociaal-tarief-en-andere-situaties",
+      "tone": "white",
+      "title": "Verhuizen, sociaal tarief en andere situaties",
+      "items": [
+        {
+          "question": "Wat moet ik regelen voor mijn energie als ik verhuis?",
+          "answer": "Laat je leverancier weten dat je verhuist en vul samen met de nieuwe bewoner een energieovernamedocument in. Zo krijg je een correcte eindafrekening voor je oude adres en start de facturatie op je nieuwe adres. Je contract kan je gratis meenemen, maar een verhuis is ook het ideale moment om via VoordeelVinder te vergelijken."
+        },
+        {
+          "question": "Wat is het energieovernamedocument?",
+          "answer": "Een document waarin de vertrekkende en de nieuwe bewoner samen de meterstanden noteren op het moment van de overdracht. Elk vult een exemplaar in, ondertekent het en bezorgt het aan de eigen leverancier. Zonder correcte meterstanden schat Fluvius het verbruik, en betaal je mogelijk voor het verbruik van iemand anders."
+        },
+        {
+          "question": "Wie heeft recht op het sociaal tarief voor energie?",
+          "answer": "Gezinnen die een bepaalde uitkering of tegemoetkoming krijgen, zoals een leefloon van het OCMW, een tegemoetkoming voor personen met een handicap of de inkomensgarantie voor ouderen. In de meeste gevallen krijg je het sociaal tarief automatisch; of je recht hebt, check je bij de FOD Economie."
+        },
+        {
+          "question": "Heeft vergelijken zin als ik het sociaal tarief heb?",
+          "answer": "Meestal niet. Het sociaal tarief is bij elke leverancier hetzelfde en wordt elke drie maanden door de federale regulator CREG vastgelegd op basis van het goedkoopste aanbod. Je betaalt dus al de laagste prijs, en het capaciteitstarief geldt niet voor jou."
+        },
+        {
+          "question": "Wat gebeurt er als ik mijn energiefactuur niet kan betalen?",
+          "answer": "Je leverancier mag je niet zomaar afsluiten. Hij moet je eerst een herinnering en daarna een ingebrekestelling sturen, en je krijgt minstens 45 kalenderdagen om je schuld te regelen of een andere leverancier te vinden. Lukt dat niet, dan wordt Fluvius je sociale leverancier en activeert het Prepaid op je digitale meter."
+        },
+        {
+          "question": "Kan ik van leverancier veranderen als ik Prepaid (vroeger budgetmeter) heb?",
+          "answer": "Ja, zodra je geen openstaande schuld meer hebt bij Fluvius en een contract tekent bij een commerciële leverancier. Prepaid wordt dan automatisch uitgeschakeld en je digitale meter werkt weer als een gewone meter. Fluvius raadt zelf aan om zo snel mogelijk over te stappen, omdat commerciële leveranciers meestal goedkoper zijn."
+        },
+        {
+          "question": "Wie bel ik bij een stroomonderbreking of gasreuk?",
+          "answer": "Daarvoor bel je Fluvius, de netbeheerder in Vlaanderen. Voor storingen bel je dag en nacht 078 35 35 00. Ruik je gas, bel dan meteen het gratis noodnummer 0800 65 0 65."
+        },
+        {
+          "question": "Waar kan ik terecht met een klacht over mijn energieleverancier?",
+          "answer": "Dien je klacht eerst in bij je leverancier zelf. Krijg je geen of geen goed antwoord, dan kan je naar de Ombudsdienst voor Energie. Gaat je klacht over Fluvius, dan dien je ze eerst bij Fluvius zelf in; daarna kan je nog terecht bij de Vlaamse Ombudsdienst."
+        }
+      ],
+      "card": false
+    },
+    {
+      "type": "faq",
+      "id": "over-voordeelvinder",
+      "tone": "white",
+      "title": "Over VoordeelVinder",
+      "items": [
+        {
+          "question": "Wat is VoordeelVinder?",
+          "answer": "VoordeelVinder is een Vlaamse energievergelijker van shakeUp BV uit Erpe-Mere. Je vult in een paar minuten je situatie in, en een partner van VoordeelVinder belt je met een voorstel op maat. Je herkent ons aan Foxy, de vos met de groene pet die de beste deal voor jou zoekt."
+        },
+        {
+          "question": "Werkt VoordeelVinder in heel België?",
+          "answer": "Nee, VoordeelVinder werkt enkel in Vlaanderen. Woon je in Brussel of Wallonië, dan kunnen we je (nog) niet helpen."
+        },
+        {
+          "question": "Is vergelijken via VoordeelVinder gratis?",
+          "answer": "Ja. Je betaalt niets voor de vergelijking en niets voor het gesprek, en je zit nergens aan vast. VoordeelVinder krijgt een vergoeding van zijn partners; jij betaalt daar niets voor."
+        },
+        {
+          "question": "Hoe werkt een vergelijking bij VoordeelVinder?",
+          "answer": "In drie stappen. Je vult je postcode, je gezin, je woning en je geschat verbruik in; je factuur heb je daarvoor niet nodig. Daarna zoeken we uit welk contract het voordeligst is voor jou, en een partner belt je met een voorstel op maat."
+        },
+        {
+          "question": "Wie belt mij, en wanneer?",
+          "answer": null
+        },
+        {
+          "question": "Met welke leveranciers vergelijkt VoordeelVinder?",
+          "answer": "Vandaag met verschillende energieleveranciers. We zijn daar altijd open over: komt er een leverancier bij, dan lees je het hier."
+        },
+        {
+          "question": "Waarom vergelijk ik mijn energiecontract via VoordeelVinder?",
+          "answer": "Omdat je zelf niets hoeft uit te pluizen. Je vult in een paar minuten je situatie in, Foxy zoekt welk contract het voordeligst is voor jou, en een partner belt je met een voorstel op maat. Gratis, vrijblijvend en van een Vlaams bedrijf."
+        },
+        {
+          "question": "Wat gebeurt er met mijn gegevens?",
+          "answer": "We gebruiken ze om je te helpen met jouw vergelijking. Ze gaan alleen naar onze partner als jij daar toestemming voor geeft, en tips per mail krijg je enkel als je dat zelf aanvinkt. Meer lees je in ons privacybeleid."
+        }
+      ]
+    },
+    {
+      "type": "ctaBand",
+      "tone": "lime",
+      "title": "Benieuwd wat Foxy voor jou vindt?",
+      "body": "Vul in een paar minuten je situatie in. Gratis, vrijblijvend en op jouw tempo. Foxy staat al te trappelen.",
+      "cta": {
+        "label": "Start je vergelijking",
+        "href": "/vergelijken/energie"
+      },
+      "overlapFooter": true
+    }
+  ]
+}

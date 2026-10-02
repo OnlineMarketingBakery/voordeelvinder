@@ -15,7 +15,16 @@ import ContactCard from './parts/ContactCard.astro';
 
 type Props = FaqBlock;
 
-const { id, tone, extendsBehindPrevious = false, eyebrow, title, items, contact } = Astro.props;
+const {
+  id,
+  tone,
+  extendsBehindPrevious = false,
+  eyebrow,
+  title,
+  items,
+  contact,
+  card: showCard = true,
+} = Astro.props;
 const site = await getSite();
 
 const headingId = `${id ?? 'faq'}-title`;
@@ -31,7 +40,9 @@ const spacing = behind
   ? 'faq-behind -mt-(--faq-overlap) pt-[calc(var(--faq-overlap)+3.5rem)] pb-14 [--faq-overlap:120px] scroll-mt-[calc(-1*var(--faq-overlap))] md:pt-[calc(var(--faq-overlap)+5rem)] md:pb-20 md:[--faq-overlap:160px] lg:pt-[calc(var(--faq-overlap)+108px)] lg:pb-[111px] lg:[--faq-overlap:191px]'
   : lavender
     ? 'mt-16 pt-14 pb-14 md:mt-24 md:pt-20 md:pb-20 lg:mt-32 lg:pt-[108px] lg:pb-[111px]'
-    : 'pt-16 md:pt-24 lg:pt-32';
+    : showCard
+      ? 'pt-16 md:pt-24 lg:pt-32'
+      : 'pt-12 md:pt-16 lg:pt-20';
 ---
 
 <section {id} aria-labelledby={headingId} class:list={['relative isolate', spacing]}>
@@ -45,7 +56,13 @@ const spacing = behind
     ></div>
   )}
   <Container>
-    <div class="grid gap-y-8 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:gap-x-8 lg:gap-y-[21px] xl:grid-cols-[458px_minmax(0,1fr)] xl:gap-x-10">
+    <div
+      class:list={[
+        'grid gap-y-8',
+        showCard &&
+          'lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:gap-x-8 lg:gap-y-[21px] xl:grid-cols-[458px_minmax(0,1fr)] xl:gap-x-10',
+      ]}
+    >
       <SectionHeading
         id={headingId}
         {eyebrow}
@@ -55,7 +72,10 @@ const spacing = behind
       />
       <ul
         role="list"
-        class="grid gap-3 self-start md:gap-5 lg:col-start-2 lg:row-span-2 lg:row-start-1"
+        class:list={[
+          'grid gap-3 self-start md:gap-5',
+          showCard && 'lg:col-start-2 lg:row-span-2 lg:row-start-1',
+        ]}
         data-reveal-stagger
       >
         {questions.map((item) => (
@@ -70,16 +90,18 @@ const spacing = behind
           </li>
         ))}
       </ul>
-      <div class="self-start lg:col-start-1 lg:row-start-2" data-reveal>
-        <ContactCard
-          title={card.title}
-          body={card.body}
-          cta={card.cta}
-          ctaHint={card.ctaHint}
-          href={`mailto:${site.contact.email.value}`}
-          surface={lavender ? 'white' : 'lavender-50'}
-        />
-      </div>
+      {showCard && (
+        <div class="self-start lg:col-start-1 lg:row-start-2" data-reveal>
+          <ContactCard
+            title={card.title}
+            body={card.body}
+            cta={card.cta}
+            ctaHint={card.ctaHint}
+            href={`mailto:${site.contact.email.value}`}
+            surface={lavender ? 'white' : 'lavender-50'}
+          />
+        </div>
+      )}
     </div>
   </Container>
 </section>

@@ -8,6 +8,7 @@ const PAGES = [
   '/zonnepanelen',
   '/thuisbatterij',
   '/over-ons',
+  '/veelgestelde-vragen',
   '/vergelijken',
   '/vergelijken/energie',
   '/vergelijken/energie/stappen',
