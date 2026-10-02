@@ -19,7 +19,7 @@ import {
   type OrderDetails,
   type OrderState,
 } from '../../lib/comparison/order-state';
-import { ORDER_PATHS, RESULTS_PATH } from '../../lib/comparison/preview';
+import { ORDER_PATHS, resultsPath } from '../../lib/comparison/preview';
 import type { Comparison, Offer } from '../../lib/comparison/types';
 import { validateField } from '../../lib/flow/validators';
 import { cx, MaskIcon } from '../form/ui';
@@ -404,7 +404,7 @@ export default function OrderIsland({ step, copy, comparison, labels, icons }: O
 
   const back =
     step === 'details'
-      ? RESULTS_PATH
+      ? resultsPath(comparison.product)
       : step === 'connection'
         ? ORDER_PATHS.details
         : ORDER_PATHS.connection;

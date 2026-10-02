@@ -12,7 +12,12 @@ import {
   writeOrder,
 } from '../../src/lib/comparison/order-state';
 import { placeholderComparison } from '../../src/lib/comparison/placeholder';
-import { orderPreview, resultsAfterLead } from '../../src/lib/comparison/preview';
+import {
+  hasResults,
+  orderPreview,
+  resultsAfterLead,
+  resultsPath,
+} from '../../src/lib/comparison/preview';
 
 describe('the preview switch', () => {
   it('keeps the screens out of production and sends only staging to the results', () => {
@@ -22,6 +27,15 @@ describe('the preview switch', () => {
     expect(resultsAfterLead('local')).toBe(false);
     expect(resultsAfterLead('ci')).toBe(false);
     expect(resultsAfterLead('production')).toBe(false);
+  });
+});
+
+describe('the results route', () => {
+  it('is one path per product, with results for energy only so far', () => {
+    expect(resultsPath('energie')).toBe('/vergelijken/energie/resultaten');
+    expect(hasResults('energie')).toBe(true);
+    expect(hasResults('zonnepanelen')).toBe(false);
+    expect(hasResults('onbekend')).toBe(false);
   });
 });
 

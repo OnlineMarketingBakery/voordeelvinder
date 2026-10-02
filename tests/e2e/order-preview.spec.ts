@@ -63,6 +63,12 @@ test('results → order → thank you, with validation on each step', async ({ p
   await expect(page.locator('main')).toContainText('Test Persoon');
 });
 
+test('the results route answers 404 for products without results', async ({ request }) => {
+  expect((await request.get('/vergelijken/zonnepanelen/resultaten')).status()).toBe(404);
+  expect((await request.get('/vergelijken/thuisbatterij/resultaten')).status()).toBe(404);
+  expect((await request.get('/vergelijken/water/resultaten')).status()).toBe(404);
+});
+
 test('the screens have no serious accessibility violations and are not indexed', async ({
   page,
 }) => {
