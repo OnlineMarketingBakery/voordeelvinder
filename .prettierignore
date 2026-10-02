@@ -7,3 +7,6 @@ test-results/
 package-lock.json
 docs/design/
 VoordeelVinder-build-brief.md
+
+# Mailchimp e-mail templates: hand-built HTML with Outlook conditional comments; never reformat.
+docs/email-templates/
