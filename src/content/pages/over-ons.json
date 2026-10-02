@@ -101,7 +101,7 @@
         },
         {
           "title": "We vragen nooit geld voor de vergelijking.",
-          "body": "Vergelijken op VoordeelVinder is gratis en vrijblijvend. Wij verdienen alleen als jij effectief bespaart — no cure, no pay."
+          "body": "Vergelijken op VoordeelVinder is gratis en vrijblijvend."
         }
       ]
     },
@@ -141,38 +141,6 @@
           "cta": {
             "label": "Bekijk de berekening",
             "href": "/vergelijken"
-          }
-        }
-      ]
-    },
-    {
-      "type": "team",
-      "title": "De mensen achter VoordeelVinder",
-      "intro": "Een klein team met één doel: vergelijken zo eenvoudig mogelijk maken voor elke Belg.",
-      "placeholder": true,
-      "members": [
-        {
-          "name": "Thomas Vermeulen",
-          "role": "Technologie & Platform",
-          "photo": {
-            "src": "team/placeholder-man",
-            "alt": "Thomas Vermeulen"
-          }
-        },
-        {
-          "name": "Lotte Peeters",
-          "role": "Partnerships & Leveranciers",
-          "photo": {
-            "src": "team/placeholder-woman",
-            "alt": "Lotte Peeters"
-          }
-        },
-        {
-          "name": "Jeroen Maes",
-          "role": "Oprichter & Strategie",
-          "photo": {
-            "src": "team/placeholder-man",
-            "alt": "Jeroen Maes"
           }
         }
       ]

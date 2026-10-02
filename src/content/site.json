@@ -117,7 +117,8 @@
     },
     "copyright": {
       "holder": "© {year} VoordeelVinder.be",
-      "rights": " — Alle rechten voorbehouden."
+      "rights": " — Alle rechten voorbehouden.",
+      "company": "shakeUp BV · Evenbroekveld 14, 9420 Erpe-Mere · KBO/BTW BE 0746.712.433"
     }
   },
   "faq": {
@@ -131,7 +132,7 @@
   },
   "contact": {
     "email": {
-      "value": "info@voordeelvinder.com",
+      "value": "privacy@voordeelvinder.be",
       "todo": true
     },
     "phone": {
