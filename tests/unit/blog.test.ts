@@ -102,13 +102,12 @@ describe('blog copy in site.json', () => {
 });
 
 describe('the blog ships without published posts (CONTENT-TODO 2.14)', () => {
-  it("has only the designer's sample posts, drafts that a production build leaves out", () => {
+  it('has only drafts (samples and posts awaiting approval), which a production build leaves out', () => {
     const dir = new URL('../../src/content/blog/', import.meta.url);
     const files = readdirSync(dir).filter((file) => file.endsWith('.md'));
     for (const file of files) {
       const head = readFileSync(new URL(file, dir), 'utf8').split('---')[1] ?? '';
       expect(head, file).toMatch(/^draft: true$/m);
-      expect(head, file).toMatch(/^placeholder: true$/m);
     }
     expect(listingPages([], 9)).toEqual({ featured: undefined, pages: [] });
   });
