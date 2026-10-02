@@ -8,8 +8,9 @@
 
 The new Figma file designs energy as one long form (sections A to E) followed by a results page
 and an online order (Screens 2–6). There are no supplier tariffs yet, so only Screen 1 can be
-built now. Tanjil asked to keep the qualification questions (social tariff, budget meter) and
-the call moment, which the design leaves out.
+built now. Tanjil asked to add the call moment, which the design leaves out. The qualification
+questions (social tariff, budget meter) were added first and then removed until the client
+decides (2026-10-02).
 
 ## Decision
 

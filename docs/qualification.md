@@ -33,6 +33,13 @@ A lead is **`no_promo`** when **any** of these holds, and every one that holds a
   JSONLogic subset, ADR 0006, on `{ answers, derived }`), update this table and
   `tests/unit/server/qualify.test.ts`.
 
+### The single-page energy form
+
+`/vergelijken/energie` (flow `energie_vergelijker`, ADR 0012) doesn't ask `social_tariff` or
+`budget_meter` (as in Figma; Tanjil 2026-10-02, until the client decides). Its leads can only be
+`no_promo` for `region_not_flanders` or `business_over_100k`; a home in Flanders is always
+`promo` (TO CONFIRM). The step form at `/vergelijken/energie/stappen` still asks both.
+
 ### Solar panels and home battery (`zonnepanelen`, `thuisbatterij`)
 
 No rules yet: every lead is **`pending`** with no reasons. Questions, rules and destination are

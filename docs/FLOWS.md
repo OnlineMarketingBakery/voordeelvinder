@@ -247,9 +247,11 @@ every question both ask, sections A to E as steps rendered on one page (`FormPag
 The server tells the two apart by `flow_id`.
 
 - **Same fields as `energie`:** `supplier`, `meter_type`, `digital_meter`, `has_solar`,
-  `budget_meter`, `social_tariff`, `knows_consumption`, `electricity_kwh`, `gas_kwh`,
+  `knows_consumption`, `electricity_kwh`, `gas_kwh`,
   `household_size`, `home_type` (same codes; `home_type` and `household_size` are radio rows
   here), `heat_pump`, `electric_car`, the postcode and business fields, contact and call moment.
+- **Not asked (as in Figma):** `social_tariff` and `budget_meter` (Tanjil 2026-10-02: removed until
+  the client decides), so their no-promo reasons never apply to this form (docs/qualification.md).
 - **`energy_type`** is the field itself here (`both`, `electricity`, `gas`), not implied by
   `energy_choice`; `?energie=` preselects it.
 - **Checkbox-style yes/no** (`display: "checkbox"`): `digital_meter`, `heat_pump`,
