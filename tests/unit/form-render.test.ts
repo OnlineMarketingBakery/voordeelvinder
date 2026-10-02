@@ -67,7 +67,7 @@ describe('form island: server render', () => {
     const html = island({});
     expect(html.match(/<h1/g)).toHaveLength(1);
     expect(text(html)).toContain(panel.energie.title);
-    expect(text(html)).toContain('Stap 1 van 10');
+    expect(text(html)).toContain('Stap 1 van 9');
     expect(html).toContain('<h2 id="formulier-stap-titel" tabindex="-1"');
     expect(html.match(/type="radio"/g)).toHaveLength(5);
     expect(html).toContain(
@@ -85,7 +85,7 @@ describe('form island: server render', () => {
   it('/vergelijken/energie renders the energy-only step', () => {
     const html = island({ entry: 'energie', flows: { energie: flows.energie }, preselected: true });
     expect(text(html)).toContain('Wat wil je vergelijken?');
-    expect(text(html)).toContain('Stap 1 van 10');
+    expect(text(html)).toContain('Stap 1 van 9');
     expect(html.match(/type="radio"/g)).toHaveLength(3);
     expect(text(html)).not.toContain('Zonnepanelen');
   });
@@ -98,7 +98,7 @@ describe('form island: server render', () => {
       preselect: { energy_type: 'both' },
     });
     expect(text(html)).toContain('Wat is je postcode?');
-    expect(text(html)).toContain('Stap 1 van 9');
+    expect(text(html)).toContain('Stap 1 van 8');
     expect(text(html)).not.toContain('Wat wil je vergelijken?');
   });
 

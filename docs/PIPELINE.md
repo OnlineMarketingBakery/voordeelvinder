@@ -104,7 +104,8 @@ Product tabs, in order (energy: 69 columns, solar: 58, battery: 57):
     Personen, Woningtype, Warmtepomp, Elektrische wagen, Interesse thuisbatterij
   - thuisbatterij: Zonnepanelen, Aantal panelen, Digitale meter, Kent verbruik, Elektriciteit
     (kWh), Personen, Woningtype, Warmtepomp, Elektrische wagen
-- **Call:** Beldag, Beltijdslot, Belmoment (the next matching slot, ISO with the Brussels offset)
+- **Call:** Beldag, Beltijdslot, Belmoment (the next matching slot, ISO with the Brussels offset);
+  empty since 2026-10-02: no form asks a call moment (ADR 0014)
 - **Consent:** Voorwaarden, Nieuwsbrief, Cookies analytics, Cookies marketing
 - **Attribution:** Entry path, Landing page, Referrer, utm_source … utm_term, fbclid, fbc, fbp,
   gclid, gbraid, wbraid, msclkid, ttclid, GA client ID, GA session ID

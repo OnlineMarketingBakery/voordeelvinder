@@ -32,8 +32,6 @@ export const ENERGY_ANSWERS: Answers = {
   meter_type: 'single',
   digital_meter: 'yes',
   has_solar: 'no',
-  social_tariff: 'no',
-  budget_meter: 'unknown',
   knows_consumption: 'no',
   household_size: '2',
   home_type: 'terraced',
@@ -43,7 +41,6 @@ export const ENERGY_ANSWERS: Answers = {
   last_name: 'Persoon',
   phone: '0475 00 00 00',
   email: 'test.persoon@example.be',
-  call_moment: { day: 'wed', slot: '13-14' },
   terms: true,
 };
 

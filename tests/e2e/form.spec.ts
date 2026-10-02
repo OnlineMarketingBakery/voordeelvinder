@@ -96,8 +96,6 @@ async function fillContact(page: Page) {
   await control(page, 'Achternaam').fill('Peeters');
   await control(page, 'Telefoonnummer').fill('0475 12 34 56');
   await control(page, 'E-mail', { exact: true }).fill('jan.peeters@example.be');
-  await choose(page, 'Woensdag');
-  await choose(page, '13:00–14:00');
   await tick(page, /Ik ga akkoord/);
 }
 
@@ -112,9 +110,6 @@ async function toContact(page: Page) {
   await goNext(page, 'Heb je een digitale meter?');
   await choose(page, 'Ja', 'Heb je een digitale meter?');
   await choose(page, 'Nee', 'Heb je zonnepanelen?');
-  await goNext(page, 'Heb je een sociaal tarief?');
-  await choose(page, 'Nee', 'Heb je een sociaal tarief?');
-  await choose(page, 'Weet ik niet', 'Heb je een budgetmeter?');
   await goNext(page, 'Ken je je jaarlijks energieverbruik?');
   await choose(page, 'Nee');
   await goNext(page, 'Hoeveel personen wonen er in je woning?');
@@ -139,7 +134,7 @@ test.describe('form: energy flow', () => {
     await open(page, '/vergelijken');
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
     await expect(heading(page)).toHaveText('Wat wil je vergelijken?');
-    await expect(progressLine(page)).toHaveText(progress(1, 10));
+    await expect(progressLine(page)).toHaveText(progress(1, 9));
 
     // Arrow keys move through the cards and select them; nothing advances by itself.
     await page.getByRole('radio', { name: 'Elektriciteit', exact: true }).focus();
@@ -153,7 +148,7 @@ test.describe('form: energy flow', () => {
     // The new step's title gets focus; Tab reaches its first field.
     await expect(heading(page)).toHaveText('Wat is je postcode?');
     await expect(heading(page)).toBeFocused();
-    await expect(progressLine(page)).toHaveText(progress(2, 10));
+    await expect(progressLine(page)).toHaveText(progress(2, 9));
     await page.keyboard.press(TAB);
     await expect(control(page, 'Wat is je postcode?')).toBeFocused();
     await page.keyboard.type('9000');
@@ -180,20 +175,13 @@ test.describe('form: energy flow', () => {
     ).toBeChecked();
     await keyNext(page);
 
-    await expect(heading(page)).toHaveText('Heb je een sociaal tarief?');
-    await page.keyboard.press(TAB);
-    await page.keyboard.press('ArrowDown'); // Nee
-    await page.keyboard.press(TAB);
-    await page.keyboard.press('ArrowDown'); // Nee
-    await keyNext(page);
-
     await expect(heading(page)).toHaveText('Ken je je jaarlijks energieverbruik?');
     await page.keyboard.press(TAB);
     await page.keyboard.press('Space'); // Ja
     await keyNext(page);
 
     await expect(heading(page)).toHaveText('Je jaarverbruik');
-    await expect(progressLine(page)).toHaveText(progress(8, 9));
+    await expect(progressLine(page)).toHaveText(progress(7, 8));
     await page.keyboard.press(TAB);
     await page.keyboard.type('3.500');
     await page.keyboard.press(TAB);
@@ -201,7 +189,7 @@ test.describe('form: energy flow', () => {
     await page.keyboard.press('Enter');
 
     await expect(heading(page)).toHaveText('Jouw gegevens');
-    await expect(progressLine(page)).toHaveText(progress(9, 9));
+    await expect(progressLine(page)).toHaveText(progress(8, 8));
     await expect(submit(page)).toBeVisible();
     for (const [label, value] of [
       ['Voornaam', 'Jan'],
@@ -212,11 +200,6 @@ test.describe('form: energy flow', () => {
       await control(page, label, { exact: true }).focus();
       await page.keyboard.type(value);
     }
-    await page.getByRole('radio', { name: 'Maandag' }).focus();
-    await page.keyboard.press('Space');
-    await page.keyboard.press('ArrowRight'); // Dinsdag
-    await page.getByRole('radio', { name: '09:00–10:00' }).focus();
-    await page.keyboard.press('Space');
     await page.getByRole('checkbox', { name: /Ik ga akkoord/ }).focus();
     await page.keyboard.press('Space');
     await submit(page).focus();
@@ -235,7 +218,7 @@ test.describe('form: energy flow', () => {
   }) => {
     await open(page, '/vergelijken/energie/stappen');
     await expect(heading(page)).toHaveText('Wat wil je vergelijken?');
-    await expect(progressLine(page)).toHaveText(progress(1, 10));
+    await expect(progressLine(page)).toHaveText(progress(1, 9));
     await expect(page.getByRole('radio')).toHaveCount(3);
     const names = await page
       .getByRole('radio')
@@ -248,7 +231,7 @@ test.describe('form: energy flow', () => {
   test('?energie=gas skips the electricity questions', async ({ page }) => {
     await open(page, '/vergelijken/energie/stappen?energie=gas');
     await expect(heading(page)).toHaveText('Wat is je postcode?');
-    await expect(progressLine(page)).toHaveText(progress(1, 8));
+    await expect(progressLine(page)).toHaveText(progress(1, 7));
     await control(page, 'Wat is je postcode?').fill('2000');
     await goNext(page, 'Wie is je huidige energieleverancier?');
     await control(page, 'Wie is je huidige energieleverancier?').selectOption('mega');
@@ -257,9 +240,6 @@ test.describe('form: energy flow', () => {
     await expect(page.getByRole('radiogroup')).toHaveCount(1);
     await expect(page.getByText('Heb je zonnepanelen?')).toHaveCount(0);
     await choose(page, 'Ja');
-    await goNext(page, 'Heb je een sociaal tarief?');
-    await choose(page, 'Nee', 'Heb je een sociaal tarief?');
-    await choose(page, 'Nee', 'Heb je een budgetmeter?');
     await goNext(page, 'Ken je je jaarlijks energieverbruik?');
     await choose(page, 'Ja');
     await goNext(page, 'Je jaarverbruik');
@@ -267,15 +247,11 @@ test.describe('form: energy flow', () => {
     await expect(control(page, 'Elektriciteit (kWh per jaar)')).toHaveCount(0);
   });
 
-  test('the business checkbox reveals the consumption bands', async ({ page }) => {
+  test('the business checkbox asks nothing more (the bands are not in Figma)', async ({ page }) => {
     await open(page, '/vergelijken/energie/stappen?energie=both');
-    await expect(page.getByRole('radiogroup')).toHaveCount(0);
     await tick(page, 'Dit is een zakelijk adres.');
-    await expect(page.getByRole('radiogroup')).toHaveCount(2);
+    await expect(page.getByRole('radiogroup')).toHaveCount(0);
     await control(page, 'Wat is je postcode?').fill('9000');
-    await next(page).click();
-    await expect(errorText(page, requiredByType.single_choice)).toHaveCount(2);
-    await tick(page, 'Dit is een zakelijk adres.', false);
     await goNext(page, 'Wie is je huidige energieleverancier?');
   });
 });
@@ -337,10 +313,8 @@ test.describe('form: validation', () => {
 
     await submit(page).click();
     await expect(control(page, 'Voornaam')).toBeFocused();
-    await expect(errorText(page, requiredByType.day_slot)).toBeVisible();
-    await expect(page.getByRole('radio', { name: 'Maandag' })).toHaveAccessibleDescription(
-      requiredByType.day_slot,
-    );
+    // No call moment any more (not in Figma, removed 2026-10-02).
+    await expect(page.getByRole('radio', { name: 'Maandag' })).toHaveCount(0);
     await expect(errorText(page, requiredByType.consent)).toBeVisible();
     expect(page.url()).toContain('/vergelijken/energie/stappen');
   });
@@ -544,7 +518,7 @@ test.describe('form: server render and before hydration', () => {
       await request.get('/vergelijken/energie/stappen?energie=both&utm_source=meta')
     ).text();
     expect(both).toContain('>Wat is je postcode?</h2>');
-    expect(text(both)).toContain(progress(1, 9));
+    expect(text(both)).toContain(progress(1, 8));
     expect(both).not.toContain('>Wat wil je vergelijken?</h2>');
     expect(both).not.toContain('utm_source'); // only the validated preselect reaches the props
     expect(both).toContain('<link rel="canonical" href="');
@@ -552,7 +526,7 @@ test.describe('form: server render and before hydration', () => {
 
     const plain = await (await request.get('/vergelijken/energie/stappen')).text();
     expect(plain).toContain('>Wat wil je vergelijken?</h2>');
-    expect(text(plain)).toContain(progress(1, 10));
+    expect(text(plain)).toContain(progress(1, 9));
     // An unknown value is dropped, like in the island.
     const unknown = await (await request.get('/vergelijken/energie/stappen?energie=water')).text();
     expect(unknown).toContain('>Wat wil je vergelijken?</h2>');
@@ -575,7 +549,7 @@ test.describe('form: server render and before hydration', () => {
     const path = '/vergelijken/energie/stappen?energie=both&utm_source=meta&test=1';
     await page.goto(path, { waitUntil: 'commit' });
     await expect(heading(page)).toHaveText('Wat is je postcode?');
-    await expect(progressLine(page)).toHaveText(progress(1, 9));
+    await expect(progressLine(page)).toHaveText(progress(1, 8));
     await expect(page.locator('astro-island[ssr]')).toHaveCount(1);
     await expect(formSubmit(page)).toBeDisabled();
 
@@ -598,7 +572,7 @@ test.describe('form: server render and before hydration', () => {
     await hydrated(page);
     // The same step as the server rendered: no swap after hydration.
     await expect(heading(page)).toHaveText('Wat is je postcode?');
-    await expect(progressLine(page)).toHaveText(progress(1, 9));
+    await expect(progressLine(page)).toHaveText(progress(1, 8));
     await postcode.fill('9000');
     await goNext(page, 'Wie is je huidige energieleverancier?');
     expect(page.url()).toBe(new URL(path, page.url()).href);
@@ -667,7 +641,7 @@ test.describe('form: accessibility and layout', () => {
     await choose(page, 'Elektriciteit + gas');
     await goNext(page, 'Wat is je postcode?');
     await tick(page, 'Dit is een zakelijk adres.');
-    await axe(page, 'postcode, checkbox and revealed bands');
+    await axe(page, 'postcode and checkbox');
     await tick(page, 'Dit is een zakelijk adres.', false);
     await control(page, 'Wat is je postcode?').fill('9000');
     await goNext(page, 'Wie is je huidige energieleverancier?');
@@ -680,9 +654,6 @@ test.describe('form: accessibility and layout', () => {
     await axe(page, 'yes/no cards');
     await choose(page, 'Ja', 'Heb je een digitale meter?');
     await choose(page, 'Ja', 'Heb je zonnepanelen?');
-    await goNext(page, 'Heb je een sociaal tarief?');
-    await choose(page, 'Nee', 'Heb je een sociaal tarief?');
-    await choose(page, 'Nee', 'Heb je een budgetmeter?');
     await goNext(page, 'Ken je je jaarlijks energieverbruik?');
     await choose(page, 'Ja');
     await goNext(page, 'Je jaarverbruik');

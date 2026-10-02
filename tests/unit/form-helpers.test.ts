@@ -766,11 +766,10 @@ describe('form labels and icons', () => {
       ['last_name', 'half'],
       ['phone', 'half'],
       ['email', 'half'],
-      ['call_moment', 'full'],
       ['terms', 'full'],
       ['newsletter', 'full'],
     ]);
-    expect(domId.option('call_moment', '09-10')).toBe('veld-call_moment-09-10');
+    expect(domId.option('product_choice', 'gas')).toBe('veld-product_choice-gas');
     expect(domId.error('postcode')).toBe('veld-postcode-fout');
   });
 });

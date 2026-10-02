@@ -93,8 +93,6 @@ async function fillContact(page: Page) {
   await control(page, 'Achternaam').fill('Peeters');
   await control(page, 'Telefoonnummer').fill('0475 12 34 56');
   await control(page, 'E-mail', { exact: true }).fill('jan.peeters@example.be');
-  await tap(page, 'Woensdag');
-  await tap(page, '13:00–14:00');
   const terms = page.getByRole('checkbox', { name: /Ik ga akkoord/ });
   await terms.locator('xpath=ancestor::label[1]').click({ position: { x: 17, y: 20 } });
   await expect(terms).toBeChecked();
@@ -215,22 +213,15 @@ test.describe('form motion: auto-advance', () => {
     await expect(heading(page)).toHaveText('Heb je een digitale meter?');
     // Both: it moves on like "Volgende" (focus on the new title, "Volgende" still there).
     await tap(page, 'Nee', 'Heb je zonnepanelen?');
-    await expect(heading(page)).toHaveText('Heb je een sociaal tarief?');
+    await expect(heading(page)).toHaveText('Ken je je jaarlijks energieverbruik?');
     await expect(heading(page)).toBeFocused();
     await expect(next(page)).toBeVisible();
-    // The tariff step (yes/no + three cards) does the same, in either order.
-    await readStep(page);
-    await tap(page, 'Weet ik niet', 'Heb je een budgetmeter?');
-    await settle(page);
-    await expect(heading(page)).toHaveText('Heb je een sociaal tarief?');
-    await tap(page, 'Nee', 'Heb je een sociaal tarief?');
-    await expect(heading(page)).toHaveText('Ken je je jaarlijks energieverbruik?');
     // Back to the step: both still answered, and a new answer moves on again.
     await page.getByRole('button', { name: buttons.back, exact: true }).click();
-    await expect(heading(page)).toHaveText('Heb je een sociaal tarief?');
-    await expect(radio(page, 'Weet ik niet', 'Heb je een budgetmeter?')).toBeChecked();
+    await expect(heading(page)).toHaveText('Heb je een digitale meter?');
+    await expect(radio(page, 'Nee', 'Heb je zonnepanelen?')).toBeChecked();
     await readStep(page);
-    await tap(page, 'Nee', 'Heb je een budgetmeter?');
+    await tap(page, 'Ja', 'Heb je zonnepanelen?');
     await expect(heading(page)).toHaveText('Ken je je jaarlijks energieverbruik?');
   });
 

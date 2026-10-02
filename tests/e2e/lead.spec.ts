@@ -294,9 +294,6 @@ test.describe('the energy form sends its lead', () => {
     await goNext('Heb je een digitale meter?');
     await choose('Ja', 'Heb je een digitale meter?');
     await choose('Nee', 'Heb je zonnepanelen?');
-    await goNext('Heb je een sociaal tarief?');
-    await choose('Nee', 'Heb je een sociaal tarief?');
-    await choose('Weet ik niet', 'Heb je een budgetmeter?');
     await goNext('Ken je je jaarlijks energieverbruik?');
     await choose('Nee');
     await goNext('Hoeveel personen wonen er in je woning?');
@@ -310,8 +307,6 @@ test.describe('the energy form sends its lead', () => {
     await control('Achternaam').fill('Persoon');
     await control('Telefoonnummer').fill('0475 00 00 00');
     await control('E-mail', true).fill('test.persoon@example.be');
-    await choose('Woensdag');
-    await choose('13:00–14:00');
     const terms = page.getByRole('checkbox', { name: /Ik ga akkoord/ });
     await terms.locator('xpath=ancestor::label[1]').click({ position: { x: 17, y: 20 } });
     await expect(terms).toBeChecked();
@@ -411,8 +406,6 @@ test.describe('the single-page energy form sends its lead', () => {
     await page.locator('#veld-last_name').fill('Persoon');
     await page.locator('#veld-phone').fill('0475 00 00 00');
     await page.locator('#veld-email').fill('test.persoon@example.be');
-    await pick(page, 'veld-call_moment-wed');
-    await pick(page, 'veld-call_moment-13-14');
     await page.locator('label:has(> #veld-terms)').click({ position: { x: 12, y: 14 } });
     await expect(page.locator('#veld-terms')).toBeChecked();
 
@@ -443,7 +436,7 @@ test.describe('the single-page energy form sends its lead', () => {
         electric_car: 'no',
         contract_type: 'fixed',
       },
-      call_preference: { day: 'wed', slot: '13-14' },
+      call_preference: null,
       meta: { page: '/vergelijken/energie' },
     });
     expect(Object.keys(webhook.body as object).sort()).toEqual(PAYLOAD_KEYS);
