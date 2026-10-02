@@ -234,7 +234,7 @@ const columnHeading = 'text-title-lg lg:text-h3';
       <p class="text-sm text-ink-900 lg:text-body">
         <strong class="font-semibold">{withYear(footer.copyright.holder)}</strong>
         {footer.copyright.rights}
-        {footer.copyright.company}
+        {footer.copyright.company && ` ${footer.copyright.company}`}
       </p>
     </Container>
   </div>
