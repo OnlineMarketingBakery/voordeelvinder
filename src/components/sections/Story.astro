@@ -30,7 +30,14 @@ const tones = {
 <section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-[135px]">
   <Container>
     <SectionHeading id={headingId} title={title} intro={intro} align="center" introClass="mt-4" />
-    <div class="mt-10 grid gap-7 md:grid-cols-2 lg:mt-14" data-reveal-stagger>
+    <div
+      class:list={[
+        'mt-10 grid gap-7 lg:mt-14',
+        // One card (About us "Gratis? Waar zit dan het addertje?") sits centred at card width.
+        items.length > 1 ? 'md:grid-cols-2' : 'mx-auto max-w-[37.5rem]',
+      ]}
+      data-reveal-stagger
+    >
       {items.map((item) => (
         <article class:list={['lift rounded-3xl p-6 md:p-10 md:pb-12', tones[item.tone].card]}>
           <div

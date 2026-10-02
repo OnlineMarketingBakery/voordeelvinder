@@ -1,0 +1,46 @@
+---
+// About us "Maak kennis met Foxy" (client copy 2026-10-02; no Figma, built from the About us
+// tokens): the h2 and paragraphs left, the mascot with the "Foxy in het kort" card right. On
+// phones the card follows the text and the mascot sits above it.
+import type { MascotIntroBlock } from '../../schemas/blocks/mascotIntro';
+import Container from '../ui/Container.astro';
+import Illustration from '../ui/Illustration.astro';
+
+type Props = MascotIntroBlock;
+
+const { id, title, paragraphs, image, facts } = Astro.props;
+const headingId = `${id ?? 'mascot-intro'}-title`;
+---
+
+<section {id} aria-labelledby={headingId} class="pt-16 md:pt-24 lg:pt-32">
+  <Container class="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,520px)] lg:gap-16">
+    <div data-reveal>
+      <h2 id={headingId} class="text-h3 text-ink-900 md:text-h2">
+        {title}
+      </h2>
+      {paragraphs.map((paragraph) => (
+        <p class="mt-5 max-w-[560px] text-body-lg text-ink-600">{paragraph}</p>
+      ))}
+    </div>
+    <div class="relative" data-reveal>
+      <Illustration
+        src={image.src}
+        alt={image.alt}
+        widths={[240, 320, 640]}
+        sizes="(min-width: 1024px) 320px, 240px"
+        class="mx-auto h-auto w-[240px] lg:w-[320px]"
+      />
+      <article class="lift -mt-6 rounded-3xl border border-lavender-300 bg-white px-6 py-6 shadow-[0_10px_0_var(--color-lime-400)] md:px-8 md:py-7">
+        <h3 class="text-title-sm text-ink-900">{facts.title}</h3>
+        <dl class="mt-4 grid gap-3">
+          {facts.items.map((item) => (
+            <div class="grid gap-0.5 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-4">
+              <dt class="text-label-sm text-purple-700">{item.label}</dt>
+              <dd class="text-body text-ink-600">{item.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </article>
+    </div>
+  </Container>
+</section>

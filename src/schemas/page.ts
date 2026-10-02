@@ -21,6 +21,7 @@ import { teamBlock } from './blocks/team';
 import { testimonialsBlock } from './blocks/testimonials';
 import { thankYouBlock } from './blocks/thankYou';
 import { valuesBlock } from './blocks/values';
+import { mascotIntroBlock } from './blocks/mascotIntro';
 import { versusBlock } from './blocks/versus';
 import { text } from './primitives';
 
@@ -40,6 +41,7 @@ export const section = z.discriminatedUnion('type', [
   storyBlock,
   statementBlock,
   valuesBlock,
+  mascotIntroBlock,
   promisesBlock,
   personasBlock,
   teamBlock,

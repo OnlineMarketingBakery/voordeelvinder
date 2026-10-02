@@ -1,17 +1,17 @@
 {
   "seo": {
     "title": "Over ons",
-    "description": "VoordeelVinder werd gebouwd omdat te veel Belgen te veel betalen voor energie. Niet uit onwil, maar omdat de bestaande tools traag, verwarrend en partijdig zijn. Dat doen wij anders."
+    "description": "VoordeelVinder is de Vlaamse vergelijker die je helpt besparen op je vaste kosten, met het beste voordeel op maat van jouw situatie. Eerlijk, zonder kleine lettertjes en zonder druk."
   },
   "sections": [
     {
       "type": "hero",
       "variant": "product",
-      "title": "Wij geloven dat\nbesparen voor iedereen\nmakkelijk moet zijn.",
-      "body": "VoordeelVinder werd gebouwd omdat te veel Belgen te veel betalen voor energie. Niet uit onwil, maar omdat de bestaande tools traag, verwarrend en partijdig zijn. Dat doen wij anders.",
+      "title": "Besparen? Daar hebben\nwij een neus voor.",
+      "body": "VoordeelVinder is de Vlaamse vergelijker die je helpt besparen op je vaste kosten, met het beste voordeel op maat van jouw situatie. Eerlijk, zonder kleine lettertjes en zonder druk. Met Foxy als speurneus: onze vos met de groene pet, die pas rust als hij de beste deal voor jou heeft gevonden.",
       "cta": {
-        "label": "Ontdek jouw voordeel",
-        "href": "/vergelijken"
+        "label": "Start je vergelijking",
+        "href": "/vergelijken/energie"
       },
       "art": {
         "preset": "about",
@@ -24,38 +24,109 @@
     {
       "type": "story",
       "title": "Hoe VoordeelVinder ontstond",
-      "intro": "Een eenvoudig idee dat groeide uit een eenvoudige frustratie.",
+      "intro": "Een simpel idee, geboren uit een herkenbare frustratie.",
       "items": [
         {
           "icon": "money",
           "tone": "purple",
-          "title": "Vergelijken mag geen hinder zijn.",
+          "title": "Vergelijken staat al jaren op je to-dolijst? Je bent niet alleen.",
           "paragraphs": [
-            "We zagen het steeds opnieuw: mensen die wisten dat ze te veel betaalden voor energie, maar er nooit aan begonnen. Niet omdat ze lui waren, maar omdat de tools die er bestonden hen onmiddellijk doorstuurden naar een verkoper, hen opbelden zonder dat ze erom gevraagd hadden, of hen lieten verdwalen in kleine lettertjes en verborgen kosten."
+            "Elke maand gaat er geld naar je energie, je internet en je verzekeringen, en telkens denk je: ik zou toch eens moeten vergelijken. Maar dan komen de tabellen, de vaktermen en de kleine lettertjes. En voor je het weet, is het weer een jaar later."
           ],
-          "accent": "We vroegen ons af: wat als vergelijken gewoon werkte? Snel, eerlijk en volledig in jouw handen?"
+          "accent": "Wij dachten: dat moet toch makkelijker kunnen?"
         },
         {
           "icon": "send",
           "tone": "lime",
-          "title": "VoordeelVinder is ons antwoord.",
+          "title": "Dus bouwden we VoordeelVinder.",
           "paragraphs": [
-            "Een platform dat je in een paar minuten laat zien welke energieleverancier het voordeligst is voor jouw situatie. Geen tussenpersonen. Geen verkoopgesprekken. Geen druk. Alleen een helder resultaat, en de keuze die volledig bij jou ligt."
+            "Eén plek waar je in een paar minuten je situatie invult, zonder jargon. Wij zoeken het voordeel dat op maat van jou past, en een partner belt je met een voorstel. Gratis, vrijblijvend en op jouw tempo."
           ],
-          "accent": "Vandaag starten we met energie. Morgen breiden we uit naar telecom, verzekeringen, internet en tv, en zonnepanelen. Één vertrouwde plek voor alles wat je elke maand betaalt."
+          "accent": "VoordeelVinder is een initiatief van shakeUp BV uit Erpe-Mere. Geen anoniem platform dus, maar een Belgisch bedrijf met een adres, een KBO-nummer en een naam die we elke dag willen waarmaken."
         }
       ]
     },
     {
-      "type": "statement",
-      "lines": ["Jij vult in.", "Wij vergelijken.", "Jij bespaart."],
+      "type": "mascotIntro",
+      "id": "foxy",
+      "title": "Maak kennis met Foxy, onze speurneus",
+      "paragraphs": [
+        "Elke goede zoektocht heeft een speurneus nodig. De onze heet Foxy: je herkent hem aan zijn groene pet en aan zijn neus, die altijd richting voordeel wijst.",
+        "Vossen staan bekend als slim, en dat klopt. Alleen gebruikt Foxy die slimheid voor één ding: voor jou. Hij duikt in tarieven en voorwaarden, snuffelt contracten na en stopt pas als hij de beste deal op maat van jou te pakken heeft."
+      ],
+      "image": {
+        "src": "mascot/fox-magnifier",
+        "alt": "Foxy, de vos met de groene pet, met een vergrootglas"
+      },
+      "facts": {
+        "title": "Foxy in het kort",
+        "items": [
+          {
+            "label": "Herkenbaar aan",
+            "value": "zijn groene pet"
+          },
+          {
+            "label": "Superkracht",
+            "value": "een neus voor voordeel"
+          },
+          {
+            "label": "Leest graag",
+            "value": "de kleine lettertjes, zodat jij het niet hoeft te doen"
+          },
+          {
+            "label": "Kan niet tegen",
+            "value": "verborgen kosten en vaag jargon"
+          },
+          {
+            "label": "Favoriete moment",
+            "value": "jouw “Was dat nu alles?”"
+          },
+          {
+            "label": "Droomt van",
+            "value": "één plek waar je al je vaste kosten slim regelt"
+          },
+          {
+            "label": "Lijfspreuk",
+            "value": "“Waarom te veel betalen als het slimmer kan?”"
+          }
+        ]
+      }
+    },
+    {
+      "type": "steps",
+      "id": "zo-werkt-het",
+      "align": "center",
+      "title": "Jij vult in. Wij vergelijken. Jij bespaart.",
       "highlight": "Wij vergelijken.",
-      "body": "De drie beloftes waar alles wat we maken aan moet voldoen."
+      "intro": "Drie stappen, geen addertjes. Zo gaat het in de praktijk:",
+      "items": [
+        {
+          "label": "Stap 01",
+          "tone": "purple",
+          "icon": "contract",
+          "title": "Jij vult in.",
+          "body": "Vertel ons in een paar minuten wat je wilt vergelijken en hoe jouw situatie eruitziet. Vaak volstaat een schatting, dus je facturen mogen gewoon in de schuif blijven."
+        },
+        {
+          "label": "Stap 02",
+          "tone": "lime",
+          "icon": "compare",
+          "title": "Wij vergelijken.",
+          "body": "Foxy gaat aan de slag en zoekt het voordeel dat bij jouw situatie past. Voor energie vergelijken we vandaag verschillende energieleveranciers."
+        },
+        {
+          "label": "Stap 03",
+          "tone": "purple",
+          "icon": "decision-making",
+          "title": "Jij bespaart.",
+          "body": "Een partner van VoordeelVinder belt je op met een voorstel op maat. Jij beslist of je overstapt. Doe je dat, dan regelt je nieuwe leverancier de overstap, en bij energie zit je geen moment zonder stroom of gas."
+        }
+      ]
     },
     {
       "type": "values",
       "title": "Waar we voor staan",
-      "intro": "Onze missie bepaalt hoe we elke dag werken. Onze visie bepaalt waar we naartoe gaan.",
+      "intro": "Wat we elke dag doen, en waar we naartoe willen.",
       "image": {
         "src": "mascot/fox-euro-documents",
         "alt": ""
@@ -63,20 +134,20 @@
       "items": [
         {
           "badge": "Missie",
-          "title": "Besparen makkelijk maken.",
-          "body": "We halen het rekenwerk en de twijfel weg, zodat iedereen in een paar minuten weet of hij te veel betaalt, en meteen kan overstappen. Zonder gedoe, zonder druk, zonder kleine lettertjes."
+          "title": "Het beste voordeel, op maat van jou.",
+          "body": "Geen standaardlijstje, maar een voorstel dat past bij hoe jij woont, leeft en verbruikt. We halen het rekenwerk en de twijfel weg, zodat besparen iets wordt wat je gewoon doet. Zonder gedoe, zonder druk en zonder kleine lettertjes."
         },
         {
           "badge": "Visie",
-          "title": "Vandaag energie. Morgen alles wat je elke maand betaalt.",
-          "body": "Wij bouwen de vertrouwde plek waar je eenvoudig en snel ontdekt of je kunt besparen op je vaste kosten. In slechts enkele klikken krijg je een helder overzicht van je mogelijkheden, zodat je makkelijk ziet waar het slimmer en voordeliger kan, zonder gedoe, onduidelijke voorwaarden of tijdrovend uitzoekwerk."
+          "title": "Vandaag energie. Straks al je vaste kosten op één plek.",
+          "body": "Energie, internet, gsm, verzekeringen: elke maand gaat er geld naar vaste kosten waar je zelden bij stilstaat. We beginnen bij energie en breiden stap voor stap uit. Zo zie je straks op één vertrouwde plek waar het slimmer en voordeliger kan."
         }
       ]
     },
     {
       "type": "promises",
       "title": "Wat we nooit doen.",
-      "intro": "De meeste vergelijkers verdienen aan jouw twijfel. Wij niet. Dit zijn onze harde afspraken: geen uitzonderingen, geen kleine lettertjes.",
+      "intro": "Vertrouwen krijg je niet, dat verdien je. Daarom maakten we vijf harde afspraken, en Foxy ziet er streng op toe.",
       "badge": "Nooit",
       "image": {
         "src": "mascot/fox-waving",
@@ -84,100 +155,93 @@
       },
       "items": [
         {
-          "title": "We bellen je nooit zonder dat je erom gevraagd hebt.",
-          "body": "Andere vergelijkers verkopen jouw gegevens aan call centers. Wij niet. Jij kiest bewust of en wanneer iemand contact met je opneemt."
+          "title": "We vragen nooit geld voor je vergelijking.",
+          "body": "Vergelijken bij VoordeelVinder is gratis en vrijblijvend. Vandaag, morgen en overmorgen."
         },
         {
-          "title": "We sturen je nooit door naar een verkoper.",
-          "body": "Geen doorverwijzingen, geen commissielinks die je naar een sales funnel trekken. Jij blijft op VoordeelVinder en jij sluit zelf af. Of niet."
+          "title": "We bellen je nooit zomaar.",
+          "body": "Zonder jouw toestemming belt er niemand."
         },
         {
-          "title": "We verbergen nooit welke leveranciers we vergelijken.",
-          "body": "We zijn open over wie er in de vergelijking zit en wie niet. Geen verborgen voorkeur, geen betaalde topposities in de resultaten."
+          "title": "We praten je nooit een contract aan.",
+          "body": "Jij beslist. Levert overstappen weinig op? Dan hoor je dat gewoon, want een eerlijk nee is beter dan een misleidend ja."
         },
         {
-          "title": "We stellen resultaten nooit mooier voor dan ze zijn.",
-          "body": "Als overstappen weinig of niets oplevert, zeggen we dat gewoon. Een eerlijk nee is beter dan een misleidend ja."
+          "title": "We houden nooit geheim met wie we vergelijken.",
+          "body": "Komt er een leverancier of een nieuwe sector bij, dan lees je het hier."
         },
         {
-          "title": "We vragen nooit geld voor de vergelijking.",
-          "body": "Vergelijken op VoordeelVinder is gratis en vrijblijvend."
+          "title": "We geven je gegevens nooit door zonder jouw toestemming.",
+          "body": "We gebruiken ze om je te helpen met jouw vergelijking, en ze gaan alleen naar onze partner als jij daar ja op zegt. Tips per mail krijg je enkel als je dat zelf aanvinkt."
         }
       ]
     },
     {
-      "type": "personas",
-      "title": "Is VoordeelVinder iets voor mij?",
-      "intro": "Herken je jezelf? Dan is het antwoord waarschijnlijk ja.",
+      "type": "story",
+      "id": "addertje",
+      "title": "Gratis? Waar zit dan het addertje?",
       "items": [
         {
-          "badge": "De Uitsteller",
-          "statement": "Je weet al een tijdje dat je waarschijnlijk te veel betaalt. Maar je bent er nooit echt aan begonnen.",
-          "occasion": "Aanleiding: een hogere factuur, een tip van iemand, of gewoon: vandaag is het moment.",
-          "quote": "“Dit gaat me weer een avond kosten die ik niet heb.”",
-          "benefit": "Het duurt vijf minuten. Geen registratie. Je hebt je factuur niet nodig.",
-          "cta": {
-            "label": "Begin hier",
-            "href": "/vergelijken"
-          }
-        },
-        {
-          "badge": "De Verhuizer",
-          "statement": "Je verhuist binnenkort of bent net verhuisd. Je moet sowieso een nieuw contract afsluiten.",
-          "occasion": "Aanleiding: nieuw adres, nieuw contract: nu meteen goed kiezen is slimmer dan later overstappen.",
-          "quote": "“Ik wil het snel regelen zonder later spijt te hebben.”",
-          "benefit": "In een paar klikken zie je welk contract het voordeligst is voor je nieuwe situatie.",
-          "cta": {
-            "label": "Vergelijk voor je verhuis",
-            "href": "/vergelijken"
-          }
-        },
-        {
-          "badge": "De Rekenaar",
-          "statement": "Je volgt de energiemarkt, kent de termen en wil zelf de cijfers zien voor je beslist.",
-          "occasion": "Aanleiding: tariefwijziging in het nieuws, contractverlenging, of gewoon periodiek checken.",
-          "quote": "Ik wil zien hoe jullie rekenen, niet zomaar een getal.",
-          "benefit": "We tonen je alle tariefcomponenten en hoe we tot het resultaat komen. Transparant tot op het detail.",
-          "cta": {
-            "label": "Bekijk de berekening",
-            "href": "/vergelijken"
-          }
+          "icon": "money",
+          "tone": "lime",
+          "title": "Terechte vraag, Foxy zou ze ook stellen.",
+          "paragraphs": [
+            "Vergelijken bij VoordeelVinder kost je niets: wij verdienen ons brood bij onze partners, die ons een vergoeding betalen. Jij betaalt niets voor de vergelijking en niets voor het gesprek.",
+            "Zo kunnen wij blijven doen waar we goed in zijn: zoeken, vergelijken en je vaste kosten waar het kan wat lichter maken."
+          ],
+          "accent": "Geen addertje dus, gewoon een eerlijk verhaal."
         }
       ]
     },
     {
-      "type": "versus",
-      "title": "Niet zomaar een vergelijker",
-      "intro": "Er zijn vergelijkingssites genoeg. Dit is waarom wij anders zijn.",
-      "others": {
-        "title": "Wat andere vergelijkers doen",
-        "items": [
-          "Je doorsturen naar een verkoper",
-          "Je opbellen zonder dat je erom vroeg",
-          "Niet open zijn over welke leveranciers meedoen",
-          "Resultaten mooier voorstellen dan ze zijn",
-          "Geld vragen voor de vergelijking"
-        ]
-      },
-      "us": {
-        "title": "Wat andere vergelijkers doen",
-        "items": [
-          "Jij regelt het zelf, op jouw tempo",
-          "We bellen alleen als jij dat aangeeft",
-          "We zeggen exact wie we vergelijken",
-          "Eerlijk resultaat, ook als overstappen weinig oplevert",
-          "Gratis en volledig vrijblijvend"
-        ]
-      }
+      "type": "faq",
+      "id": "veelgestelde-vragen",
+      "tone": "white",
+      "title": "Veelgestelde vragen",
+      "items": [
+        {
+          "question": "Waarop kan ik besparen met VoordeelVinder?",
+          "answer": "Vandaag op je energie: elektriciteit en gas. En we kijken verder: stap voor stap nemen we al je vaste kosten onder de loep, zodat jij op één plek het beste voordeel op maat vindt.",
+          "open": true
+        },
+        {
+          "question": "Is VoordeelVinder Belgisch?",
+          "answer": "Jazeker. VoordeelVinder is een initiatief van shakeUp BV uit Erpe-Mere (KBO BE 0746.712.433). En Foxy? Die is ook van hier."
+        },
+        {
+          "question": "Is vergelijken echt gratis?",
+          "answer": "Ja. Je betaalt niets voor de vergelijking en niets voor het gesprek, en je zit nergens aan vast. Hoe wij ons geld verdienen, lees je hierboven bij “Waar zit het addertje?”."
+        },
+        {
+          "question": "Moet ik mijn factuur bij de hand hebben?",
+          "answer": "Nee hoor. Voor energie volstaat een schatting van je verbruik. Ken je je jaarverbruik wel? Dan wordt je vergelijking nog preciezer."
+        },
+        {
+          "question": "Wie belt mij, en wanneer?",
+          "answer": null
+        },
+        {
+          "question": "Zit ik ergens aan vast?",
+          "answer": "Nee. Pas als jij zelf ja zegt tegen een voorstel, stap je over. Zeg je nee, ook goed: Foxy is niet snel beledigd."
+        },
+        {
+          "question": "Met welke leveranciers vergelijken jullie?",
+          "answer": "Voor energie vergelijken we vandaag met verschillende energieleveranciers. Daar zijn we altijd open over: komt er een leverancier of een nieuwe sector bij, dan vind je dat hier terug."
+        },
+        {
+          "question": "Wat gebeurt er met mijn gegevens?",
+          "answer": "We gebruiken ze om je te helpen met jouw vergelijking. Ze gaan alleen naar onze partner als jij daar toestemming voor geeft, en tips per mail krijg je enkel als je dat zelf aanvinkt. Alles staat zwart op wit in ons privacybeleid."
+        }
+      ]
     },
     {
       "type": "ctaBand",
       "tone": "lime",
-      "title": "Overtuigd? Zie zelf wat je\nkan besparen.",
-      "body": "In een paar minuten weet je of je te veel betaalt voor energie, en welk contract beter bij jou past. Gratis, vrijblijvend en volledig op jouw tempo.",
+      "title": "Benieuwd wat Foxy\nvoor jou vindt?",
+      "body": "Vul in een paar minuten je situatie in. Gratis, vrijblijvend en op jouw tempo. Foxy staat al te trappelen.",
       "cta": {
         "label": "Start je vergelijking",
-        "href": "/vergelijken"
+        "href": "/vergelijken/energie"
       },
       "overlapFooter": true
     }

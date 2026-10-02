@@ -11,7 +11,7 @@
         "text": "Welkom bij VoordeelVinder"
       },
       "title": "Betaal jij te veel voor energie?",
-      "body": "In een paar minuten weet je het zeker. Vul je gegevens in, wij vergelijken Luminus, Mega en TotalEnergies, en je ziet meteen welk contract het voordeligst is voor jouw situatie.",
+      "body": "In een paar minuten weet je het zeker. Vul je gegevens in, wij vergelijken energieleveranciers, en je ziet meteen welk contract het voordeligst is voor jouw situatie.",
       "cta": {
         "label": "Vergelijk nu gratis",
         "href": "/vergelijken"
@@ -100,7 +100,7 @@
           "tone": "lime",
           "icon": "compare",
           "title": "Wij vergelijken",
-          "body": "We checken Luminus, Mega en TotalEnergies op basis van jouw gegevens. Transparant, zonder verborgen voorkeur."
+          "body": "We checken energieleveranciers op basis van jouw gegevens. Transparant, zonder verborgen voorkeur."
         },
         {
           "label": "Stap 03",
@@ -275,7 +275,7 @@
       "items": [
         {
           "question": "Moet ik mijn factuur bij de hand hebben?",
-          "answer": null
+          "answer": "Nee hoor. Voor energie volstaat een schatting van je verbruik. Ken je je jaarverbruik wel? Dan wordt je vergelijking nog preciezer."
         },
         {
           "question": "Word ik daarna opgebeld door een verkoper?",
@@ -284,15 +284,15 @@
         },
         {
           "question": "Is VoordeelVinder gratis?",
-          "answer": null
+          "answer": "Ja. Je betaalt niets voor de vergelijking en niets voor het gesprek, en je zit nergens aan vast."
         },
         {
           "question": "Met welke leveranciers vergelijken jullie?",
-          "answer": null
+          "answer": "Voor energie vergelijken we vandaag met verschillende energieleveranciers. Daar zijn we altijd open over: komt er een leverancier of een nieuwe sector bij, dan vind je dat hier terug."
         },
         {
           "question": "Zit ik ergens aan vast na de vergelijking?",
-          "answer": null
+          "answer": "Nee. Pas als jij zelf ja zegt tegen een voorstel, stap je over. Zeg je nee, ook goed: Foxy is niet snel beledigd."
         }
       ]
     },

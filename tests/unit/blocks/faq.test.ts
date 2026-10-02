@@ -40,8 +40,9 @@ const productFaq = {
   ],
 };
 
-const answered = homeFaq.items.find((item) => item.answer !== null)!;
-const unanswered = homeFaq.items.find((item) => item.answer === null)!;
+const answered = homeFaq.items.find((item) => item.open)!;
+/** All five homepage questions are answered since 2026-10-02 (the client's copy). */
+const unanswered = { question: 'Nog geen antwoord?', answer: null };
 const parse = (value: unknown) => faqBlock.safeParse(value).success;
 
 describe('faq block', () => {
@@ -51,7 +52,7 @@ describe('faq block', () => {
     expect(page.safeParse(home).success).toBe(true);
   });
 
-  it('has the designed homepage FAQ: lavender, behind the band, 5 questions, 1 answered', () => {
+  it('has the designed homepage FAQ: lavender, behind the band, 5 answered questions', () => {
     const data = faqBlock.parse(homeFaq);
     expect(data).toMatchObject({
       id: 'veelgestelde-vragen',
@@ -60,12 +61,13 @@ describe('faq block', () => {
       title: 'Veelgestelde vraag',
     });
     expect(data.items).toHaveLength(5);
-    expect(answeredItems(data.items)).toEqual([{ ...answered, open: true }]);
+    expect(answeredItems(data.items)).toHaveLength(5);
+    expect(data.items.filter((item) => item.open)).toEqual([answered]);
   });
 
-  it('carries the #veelgestelde-vragen anchor that the header and footer link to', () => {
+  it('keeps the #veelgestelde-vragen anchor; the header and footer link to the FAQ page', () => {
     const hrefs = [...site.header.nav, ...site.footer.links.items].map((l) => l.href);
-    expect(hrefs).toContain('/#veelgestelde-vragen');
+    expect(hrefs).toContain('/veelgestelde-vragen');
     expect(home.sections.filter((s) => s.id === 'veelgestelde-vragen')).toHaveLength(1);
   });
 
@@ -121,7 +123,8 @@ describe('faq block', () => {
 describe('FAQPage structured data', () => {
   it('lists the answered questions of visible FAQ blocks only', () => {
     const sections = page.parse(home).sections;
-    expect(visibleFaqItems(sections)).toEqual([{ ...answered, open: true }]);
+    expect(visibleFaqItems(sections)).toHaveLength(5);
+    expect(visibleFaqItems(sections)).toContainEqual(answered);
     const hidden = sections.map((s) => (s.type === 'faq' ? { ...s, hidden: true } : s));
     expect(visibleFaqItems(hidden)).toEqual([]);
   });
@@ -158,17 +161,15 @@ describe('Faq component', () => {
     expect(html).toContain('Veelgestelde vragen');
   });
 
-  it('shows only the answered question, as an open native disclosure', async () => {
-    const html = await render(homeFaq);
-    expect(count(html, /<details /g)).toBe(1);
-    expect(count(html, /<summary /g)).toBe(1);
+  it('shows only answered questions, as native disclosures (the designed one open)', async () => {
+    const html = await render({ ...homeFaq, items: [...homeFaq.items, unanswered] });
+    expect(count(html, /<details /g)).toBe(5);
+    expect(count(html, /<summary /g)).toBe(5);
     expect(html).toMatch(/<details [^>]*\sopen[\s>=]/);
     expect(html).toContain(answered.question);
     expect(html).toContain(answered.answer!);
     expect(html).toContain(site.faq.answerLabel);
-    for (const item of homeFaq.items.filter((i) => i.answer === null)) {
-      expect(html).not.toContain(item.question);
-    }
+    expect(html).not.toContain(unanswered.question);
     expect(html).toMatch(/<ul role="list"[^>]*data-reveal-stagger/);
     // Questions are not headings: the only headings are the h2 and the contact card h3.
     expect(count(html, /<h[1-6] /g)).toBe(2);
