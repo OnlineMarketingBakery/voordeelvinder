@@ -64,6 +64,10 @@ Custom audience fields. n8n fills these when it adds the lead to Mailchimp (step
 
 ## TO CONFIRM
 
+- **No call moment since 2026-10-02 (ADR 0014):** the forms no longer ask when to call, so
+  `*|BELMOMENT|*` stays empty. Templates 01 and 02 show it in their card: reword them (or drop
+  the card) once the client decides how the partner plans the call.
+
 - **All copy**, especially:
   - the "Antwoord op deze e-mail" lines: someone must read and act on the replies;
   - the no-promo wording.
