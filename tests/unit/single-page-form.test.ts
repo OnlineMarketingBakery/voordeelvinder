@@ -29,13 +29,11 @@ const answers: Answers = {
   inverter_kw: '3,5',
   injection_day_kwh: '1200',
   injection_night_kwh: '300',
-  budget_meter: 'no',
   knows_consumption: 'no',
   home_type: 'terraced',
   household_size: '2',
   heat_pump: 'yes',
   contract_type: 'fixed',
-  social_tariff: 'no',
   ...contactAnswers,
 };
 
@@ -113,15 +111,17 @@ describe('the server and the single-page form', () => {
       digital_meter: 'yes',
       home_battery: 'no',
       contract_type: 'fixed',
-      social_tariff: 'no',
     });
+    // The tariff questions are not on this form (Tanjil 2026-10-02, waiting for the client).
+    expect(payload.answers).not.toHaveProperty('social_tariff');
+    expect(payload.answers).not.toHaveProperty('budget_meter');
     expect(payload.labels.home_type).toBe('Rijwoning');
     expect(payload.outcome).toBe('promo');
     expect(payload.call_preference).toEqual({ day: 'wed', slot: '13-14' });
   });
 
-  it('still classifies: a social tariff makes it no_promo', () => {
-    const parsed = parseLeadRequest(body({ ...answers, social_tariff: 'yes' }), flows);
+  it('still classifies: an address outside Flanders makes it no_promo', () => {
+    const parsed = parseLeadRequest(body({ ...answers, postcode: '1000' }), flows);
     if (!parsed.ok) throw new Error(parsed.issues.join('; '));
     const payload = toPayload(parsed.submission, {
       receivedAt: new Date(SUBMITTED_AT),
@@ -131,7 +131,7 @@ describe('the server and the single-page form', () => {
       isTest: false,
     });
     expect(payload.outcome).toBe('no_promo');
-    expect(payload.outcome_reasons).toEqual(['social_tariff']);
+    expect(payload.outcome_reasons).toEqual(['region_not_flanders']);
   });
 
   it('refuses an unknown flow_id as the energy flow, and finds the variant by id', () => {

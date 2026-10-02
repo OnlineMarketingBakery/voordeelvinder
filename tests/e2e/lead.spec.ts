@@ -402,13 +402,11 @@ test.describe('the single-page energy form sends its lead', () => {
     await page.locator('#veld-inverter_kw').fill('3,5');
     await page.locator('#veld-injection_day_kwh').fill('1200');
     await page.locator('#veld-injection_night_kwh').fill('300');
-    await pick(page, 'veld-budget_meter-no');
     await pick(page, 'veld-knows_consumption-no');
     await pick(page, 'veld-home_type-terraced');
     await pick(page, 'veld-household_size-2');
     await pick(page, 'veld-heat_pump');
     await pick(page, 'veld-contract_type-fixed');
-    await pick(page, 'veld-social_tariff-no');
     await page.locator('#veld-first_name').fill('Test');
     await page.locator('#veld-last_name').fill('Persoon');
     await page.locator('#veld-phone').fill('0475 00 00 00');
@@ -444,7 +442,6 @@ test.describe('the single-page energy form sends its lead', () => {
         heat_pump: 'yes',
         electric_car: 'no',
         contract_type: 'fixed',
-        social_tariff: 'no',
       },
       call_preference: { day: 'wed', slot: '13-14' },
       meta: { page: '/vergelijken/energie' },

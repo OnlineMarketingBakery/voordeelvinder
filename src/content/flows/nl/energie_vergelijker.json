@@ -395,26 +395,6 @@
             ]
           },
           "panel": "solar"
-        },
-        {
-          "id": "budget_meter",
-          "type": "single_choice",
-          "label": "Heb je een budgetmeter?",
-          "required": true,
-          "options": [
-            {
-              "code": "yes",
-              "label": "Ja"
-            },
-            {
-              "code": "no",
-              "label": "Nee"
-            },
-            {
-              "code": "unknown",
-              "label": "Weet ik niet"
-            }
-          ]
         }
       ],
       "next": [
@@ -665,12 +645,6 @@
           "id": "compare_promotions",
           "type": "yes_no",
           "label": "Wil je ook lopende promoties vergelijken?"
-        },
-        {
-          "id": "social_tariff",
-          "type": "yes_no",
-          "required": true,
-          "label": "Heb je recht op het sociaal tarief?"
         }
       ],
       "next": [
