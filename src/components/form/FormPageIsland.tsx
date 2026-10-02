@@ -54,6 +54,7 @@ import {
   thanksPath,
   type SendFailure,
 } from '../../lib/form/submit';
+import { COMPARISON_ANSWERS_KEY } from '../../lib/comparison/order-state';
 import type { FormCopy, FormFlags } from '../../lib/form/types';
 import { CheckField } from './fields/CheckField';
 import { ChoiceField } from './fields/ChoiceField';
@@ -75,6 +76,11 @@ export type FormPageIslandProps = {
   icons: Record<string, string>;
   flag: { src: string; width: number; height: number };
   turnstileSiteKey?: string | null;
+  /**
+   * Where to go after a sent lead instead of the thank-you page: the results screen on staging
+   * (ADR 0013), null elsewhere.
+   */
+  afterLead?: string | null;
 };
 
 /** The sessionStorage entry (voordeelvinder:form:energie_vergelijker). */
@@ -166,6 +172,7 @@ export default function FormPageIsland({
   icons,
   flag,
   turnstileSiteKey = null,
+  afterLead = null,
 }: FormPageIslandProps) {
   const [answers, setAnswers] = useState<Answers>(() => ({ ...preselect }));
   const [messages, setMessages] = useState<Messages>(NO_MESSAGES);
@@ -364,10 +371,13 @@ export default function FormPageIsland({
         );
       }
       store?.setItem(MORPH_MARKER, 'form-card');
+      // Staging goes on to the results (ADR 0013), which start from these answers: kept for
+      // this tab only, like the form session the submit just cleared.
+      if (afterLead) store?.setItem(COMPARISON_ANSWERS_KEY, JSON.stringify(filled));
     } catch {
       // No storage: the thank-you page shows without the cheer.
     }
-    window.location.assign(result.redirect);
+    window.location.assign(afterLead ?? result.redirect);
   };
 
   const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
