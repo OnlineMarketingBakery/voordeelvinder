@@ -96,6 +96,8 @@ const site = defineCollection({
         /** `{year}` is replaced with the build year. */
         holder: text,
         rights: text,
+        /** The company behind the site: legal name, address, KBO/BTW number. */
+        company: text.optional(),
       }),
     }),
     /** Shared FAQ copy; a page's faq block can override the contact card per field. */

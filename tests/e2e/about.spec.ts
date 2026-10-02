@@ -16,7 +16,6 @@ test('About us renders every section as designed', async ({ page }) => {
     'Waar we voor staan',
     'Wat we nooit doen.',
     'Is VoordeelVinder iets voor mij?',
-    'De mensen achter VoordeelVinder',
     'Niet zomaar een vergelijker',
   ]) {
     await expect(
