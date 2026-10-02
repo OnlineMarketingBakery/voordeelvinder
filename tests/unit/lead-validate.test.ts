@@ -66,7 +66,8 @@ describe('parseLeadRequest: valid bodies', () => {
       phone_display: '+32 475 12 34 56',
       email: 'jan.peeters@example.be',
     });
-    expect(submission.call_preference).toEqual({ day: 'wed', slot: '13-14' });
+    // No form asks a call moment (not in Figma, removed 2026-10-02).
+    expect(submission.call_preference).toBeNull();
     expect(submission.consent).toEqual({
       cookies: { analytics: true, marketing: true },
       terms: true,
@@ -112,36 +113,16 @@ describe('parseLeadRequest: valid bodies', () => {
         gas_kwh: 12000,
         household_size: '2',
         heat_pump: 'yes',
-        business_gas_band: 'over_100k',
-        business_electricity_band: 'over_100k',
       },
     };
     const { submission } = accepted(stale);
     expect(submission.answers).not.toHaveProperty('gas_kwh');
     expect(submission.answers).not.toHaveProperty('household_size');
     expect(submission.answers).not.toHaveProperty('heat_pump');
-    expect(submission.answers).not.toHaveProperty('business_gas_band');
-    expect(submission.answers).not.toHaveProperty('business_electricity_band');
     expect(submission.answers.energy_type).toBe('electricity');
     // Even a hidden answer that wouldn't validate is simply dropped.
     const invalidHidden = withValue(stale, 'answers.gas_kwh', 'veel');
     expect(accepted(invalidHidden).submission.answers).not.toHaveProperty('gas_kwh');
-  });
-
-  it('keeps business bands only for a business, per energy type', () => {
-    const business = body('energie', {
-      ...energyAnswers,
-      is_business: true,
-      business_electricity_band: 'over_100k',
-      business_gas_band: 'under_100k',
-    });
-    expect(accepted(business).submission.answers).toMatchObject({
-      is_business: true,
-      business_electricity_band: 'over_100k',
-      business_gas_band: 'under_100k',
-    });
-    const home = withValue(business, 'answers.is_business', false);
-    expect(accepted(home).submission.answers).not.toHaveProperty('business_electricity_band');
   });
 
   it('reads a filled honeypot and a missing Turnstile token', () => {
@@ -240,9 +221,9 @@ describe('parseLeadRequest: rejected bodies (400)', () => {
     expect(issuesOf(withValue(energy(), 'derived.municipality', 'Gent'))).toEqual([
       'derived.municipality: unknown field',
     ]);
-    expect(issuesOf(withValue(energy(), 'call_preference.note', 'x'))[0]).toMatch(
-      /^call_preference: Unrecognized/,
-    );
+    expect(
+      issuesOf(withValue(energy(), 'call_preference', { day: 'wed', slot: '13-14', note: 'x' }))[0],
+    ).toMatch(/^call_preference: Unrecognized/);
   });
 
   it('rejects fields that are never sent, or sent in the wrong place', () => {
@@ -274,8 +255,8 @@ describe('parseLeadRequest: rejected bodies (400)', () => {
     expect(issuesOf(withValue(energy(), 'answers.supplier', 'Luminus'))).toEqual([
       'answers.supplier: option_unknown',
     ]);
-    expect(issuesOf(withValue(energy(), 'answers.social_tariff', 'ja'))).toEqual([
-      'answers.social_tariff: option_unknown',
+    expect(issuesOf(withValue(energy(), 'answers.has_solar', 'ja'))).toEqual([
+      'answers.has_solar: option_unknown',
     ]);
     expect(issuesOf(withValue(energy(), 'answers.energy_type', 'water'))).toEqual([
       'answers.energy_type: option_unknown',
@@ -283,14 +264,9 @@ describe('parseLeadRequest: rejected bodies (400)', () => {
     expect(issuesOf(withValue(energy(), 'answers.energy_type', 3))).toEqual([
       'answers.energy_type: option_unknown',
     ]);
-    expect(issuesOf(withValue(energy(), 'call_preference', { day: 'sat', slot: '13-14' }))).toEqual(
-      ['call_preference: day_unknown'],
-    );
-    // "false" as text: not a boolean (and truthy, so the business bands would be asked too).
+    // "false" as text: not a boolean.
     expect(issuesOf(withValue(energy(), 'answers.is_business', 'false'))).toEqual([
       'answers.is_business: invalid_type',
-      'answers.business_electricity_band: required',
-      'answers.business_gas_band: required',
     ]);
   });
 
@@ -312,9 +288,6 @@ describe('parseLeadRequest: rejected bodies (400)', () => {
     ]);
     expect(issuesOf(withValue(energy(), 'answers.gas_kwh', undefined))).toEqual([
       'answers.gas_kwh: required',
-    ]);
-    expect(issuesOf(withValue(energy(), 'call_preference', null))).toEqual([
-      'call_preference: required',
     ]);
     expect(issuesOf(withValue(energy(), 'consent.terms', false))).toEqual([
       'consent.terms: required',
@@ -427,9 +400,6 @@ describe('answer keys', () => {
   it('lists what each flow sends in answers (rules read these)', () => {
     expect([...submittedAnswerKeys(flows.energie)].sort()).toEqual(
       [
-        'budget_meter',
-        'business_electricity_band',
-        'business_gas_band',
         'digital_meter',
         'electricity_kwh',
         'energy_type',
@@ -442,7 +412,6 @@ describe('answer keys', () => {
         'is_business',
         'knows_consumption',
         'meter_type',
-        'social_tariff',
         'supplier',
       ].sort(),
     );

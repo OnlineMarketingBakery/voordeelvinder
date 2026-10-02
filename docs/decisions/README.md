@@ -19,3 +19,4 @@ rewriting history.
 | 0011 | [One n8n workflow for staging and production](0011-one-n8n-workflow-for-staging-and-production.md)    | Accepted                   |
 | 0012 | [Single-page energy form; the step form stays](0012-single-page-energy-form.md)                       | Accepted                   |
 | 0013 | [Results and ordering screens on placeholder data](0013-results-and-order-screens-on-placeholders.md) | Accepted                   |
+| 0014 | [The energy forms ask only what Figma shows](0014-forms-follow-figma.md)                              | Accepted                   |

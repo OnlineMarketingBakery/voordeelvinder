@@ -226,42 +226,6 @@
       ],
       "next": [
         {
-          "goto": "tariff_meter"
-        }
-      ]
-    },
-    {
-      "id": "tariff_meter",
-      "title": "Heb je een sociaal tarief?",
-      "fields": [
-        {
-          "id": "social_tariff",
-          "type": "yes_no",
-          "required": true
-        },
-        {
-          "id": "budget_meter",
-          "type": "single_choice",
-          "label": "Heb je een budgetmeter?",
-          "required": true,
-          "options": [
-            {
-              "code": "yes",
-              "label": "Ja"
-            },
-            {
-              "code": "no",
-              "label": "Nee"
-            },
-            {
-              "code": "unknown",
-              "label": "Weet ik niet"
-            }
-          ]
-        }
-      ],
-      "next": [
-        {
           "goto": "knows_consumption"
         }
       ]

@@ -124,10 +124,7 @@ describe('auto-advance after a tap (real flows)', () => {
     expect(gas.auto).toBe(true);
   });
 
-  it('the tariff step (yes/no + single choice) and the appliances step', () => {
-    const tariff = tap(energie, 'tariff_meter', both, 'social_tariff', 'no');
-    expect(tariff.auto).toBe(false);
-    expect(tap(energie, 'tariff_meter', tariff.answers, 'budget_meter', 'unknown').auto).toBe(true);
+  it('the appliances step (two yes/no questions)', () => {
     for (const flow of [energie, zonnepanelen, thuisbatterij]) {
       const heat = tap(flow, 'appliances', both, 'heat_pump', 'no');
       expect(heat.auto, flow.id).toBe(false);
@@ -142,20 +139,11 @@ describe('auto-advance after a tap (real flows)', () => {
     expect(tap(zonnepanelen, 'roof', roof.answers, 'roof_orientation', 'south').auto).toBe(true);
   });
 
-  it('keeps "Volgende" on a step with a typing field: the business bands by the postcode', () => {
-    const business = { energy_type: 'both', postcode: '9000', is_business: true };
-    const bands = tap(energie, 'postcode', business, 'business_electricity_band', 'under_100k');
-    expect(bands.outcome.fields.map((field) => field.type)).toEqual([
-      'postcode',
-      'checkbox',
-      'single_choice',
-      'single_choice',
-    ]);
-    expect(bands.auto).toBe(false);
-    expect(bands.outcome.nextOpen).toBe('business_gas_band');
-    const complete = tap(energie, 'postcode', bands.answers, 'business_gas_band', 'over_100k');
-    expect(complete.outcome.complete).toBe(true);
-    expect(complete.auto).toBe(false);
+  it('keeps "Volgende" on a step with a typing field: the postcode and the business checkbox', () => {
+    const business = { energy_type: 'both', postcode: '9000' };
+    const ticked = tap(energie, 'postcode', business, 'is_business', true as never);
+    expect(ticked.outcome.fields.map((field) => field.type)).toEqual(['postcode', 'checkbox']);
+    expect(ticked.auto).toBe(false);
   });
 
   it('never on keyboard input, when switched off or while sending', () => {

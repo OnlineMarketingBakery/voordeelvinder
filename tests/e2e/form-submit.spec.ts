@@ -69,8 +69,6 @@ async function fillContact(page: Page) {
   await control(page, 'Achternaam').fill('Peeters');
   await control(page, 'Telefoonnummer').fill('0475 12 34 56');
   await control(page, 'E-mail', { exact: true }).fill('jan.peeters@example.be');
-  await choose(page, 'Woensdag');
-  await choose(page, '13:00–14:00');
   const terms = page.getByRole('checkbox', { name: /Ik ga akkoord/ });
   await terms.locator('xpath=ancestor::label[1]').click({ position: { x: 17, y: 20 } });
   await expect(terms).toBeChecked();
@@ -351,11 +349,6 @@ test.describe('form submit: the lead could not be sent', () => {
     await page.keyboard.type('9');
     await expect(phone).toBeFocused();
     await expect(phone).toHaveValue('0475 12 34 56');
-    const thursday = page.getByRole('radio', { name: 'Donderdag', exact: true });
-    await thursday.focus();
-    await page.keyboard.press('Space');
-    await expect(thursday).not.toBeChecked();
-    await expect(page.getByRole('radio', { name: 'Woensdag', exact: true })).toBeChecked();
     const terms = page.getByRole('checkbox', { name: /Ik ga akkoord/ });
     await terms.locator('xpath=ancestor::label[1]').click({ position: { x: 17, y: 20 } });
     await expect(terms).toBeChecked();
@@ -370,7 +363,7 @@ test.describe('form submit: the lead could not be sent', () => {
     expect(bodies).toHaveLength(2);
     expect(bodies[0]!.contact).toMatchObject({ phone_e164: '+32475123456' });
     expect(bodies[1]!.contact).toMatchObject({ phone_e164: '+32476654321' });
-    expect(bodies[1]!.call_preference).toEqual({ day: 'wed', slot: '13-14' });
+    expect(bodies[1]!.call_preference).toBeNull();
     expect(bodies[1]!.consent).toMatchObject({ terms: true });
   });
 

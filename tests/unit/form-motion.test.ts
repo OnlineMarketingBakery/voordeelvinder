@@ -385,7 +385,7 @@ describe('server render: nothing moves at hydration', () => {
 
   it('renders the steps bar pill at its place and the first step fully visible', () => {
     // Step 1 of 10: the pill rides on the centre of the first segment.
-    expect(html).toContain('style="translate:calc(5% + var(--gap) * -0.45) 0"');
+    expect(html).toContain('style="translate:calc(5.5556% + var(--gap) * -0.4444) 0"');
     // The step is rendered in its final state: no opacity 0, no offset.
     expect(html).not.toMatch(/<(div|h2|label|span)[^>]*style="[^"]*(opacity:0|translateX)/);
   });

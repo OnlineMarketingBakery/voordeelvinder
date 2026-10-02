@@ -171,7 +171,7 @@ test.describe('form: "Opnieuw beginnen" and its undo', () => {
     // Back on the first step the URL serves (?energie=both skips the energy question).
     await expect(heading(page)).toHaveText('Wat is je postcode?');
     await expect(heading(page)).toBeFocused();
-    await expect(progressLine(page)).toHaveText(progress(1, 9));
+    await expect(progressLine(page)).toHaveText(progress(1, 8));
     await expect(control(page, 'Wat is je postcode?')).toHaveValue('');
     await expect(live(page)).toHaveText(reset.done);
     await expect(notice(page)).toBeVisible();
@@ -188,9 +188,9 @@ test.describe('form: "Opnieuw beginnen" and its undo', () => {
     await undoButton(page).click();
     await expect(heading(page)).toHaveText('Wat voor meter heb je?');
     await expect(heading(page)).toBeFocused();
-    await expect(progressLine(page)).toHaveText(progress(3, 9));
+    await expect(progressLine(page)).toHaveText(progress(3, 8));
     await expect(radio(page, 'Dag/nachtmeter (tweevoudig tarief)')).toBeChecked();
-    await expect(live(page)).toHaveText(`Wat voor meter heb je?. ${progress(3, 9)}`);
+    await expect(live(page)).toHaveText(`Wat voor meter heb je?. ${progress(3, 8)}`);
     await expect(notice(page)).toHaveCount(0);
     // Exactly the session from before the reset, the old ids included.
     await expect.poll(() => storedRaw(page, 'energie')).toBe(before);
@@ -212,7 +212,7 @@ test.describe('form: "Opnieuw beginnen" and its undo', () => {
     await resetButton(page).click();
     await expect(heading(page)).toHaveText('Wat wil je vergelijken?');
     await expect(page.getByRole('radio', { checked: true })).toHaveCount(0);
-    await expect(progressLine(page)).toHaveText(progress(1, 10));
+    await expect(progressLine(page)).toHaveText(progress(1, 9));
     await expect.poll(async () => (await stored(page, 'vergelijken')).answers).toEqual({});
     await undoButton(page).click();
     await expect(heading(page)).toHaveText('Ben je eigenaar van de woning?');
@@ -339,7 +339,7 @@ test.describe('form: the second half of a double click lands on the new step', (
 test.describe('form: going back from the progress bar', () => {
   test('a completed step jumps back two steps and keeps the answers', async ({ page }) => {
     await toMeterType(page);
-    await expect(progressLine(page)).toHaveText(progress(3, 9));
+    await expect(progressLine(page)).toHaveText(progress(3, 8));
     // Only the steps before the current one.
     await expect(page.getByRole('button', { name: /^Ga terug naar stap/ })).toHaveCount(2);
     const first = page.getByRole('button', { name: jumpName(1, 'Wat is je postcode?') });
@@ -347,8 +347,8 @@ test.describe('form: going back from the progress bar', () => {
     await page.keyboard.press('Enter');
     await expect(heading(page)).toHaveText('Wat is je postcode?');
     await expect(heading(page)).toBeFocused();
-    await expect(progressLine(page)).toHaveText(progress(1, 9));
-    await expect(live(page)).toHaveText(`Wat is je postcode?. ${progress(1, 9)}`);
+    await expect(progressLine(page)).toHaveText(progress(1, 8));
+    await expect(live(page)).toHaveText(`Wat is je postcode?. ${progress(1, 8)}`);
     await expect(control(page, 'Wat is je postcode?')).toHaveValue('9000');
     // Nothing before the first step; the steps after it are never jump targets.
     await expect(page.getByRole('button', { name: /^Ga terug naar stap/ })).toHaveCount(0);
@@ -383,7 +383,7 @@ test.describe('form: a two-question step on a phone', () => {
     // right after the scroll is the second half of a double tap (next test).
     await page.waitForTimeout(AUTO_ADVANCE_GUARD_MS);
     await tap(page, 'Nee', 'Heb je zonnepanelen?');
-    await expect(heading(page)).toHaveText('Heb je een sociaal tarief?');
+    await expect(heading(page)).toHaveText('Ken je je jaarlijks energieverbruik?');
   });
 
   for (const gap of [DOUBLE_CLICK_GAP_MS, 250]) {

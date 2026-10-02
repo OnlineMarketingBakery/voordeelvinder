@@ -80,68 +80,6 @@
           "id": "is_business",
           "type": "checkbox",
           "label": "Dit is een zakelijk adres."
-        },
-        {
-          "id": "business_electricity_band",
-          "type": "single_choice",
-          "label": "Elektriciteit: wat is je geschat jaarverbruik?",
-          "required": true,
-          "visibleIf": {
-            "and": [
-              {
-                "var": "is_business"
-              },
-              {
-                "in": [
-                  {
-                    "var": "energy_type"
-                  },
-                  ["electricity", "both"]
-                ]
-              }
-            ]
-          },
-          "options": [
-            {
-              "code": "under_100k",
-              "label": "Minder dan 100.000 kWh per jaar"
-            },
-            {
-              "code": "over_100k",
-              "label": "Meer dan 100.000 kWh per jaar"
-            }
-          ]
-        },
-        {
-          "id": "business_gas_band",
-          "type": "single_choice",
-          "label": "Aardgas: wat is je geschat jaarverbruik?",
-          "required": true,
-          "visibleIf": {
-            "and": [
-              {
-                "var": "is_business"
-              },
-              {
-                "in": [
-                  {
-                    "var": "energy_type"
-                  },
-                  ["gas", "both"]
-                ]
-              }
-            ]
-          },
-          "options": [
-            {
-              "code": "under_100k",
-              "label": "Minder dan 100.000 kWh per jaar"
-            },
-            {
-              "code": "over_100k",
-              "label": "Meer dan 100.000 kWh per jaar"
-            }
-          ]
         }
       ]
     },
@@ -271,67 +209,6 @@
           "placeholder": "example@email.com",
           "required": true,
           "payload": "contact"
-        },
-        {
-          "id": "call_moment",
-          "type": "day_slot",
-          "label": "Wanneer mogen we je bellen?",
-          "dayLabel": "Dag",
-          "slotLabel": "Tijdstip",
-          "required": true,
-          "payload": "call_preference",
-          "days": [
-            {
-              "code": "mon",
-              "label": "Maandag"
-            },
-            {
-              "code": "tue",
-              "label": "Dinsdag"
-            },
-            {
-              "code": "wed",
-              "label": "Woensdag"
-            },
-            {
-              "code": "thu",
-              "label": "Donderdag"
-            },
-            {
-              "code": "fri",
-              "label": "Vrijdag"
-            }
-          ],
-          "slots": [
-            {
-              "code": "09-10",
-              "label": "09:00–10:00"
-            },
-            {
-              "code": "10-11",
-              "label": "10:00–11:00"
-            },
-            {
-              "code": "11-12",
-              "label": "11:00–12:00"
-            },
-            {
-              "code": "12-13",
-              "label": "12:00–13:00"
-            },
-            {
-              "code": "13-14",
-              "label": "13:00–14:00"
-            },
-            {
-              "code": "14-15",
-              "label": "14:00–15:00"
-            },
-            {
-              "code": "15-16",
-              "label": "15:00–16:00"
-            }
-          ]
         },
         {
           "id": "terms",

@@ -117,7 +117,7 @@ describe('the server and the single-page form', () => {
     expect(payload.answers).not.toHaveProperty('budget_meter');
     expect(payload.labels.home_type).toBe('Rijwoning');
     expect(payload.outcome).toBe('promo');
-    expect(payload.call_preference).toEqual({ day: 'wed', slot: '13-14' });
+    expect(payload.call_preference).toBeNull();
   });
 
   it('still classifies: an address outside Flanders makes it no_promo', () => {
