@@ -1,6 +1,8 @@
 // The comparison's data contract (Figma 221:5711 results, 241:7189–250:12053 ordering). Today
 // it is filled with placeholders (placeholder.ts); the tariff API will fill the same shapes
 // later (ADR 0013), so the screens don't change when the data does.
+import type { Product } from '../flow/types';
+
 export type Tariff = 'fixed' | 'variable' | 'dynamic';
 export type PaymentMethod = 'direct_debit' | 'transfer';
 
@@ -28,6 +30,8 @@ export type Offer = {
 };
 
 export type Comparison = {
+  /** The product compared: its results page is /vergelijken/<product>/resultaten. */
+  product: Product;
   /** True while the data is invented: the screens show the preview notice. */
   placeholder: boolean;
   current: { supplier: string; yearlyCost: number };

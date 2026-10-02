@@ -11,7 +11,8 @@ no order hand-off yet, and we never publish invented prices, suppliers or rating
 
 ## Decision
 
-- **Routes:** `/vergelijken/energie/resultaten` and `/bestellen/{gegevens,aansluiting,controle,bedankt}` exist
+- **Routes:** `/vergelijken/<product>/resultaten` (one route; only the products in
+  `RESULTS_PRODUCTS` have results, energy today, the others answer 404: Tanjil 2026-10-02) and `/bestellen/{gegevens,aansluiting,controle,bedankt}` exist
   everywhere except production (`orderPreview`); in production they answer 404. Always noindex.
 - **Data:** the screens read one data contract (`src/lib/comparison/types.ts`). Today
   `placeholderComparison()` fills it with "Leverancier A…E" and round example amounts, marked

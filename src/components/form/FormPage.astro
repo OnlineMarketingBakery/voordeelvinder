@@ -7,7 +7,7 @@ import { iconUrl } from '../../lib/assets';
 import { loadFormContent } from '../../lib/form-content';
 import { urlPreselects } from '../../lib/form/initial';
 import { formIconKeys } from '../../lib/form/labels';
-import { RESULTS_PATH, resultsAfterLead } from '../../lib/comparison/preview';
+import { resultsAfterLead, resultsPath } from '../../lib/comparison/preview';
 import { turnstileSiteKey } from '../../lib/turnstile';
 import FormPageIsland from './FormPageIsland';
 
@@ -49,7 +49,7 @@ const siteKey = turnstileSiteKey(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY, __SI
       icons={icons}
       flag={flag}
       turnstileSiteKey={siteKey}
-      afterLead={resultsAfterLead(__SITE_ENV__) ? RESULTS_PATH : null}
+      afterLead={resultsAfterLead(__SITE_ENV__) ? resultsPath('energie') : null}
     />
     {/* Before hydration a native submit would put the answers in the URL: cancel it. */}
     <script is:inline>

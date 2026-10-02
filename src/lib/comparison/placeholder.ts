@@ -2,6 +2,7 @@
 // (ADR 0013). Never real suppliers or prices: "Leverancier A…E" with round example amounts, and
 // `placeholder: true`, which makes every screen show the preview notice. These pages are off in
 // production (orderPreview).
+import type { Product } from '../flow/types';
 import type { Comparison, Offer } from './types';
 
 const offer = (
@@ -25,8 +26,9 @@ const offer = (
   ...fields,
 });
 
-export function placeholderComparison(): Comparison {
+export function placeholderComparison(product: Product = 'energie'): Comparison {
   return {
+    product,
     placeholder: true,
     current: { supplier: 'je huidige leverancier', yearlyCost: 1300 },
     offers: [

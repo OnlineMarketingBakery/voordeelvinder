@@ -1,5 +1,7 @@
 ---
-// Screen 2, the results (Figma 221:5711, ADR 0013): placeholder data, off in production.
+// Screen 2, the results (Figma 221:5711, ADR 0013): /vergelijken/<product>/resultaten, one route
+// for every product. Only the products in RESULTS_PRODUCTS have one (energy today); the others,
+// and every product in production, answer 404. Placeholder data until the tariff API.
 import { getImage } from 'astro:assets';
 
 import OrderLayout from '../../../components/order/OrderLayout.astro';
@@ -7,12 +9,15 @@ import ResultsIsland from '../../../components/order/ResultsIsland';
 import { image } from '../../../lib/assets';
 import { fill } from '../../../lib/comparison/copy';
 import { orderPageData } from '../../../lib/comparison/page-data';
-import { orderPreview } from '../../../lib/comparison/preview';
+import { hasResults, orderPreview } from '../../../lib/comparison/preview';
 
 export const prerender = false;
 
-if (!orderPreview(__SITE_ENV__)) return new Response(null, { status: 404 });
-const { copy, comparison, labels } = await orderPageData();
+const product = Astro.params.product ?? '';
+if (!orderPreview(__SITE_ENV__) || !hasResults(product)) {
+  return new Response(null, { status: 404 });
+}
+const { copy, comparison, labels } = await orderPageData(product);
 const foxMeta = image('mascot/fox-cheer-document');
 const foxImage = await getImage({ src: foxMeta, width: 240, format: 'webp' });
 const fox = {

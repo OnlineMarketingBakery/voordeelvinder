@@ -2,6 +2,7 @@
 // placeholders), the single-page form's option labels and the icons they show.
 import { iconUrl } from '../assets';
 import type { Flow } from '../flow/schema';
+import type { Product } from '../flow/types';
 import { loadFormContent } from '../form-content';
 import { orderCopy } from './copy';
 import { placeholderComparison } from './placeholder';
@@ -19,7 +20,7 @@ export function optionLabels(flow: Flow): Record<string, Record<string, string>>
   return out;
 }
 
-export async function orderPageData() {
+export async function orderPageData(product: Product = 'energie') {
   const { byId } = await loadFormContent();
   const flow = byId.energie_vergelijker;
   if (!flow) throw new Error('src/content/flows/nl/energie_vergelijker.json is missing');
@@ -31,7 +32,7 @@ export async function orderPageData() {
   );
   return {
     copy: orderCopy,
-    comparison: placeholderComparison(),
+    comparison: placeholderComparison(product),
     labels: optionLabels(flow),
     icons,
   };
