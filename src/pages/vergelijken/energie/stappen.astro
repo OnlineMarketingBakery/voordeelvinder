@@ -1,0 +1,17 @@
+---
+// The step-by-step energy form, kept next to the single-page form on /vergelijken/energie
+// (Tanjil 2026-10-02): for testing the two against each other, or for later use. Not indexed
+// (the same content as /vergelijken/energie); canonical points there.
+import Form from '../../../components/form/Form.astro';
+import Page from '../../../layouts/Page.astro';
+import { loadFormContent } from '../../../lib/form-content';
+
+export const prerender = false;
+
+const { copy } = await loadFormContent();
+const seo = copy.pages.energie;
+---
+
+<Page title={seo.title} description={seo.description} canonicalPath="/vergelijken/energie/" noindex>
+  <Form entry="energie" search={Astro.url.search} />
+</Page>

@@ -30,10 +30,29 @@ export function parseInteger(raw: string | number): ParsedNumber {
   return { ok: false, code: DECIMAL.test(text) ? 'number_not_integer' : 'number_invalid' };
 }
 
+/**
+ * A number with at most `decimals` decimals ("3,5" or "3.5" → 3.5), for fields such as an
+ * inverter's kW. No thousands separators: "3.500" with one decimal allowed is 3500, not 3.5.
+ */
+export function parseDecimal(raw: string | number, decimals: number): ParsedNumber {
+  if (typeof raw === 'number') {
+    if (!Number.isFinite(raw)) return { ok: false, code: 'number_invalid' };
+    const scaled = raw * 10 ** decimals;
+    return Math.abs(scaled - Math.round(scaled)) < 1e-9
+      ? { ok: true, value: raw }
+      : { ok: false, code: 'number_not_integer' };
+  }
+  const text = raw.trim();
+  if (new RegExp(`^\\d+(?:[.,]\\d{1,${decimals}})?$`).test(text)) {
+    return { ok: true, value: Number(text.replace(',', '.')) };
+  }
+  return parseInteger(text);
+}
+
 export function validateNumber(value: unknown, field: FieldConfig): ValidationResult<unknown> {
   if (isEmpty(value)) return empty(field);
   if (typeof value !== 'string' && typeof value !== 'number') return fail('invalid_type');
-  const parsed = parseInteger(value);
+  const parsed = field.decimals ? parseDecimal(value, field.decimals) : parseInteger(value);
   if (!parsed.ok) return fail(parsed.code);
   const n = parsed.value;
   if (field.min !== undefined && n < field.min) return fail('number_too_low');

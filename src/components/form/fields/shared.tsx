@@ -4,6 +4,7 @@ import type { Field, Step } from '../../../lib/flow/schema';
 import type { AnswerValue } from '../../../lib/flow/types';
 import { domId } from '../../../lib/form/labels';
 import type { FormCopy } from '../../../lib/form/types';
+import { useFormLayout } from '../layout';
 import { FadeInText } from '../motion';
 
 export type FieldProps<F extends Field = Field> = {
@@ -89,3 +90,16 @@ export const labelClass = 'mb-2 block text-label text-ink-900';
 
 /** A second question on a step reads like the step title (Figma 90:9450, Step 5). */
 export const questionClass = 'mb-5 text-title-lg text-ink-900 md:text-h3';
+
+/** The single-page form's question label (Figma 193:2095: 14px SemiBold above the control). */
+export const pageLabelClass = 'mb-2 block text-label-sm text-ink-900';
+
+/** The label class for the current form layout: a question above a control. */
+export function useLabelClass(): string {
+  return useFormLayout() === 'page' ? pageLabelClass : labelClass;
+}
+
+/** The class of a choice question for the current layout (step title size in the step form). */
+export function useQuestionClass(): string {
+  return useFormLayout() === 'page' ? pageLabelClass : questionClass;
+}

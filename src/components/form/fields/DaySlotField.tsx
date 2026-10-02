@@ -6,7 +6,8 @@ import type { Field } from '../../../lib/flow/schema';
 import type { DaySlotAnswer } from '../../../lib/flow/types';
 import { domId, fieldLabel } from '../../../lib/form/labels';
 import { cx } from '../ui';
-import { describedBy, FieldHint, FieldMessage, labelClass, type FieldProps } from './shared';
+import { useFormLayout } from '../layout';
+import { describedBy, FieldHint, FieldMessage, useLabelClass, type FieldProps } from './shared';
 
 type DaySlotFieldType = Extract<Field, { type: 'day_slot' }>;
 
@@ -94,6 +95,8 @@ export function DaySlotField({
   onChange,
 }: FieldProps<DaySlotFieldType>) {
   const label = fieldLabel(step, field);
+  const labelClass = useLabelClass();
+  const page = useFormLayout() === 'page';
   const answer: DaySlotAnswer =
     typeof value === 'object' && value !== null ? (value as DaySlotAnswer) : {};
   const described = describedBy(field, error, warning);
@@ -103,6 +106,7 @@ export function DaySlotField({
     <div>
       <p id={domId.label(field.id)} className={labelClass}>
         {label.text}
+        {page && field.required && <span aria-hidden="true"> *</span>}
       </p>
       <div className="grid gap-4">
         <Chips

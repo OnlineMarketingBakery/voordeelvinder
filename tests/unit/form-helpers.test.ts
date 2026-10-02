@@ -754,6 +754,7 @@ describe('form labels and icons', () => {
         YES_NO_ICONS.no,
         UI_ICONS.back,
         UI_ICONS.next,
+        UI_ICONS.info,
       ].sort(),
     );
   });

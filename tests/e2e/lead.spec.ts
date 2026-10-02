@@ -283,7 +283,7 @@ test.describe('the energy form sends its lead', () => {
       await expect(heading).toHaveText(title);
     };
 
-    await page.goto('/vergelijken/energie?energie=both');
+    await page.goto('/vergelijken/energie/stappen?energie=both');
     await expect(page.locator('astro-island[ssr]')).toHaveCount(0);
     await expect(main.locator('form button[type="submit"]')).toBeEnabled();
     await control('Wat is je postcode?').fill('9000');
@@ -348,7 +348,7 @@ test.describe('the energy form sends its lead', () => {
       product: 'energie',
       answers: { energy_type: 'both', supplier: 'luminus' },
       derived: { postcode: '9000', region: 'flanders' },
-      meta: { page: '/vergelijken/energie' },
+      meta: { page: '/vergelijken/energie/stappen' },
     });
     expect(Object.keys(webhook.body as object).sort()).toEqual(PAYLOAD_KEYS);
     expect(webhook.headers['x-vv-secret']).toBe(E2E_WEBHOOK_SECRET);
@@ -370,5 +370,85 @@ test.describe('the energy form sends its lead', () => {
     expect(
       await page.evaluate(() => sessionStorage.getItem('voordeelvinder:lead-safe')),
     ).toBeNull();
+  });
+});
+
+// The single-page energy form (Figma 193:2095, /vergelijken/energie): every section on one page,
+// one "Vergelijken" that validates them all and sends the same lead as the step form.
+test.describe('the single-page energy form sends its lead', () => {
+  const pick = (page: Page, id: string) => page.locator(`label:has(> #${id})`).click();
+
+  test('"Vergelijken" first shows the errors, then posts once and the lead reaches n8n', async ({
+    page,
+    request,
+  }) => {
+    await stubTurnstile(page);
+    await page.goto('/vergelijken/energie?energie=both');
+    await expect(page.locator('astro-island[ssr]')).toHaveCount(0);
+    const submit = page.getByRole('button', { name: 'Vergelijken', exact: true });
+    await expect(submit).toBeEnabled();
+    await expect(page.locator('#veld-energy_type-both')).toBeChecked();
+
+    // Nothing filled in: the first open question is focused and its error shows.
+    await submit.click();
+    await expect(page.locator('#veld-postcode')).toBeFocused();
+    await expect(page.locator('#veld-postcode-fout')).toBeVisible();
+
+    await page.locator('#veld-postcode').fill('9000');
+    await page.locator('#veld-supplier').selectOption('luminus');
+    await pick(page, 'veld-meter_type-dual');
+    await pick(page, 'veld-digital_meter');
+    await pick(page, 'veld-has_solar-yes');
+    await page.locator('#veld-inverter_kw').fill('3,5');
+    await page.locator('#veld-injection_day_kwh').fill('1200');
+    await page.locator('#veld-injection_night_kwh').fill('300');
+    await pick(page, 'veld-budget_meter-no');
+    await pick(page, 'veld-knows_consumption-no');
+    await pick(page, 'veld-home_type-terraced');
+    await pick(page, 'veld-household_size-2');
+    await pick(page, 'veld-heat_pump');
+    await pick(page, 'veld-contract_type-fixed');
+    await pick(page, 'veld-social_tariff-no');
+    await page.locator('#veld-first_name').fill('Test');
+    await page.locator('#veld-last_name').fill('Persoon');
+    await page.locator('#veld-phone').fill('0475 00 00 00');
+    await page.locator('#veld-email').fill('test.persoon@example.be');
+    await pick(page, 'veld-call_moment-wed');
+    await pick(page, 'veld-call_moment-13-14');
+    await page.locator('label:has(> #veld-terms)').click({ position: { x: 12, y: 14 } });
+    await expect(page.locator('#veld-terms')).toBeChecked();
+
+    const posts: string[] = [];
+    page.on('request', (sent) => {
+      if (sent.url().endsWith('/api/lead') && sent.method() === 'POST')
+        posts.push(sent.postData() ?? '');
+    });
+    await submit.dblclick();
+    await expect(page).toHaveURL(/\/bedankt\/energie\/?$/);
+    expect(posts).toHaveLength(1);
+    const sent = JSON.parse(posts[0]!) as { lead_id: string; flow_id: string };
+    expect(sent.flow_id).toBe('energie_vergelijker');
+
+    const webhook = await webhookFor(request, sent.lead_id);
+    expect(webhook.body).toMatchObject({
+      is_test: true,
+      product: 'energie',
+      outcome: 'promo',
+      answers: {
+        energy_type: 'both',
+        meter_type: 'dual',
+        digital_meter: 'yes',
+        inverter_kw: 3.5,
+        injection_night_kwh: 300,
+        home_battery: 'no',
+        heat_pump: 'yes',
+        electric_car: 'no',
+        contract_type: 'fixed',
+        social_tariff: 'no',
+      },
+      call_preference: { day: 'wed', slot: '13-14' },
+      meta: { page: '/vergelijken/energie' },
+    });
+    expect(Object.keys(webhook.body as object).sort()).toEqual(PAYLOAD_KEYS);
   });
 });

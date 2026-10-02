@@ -162,6 +162,7 @@ describe('real flows: validate:flows', () => {
     expect(locales.map(({ locale }) => locale)).toEqual(['nl']);
     expect(locales[0]!.flows.map(({ path }) => path)).toEqual([
       'nl/energie.json',
+      'nl/energie_vergelijker.json',
       'nl/thuisbatterij.json',
       'nl/zonnepanelen.json',
     ]);

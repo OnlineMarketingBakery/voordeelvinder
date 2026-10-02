@@ -120,9 +120,9 @@ async function stored(page: Page, entry: string): Promise<Stored> {
   return JSON.parse(raw) as Stored;
 }
 
-/** /vergelijken/energie?energie=both up to the meter type, which is answered. */
+/** /vergelijken/energie/stappen?energie=both up to the meter type, which is answered. */
 async function toMeterType(page: Page) {
-  await open(page, '/vergelijken/energie?energie=both');
+  await open(page, '/vergelijken/energie/stappen?energie=both');
   await control(page, 'Wat is je postcode?').fill('9000');
   await goNext(page, 'Wie is je huidige energieleverancier?');
   await control(page, 'Wie is je huidige energieleverancier?').selectOption('luminus');
@@ -133,7 +133,7 @@ async function toMeterType(page: Page) {
 /** At 390x560, on the digital meter + solar step (two questions), scrolled to the top. */
 async function toMetersOnPhone(page: Page) {
   await page.setViewportSize({ width: 390, height: 560 });
-  await open(page, '/vergelijken/energie?energie=both');
+  await open(page, '/vergelijken/energie/stappen?energie=both');
   await control(page, 'Wat is je postcode?').fill('9000');
   await goNext(page, 'Wie is je huidige energieleverancier?');
   await control(page, 'Wie is je huidige energieleverancier?').selectOption('luminus');
@@ -145,7 +145,7 @@ async function toMetersOnPhone(page: Page) {
 
 test.describe('form: "Opnieuw beginnen" and its undo', () => {
   test('shows only when there is something to reset', async ({ page }) => {
-    await open(page, '/vergelijken/energie?energie=both');
+    await open(page, '/vergelijken/energie/stappen?energie=both');
     // The served first step with only the URL's energy type: nothing to reset.
     await expect(resetButton(page)).toHaveCount(0);
     const postcode = control(page, 'Wat is je postcode?');

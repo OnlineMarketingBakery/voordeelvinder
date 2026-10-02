@@ -6,7 +6,13 @@ import { resolveFlow } from './flow/resolve';
 import type { Flow, FlowCopy } from './flow/schema';
 import { PRODUCTS, type Product } from './flow/types';
 
-export type FormContent = { flows: Record<Product, Flow>; copy: FlowCopy };
+export type FormContent = {
+  /** Each product's step-by-step flow (the file named after the product). */
+  flows: Record<Product, Flow>;
+  /** Every flow by id, the variants included (energie_vergelijker: the single-page form). */
+  byId: Record<string, Flow>;
+  copy: FlowCopy;
+};
 
 export async function loadFormContent(locale = 'nl'): Promise<FormContent> {
   const inLocale = (id: string) => id.startsWith(`${locale}/`);
@@ -20,9 +26,11 @@ export async function loadFormContent(locale = 'nl'): Promise<FormContent> {
   const shared = sharedEntries[0]?.data;
   const flows = {} as Record<Product, Flow>;
   for (const product of PRODUCTS) {
-    const entry = flowEntries.find((candidate) => candidate.data.product === product);
+    const entry = flowEntries.find((candidate) => candidate.data.id === product);
     if (!entry) throw new Error(`no ${locale} flow for "${product}" in src/content/flows`);
     flows[product] = resolveFlow(entry.data, shared);
   }
-  return { flows, copy };
+  const byId: Record<string, Flow> = {};
+  for (const entry of flowEntries) byId[entry.data.id] = resolveFlow(entry.data, shared);
+  return { flows, byId, copy };
 }

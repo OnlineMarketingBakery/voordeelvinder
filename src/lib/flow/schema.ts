@@ -115,6 +115,13 @@ const fieldBase = {
   /** Only enforced while the field is shown (brief §7.6). */
   required: z.boolean().optional(),
   payload: z.enum(PAYLOAD_TARGETS).optional(),
+  /**
+   * Single-page form only (energie-vergelijker): the id of the step's `panels` entry the field
+   * sits in (a tinted box). Consecutive fields with the same panel share one box.
+   */
+  panel: flowId.optional(),
+  /** Single-page form only: the heading of an inline row of checkboxes, on its first field. */
+  rowLabel: text.optional(),
 };
 
 const placeholder = text.optional();
@@ -130,6 +137,11 @@ export const field = z.discriminatedUnion('type', [
     type: z.literal('yes_no'),
     /** Card labels; the codes are always "yes" and "no". */
     labels: z.strictObject({ yes: text, no: text }).optional(),
+    /**
+     * Single-page form only: a checkbox (checked = "yes", unchecked = "no") instead of two
+     * cards. The answer stays "yes" / "no", so the payload is the same as the cards'.
+     */
+    display: z.literal('checkbox').optional(),
   }),
   z.strictObject({
     ...fieldBase,
@@ -156,6 +168,8 @@ export const field = z.discriminatedUnion('type', [
       /** Outside softMin–softMax the value is accepted with a warning (brief §7.3). */
       softMin: z.number().optional(),
       softMax: z.number().optional(),
+      /** Decimals allowed ("3,5" kW with 1); default whole numbers only. */
+      decimals: z.int().min(1).max(3).optional(),
     })
     .refine(
       (f) => {
@@ -224,6 +238,17 @@ export const step = z.strictObject({
   hint: text.optional(),
   /** When false the step is skipped: the engine follows its `next` without showing it. */
   visibleIf: condition.optional(),
+  /** Single-page form only: tinted boxes the fields name with `panel`, with an optional note. */
+  panels: z
+    .array(
+      z.strictObject({
+        id: flowId,
+        tone: z.enum(['lavender', 'grey']),
+        /** A purple info box at the bottom of the panel. */
+        note: text.optional(),
+      }),
+    )
+    .optional(),
   fields: z.array(field).min(1),
   /** Ordered: the first entry whose `if` holds (or has none) wins. Empty only for contact. */
   next: z.array(nextEntry).default([]),
@@ -318,6 +343,19 @@ export const flowCopyFile = z.strictObject({
     thuisbatterij: formPageSeo,
   }),
   buttons: z.strictObject({ back: text, next: text, submit: text }),
+  /**
+   * The single-page energy form (/vergelijken/energie, Figma 193:2095): the band's h1 (with one
+   * word on the lime highlight), its subtitle, the required-field note beside the button, the
+   * button, and the step-by-step form's link (the earlier form, kept as a variant).
+   */
+  singlePage: z.strictObject({
+    title: text,
+    highlight: text,
+    subtitle: text,
+    requiredNote: text,
+    submit: text,
+    seo: formPageSeo,
+  }),
   /**
    * The round reset button beside "Terug" (src/lib/form/reset.ts): its name and tooltip, the
    * message shown (and announced) once it emptied the form, and the button that undoes it.

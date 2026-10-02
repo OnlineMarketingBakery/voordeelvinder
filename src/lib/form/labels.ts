@@ -68,7 +68,11 @@ export function consentSegments(
 }
 
 /** Icons of the form's own controls: button chevrons, the select chevron (rotated). */
-export const UI_ICONS = { back: 'chevron-left', next: 'chevron-right' } as const;
+export const UI_ICONS = {
+  back: 'chevron-left',
+  next: 'chevron-right',
+  info: 'info-circle',
+} as const;
 
 /** Every icon key the island can show for these flows: option, yes/no and control icons. */
 export function formIconKeys(flows: FormFlows): string[] {

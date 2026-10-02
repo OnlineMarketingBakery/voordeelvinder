@@ -12,6 +12,7 @@ const PAGES = [
   { name: 'vergelijken', path: '/vergelijken' },
   { name: 'vergelijken-energie', path: '/vergelijken/energie' },
   { name: 'vergelijken-energie-both', path: '/vergelijken/energie?energie=both' },
+  { name: 'vergelijken-energie-stappen', path: '/vergelijken/energie/stappen?energie=both' },
   { name: 'vergelijken-zonnepanelen', path: '/vergelijken/zonnepanelen' },
   { name: 'vergelijken-thuisbatterij', path: '/vergelijken/thuisbatterij' },
   { name: 'bedankt-energie', path: '/bedankt/energie' },

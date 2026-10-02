@@ -239,6 +239,37 @@ The brief says "codes = slugs" for suppliers: brand names are slugged (`Octa+` �
 `Energie.be` → `energie-be`, `DATS 24` → `dats-24`); "Andere" and "Weet ik niet" use `other`
 and `unknown`, like `budget_meter`.
 
+### Energy, single page (`energie_vergelijker.json`, Figma 193:2095)
+
+The main energy form on `/vergelijken/energie` since 2026-10-02 (ADR 0012); the step-by-step
+`energie` flow stays at `/vergelijken/energie/stappen`. Same product (`energie`), same codes for
+every question both ask, sections A to E as steps rendered on one page (`FormPageIsland.tsx`).
+The server tells the two apart by `flow_id`.
+
+- **Same fields as `energie`:** `supplier`, `meter_type`, `digital_meter`, `has_solar`,
+  `budget_meter`, `social_tariff`, `knows_consumption`, `electricity_kwh`, `gas_kwh`,
+  `household_size`, `home_type` (same codes; `home_type` and `household_size` are radio rows
+  here), `heat_pump`, `electric_car`, the postcode and business fields, contact and call moment.
+- **`energy_type`** is the field itself here (`both`, `electricity`, `gas`), not implied by
+  `energy_choice`; `?energie=` preselects it.
+- **Checkbox-style yes/no** (`display: "checkbox"`): `digital_meter`, `heat_pump`,
+  `electric_car`, `home_battery`. Unticked is `no`, so the payload is the same as the cards'.
+
+New fields (only in this flow):
+
+| Field                 | Type          | Codes / values                                                                                             |
+| --------------------- | ------------- | ---------------------------------------------------------------------------------------------------------- |
+| `inverter_kw`         | number        | 0.5–100, one decimal ("3,5"); solar panel owners                                                           |
+| `solar_panel_count`   | number        | 1–200, optional; solar panel owners                                                                        |
+| `injection_day_kwh`   | number        | 0–100 000; solar + digital meter                                                                           |
+| `injection_night_kwh` | number        | 0–100 000; solar + digital meter + a dual meter (`dual`, `dual_excl_night`)                                |
+| `home_battery`        | yes/no        | `yes`, `no` (checkbox, "Ik heb een … Thuisbatterij")                                                       |
+| `contract_type`       | single choice | `fixed` Vast tarief, `variable` Variabel tarief, `dynamic` Dynamisch tarief, `all` Alle soorten (optional) |
+| `compare_promotions`  | yes/no        | `yes`, `no` (optional)                                                                                     |
+
+Schema additions for this layout (ignored by the step form): a step's `panels` (tinted boxes with
+an optional note), a field's `panel` and `rowLabel`, a number's `decimals`, a yes/no's `display`.
+
 ### Solar panels (§7.4 DRAFT, codes proposed)
 
 | Field              | Type          | Codes                                                                                                   |

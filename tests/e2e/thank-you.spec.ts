@@ -97,7 +97,7 @@ for (const product of PRODUCTS) {
 }
 
 test('a direct visit shows nothing personal, even with a stored form session', async ({ page }) => {
-  await page.goto('/vergelijken/energie');
+  await page.goto('/vergelijken/energie/stappen');
   await page.evaluate(() =>
     sessionStorage.setItem(
       'voordeelvinder:form:energie',
@@ -121,7 +121,7 @@ test.describe('the form card morph runs one way: from the form into the thank-yo
     page,
   }) => {
     await recordCardNames(page);
-    await page.goto('/vergelijken/energie');
+    await page.goto('/vergelijken/energie/stappen');
     await expect(page.locator('main form button[type="submit"]')).toBeEnabled();
     // How the form's "Verstuur" navigates (FormIsland.tsx): the one-time marker, then
     // window.location.assign.

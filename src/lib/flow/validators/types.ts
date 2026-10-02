@@ -37,6 +37,8 @@ export interface FieldConfig {
   /** number: typical range (inclusive); outside it the value is valid but gets a warning. */
   readonly softMin?: number;
   readonly softMax?: number;
+  /** number: decimals allowed ("3,5" with 1); default 0, whole numbers only. */
+  readonly decimals?: number;
   /** text: maximum length after trimming (default `TEXT_MAX_LENGTH`). */
   readonly maxLength?: number;
   /** phone: also accept Belgian landlines (default false: mobiles only, brief §7.5). */
