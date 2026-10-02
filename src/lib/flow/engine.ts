@@ -54,8 +54,8 @@ function fieldConfig(field: Field): FieldConfig {
     case 'select':
       return { ...base, options: field.options.map(({ code }) => ({ code })) };
     case 'number': {
-      const { min, max, softMin, softMax } = field;
-      return { ...base, min, max, softMin, softMax };
+      const { min, max, softMin, softMax, decimals } = field;
+      return { ...base, min, max, softMin, softMax, decimals };
     }
     case 'text':
       return { ...base, maxLength: field.maxLength };
@@ -452,6 +452,23 @@ export function validateStep(
     if (result.suggestion) suggestions[field.id] = result.suggestion;
   }
   return { valid: Object.keys(errors).length === 0, errors, warnings, suggestions };
+}
+
+/**
+ * The answers with "no" for every yes/no shown as a checkbox (`display: "checkbox"`) that has
+ * no answer yet: an unticked box is an answer, unlike two cards nobody picked.
+ */
+export function withCheckboxDefaults(flow: Flow, answers: Answers): Answers {
+  let filled: Record<string, AnswerValue | undefined> | null = null;
+  for (const step of flow.steps) {
+    for (const field of step.fields) {
+      if (field.type !== 'yes_no' || field.display !== 'checkbox') continue;
+      if (own(answers, field.id) !== undefined) continue;
+      filled ??= { ...answers };
+      filled[field.id] = 'no';
+    }
+  }
+  return filled ?? answers;
 }
 
 /**

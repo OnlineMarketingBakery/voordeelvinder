@@ -116,8 +116,6 @@ describe('toPayload: the docs/PAYLOAD.md contract', () => {
       meter_type: 'Dag/nachtmeter (tweevoudig tarief)',
       digital_meter: 'Ja',
       has_solar: 'Nee',
-      social_tariff: 'Nee',
-      budget_meter: 'Nee',
       knows_consumption: 'Ja',
     });
   });
@@ -136,21 +134,17 @@ describe('toPayload: the docs/PAYLOAD.md contract', () => {
     const built = toPayload(parsed.submission, production);
     built.answers.supplier = 'x';
     built.consent.cookies.analytics = false;
-    built.call_preference!.day = 'mon';
     expect(parsed.submission.answers.supplier).toBe('luminus');
     expect(parsed.submission.consent.cookies.analytics).toBe(true);
-    expect(parsed.submission.call_preference!.day).toBe('wed');
+    expect(parsed.submission.call_preference).toBeNull();
   });
 });
 
 describe('toPayload: no qualification, and test mode', () => {
   it('sends every lead with the outcome the site decided; n8n only routes (ADR 0010)', () => {
-    const outsideFlanders = payloadFor(
-      body('energie', { ...energyAnswers, postcode: '1000', social_tariff: 'yes' }),
-    );
+    const outsideFlanders = payloadFor(body('energie', { ...energyAnswers, postcode: '1000' }));
     expect(outsideFlanders.outcome).toBe('no_promo');
-    expect(outsideFlanders.outcome_reasons).toEqual(['region_not_flanders', 'social_tariff']);
-    expect(outsideFlanders.answers).toMatchObject({ social_tariff: 'yes' });
+    expect(outsideFlanders.outcome_reasons).toEqual(['region_not_flanders']);
     expect(outsideFlanders.derived).toEqual({
       postcode: '1000',
       region: 'brussels',

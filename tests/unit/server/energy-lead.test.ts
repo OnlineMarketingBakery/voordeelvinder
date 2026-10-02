@@ -12,7 +12,7 @@ describe('energy lead fixture', () => {
       answers: { energy_type: 'both', supplier: 'luminus', meter_type: 'single' },
       derived: { postcode: '9000', region: 'flanders', province: 'oost-vlaanderen' },
       contact: { phone_e164: '+32475000000', email: 'test.persoon@example.be' },
-      call_preference: { day: 'wed', slot: '13-14' },
+      call_preference: null,
       consent: { terms: true },
       meta: { page: '/vergelijken/energie', test: true },
       website: '',

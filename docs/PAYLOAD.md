@@ -32,8 +32,6 @@ part comes from", which describe the implementation.
     "meter_type": "dual",
     "digital_meter": "yes",
     "has_solar": "no",
-    "social_tariff": "no",
-    "budget_meter": "no",
     "knows_consumption": "yes",
     "electricity_kwh": 3500,
     "gas_kwh": 12000
@@ -47,7 +45,7 @@ part comes from", which describe the implementation.
     "phone_display": "+32 475 12 34 56",
     "email": "…"
   },
-  "call_preference": { "day": "wed", "slot": "13-14" },
+  "call_preference": null,
   "consent": {
     "terms": true,
     "newsletter": false,
@@ -100,6 +98,15 @@ part comes from", which describe the implementation.
   are sent **only when `consent.cookies.marketing` is `true`** and `is_test` is `false`
   (brief §9.3), both with the lead's `event_id`.
 - Option codes never change once live (AGENTS.md rule 4); labels may.
+
+## Two energy forms
+
+`/vergelijken/energie` (the single-page form, flow `energie_vergelijker`) and
+`/vergelijken/energie/stappen` (the step form, flow `energie`) send the same payload. The
+single-page form's `answers` can also hold `inverter_kw` (a number with one decimal),
+`solar_panel_count`, `injection_day_kwh`, `injection_night_kwh`, `home_battery`,
+`contract_type` and `compare_promotions` (docs/FLOWS.md); additive, so `schema_version` stays 1.
+`meta.page` says which form it came from.
 
 ## Delivery: at least once
 
@@ -154,7 +161,7 @@ request body's extra keys never reach n8n: the payload below is built by the ser
 | `labels`                                | no                                                                                                                                                                                | from its own copy of the flow (`answerLabels`)                                                                                                                                                                       |
 | `derived`                               | `postcode` (the postcode field) and the region/province the form worked out                                                                                                       | recomputed from the postcode                                                                                                                                                                                         |
 | `contact`                               | `first_name`, `last_name` (trimmed; never starting with `=` or `@`), `phone_e164` and `phone_display` (the phone normalised by the field validator), `email` (trimmed, lowercase) | re-validated with the same field validators                                                                                                                                                                          |
-| `call_preference`                       | the `day_slot` field                                                                                                                                                              |                                                                                                                                                                                                                      |
+| `call_preference`                       | `null`: no form asks a call moment since 2026-10-02 (not in Figma); kept for a later `day_slot` field                                                                             |                                                                                                                                                                                                                      |
 | `consent`                               | `terms`, `newsletter` and the cookie banner's `cookies` state                                                                                                                     |                                                                                                                                                                                                                      |
 | `tracking`                              | every key, `""` when unknown                                                                                                                                                      | cleaned: trimmed, cut to 512 characters, `""` when it starts with `=` or `@` or has a character outside letters, digits, dashes, the space and URL punctuation (no quotes, parentheses, angle brackets, backslashes) |
 | `meta`                                  | `page`, and `test` (the visitor arrived with `?test=1`)                                                                                                                           | `user_agent`, `ip`, `site_env`                                                                                                                                                                                       |

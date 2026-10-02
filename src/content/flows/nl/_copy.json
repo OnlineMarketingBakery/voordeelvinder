@@ -1,9 +1,31 @@
 {
-  "buttons": { "back": "Terug", "next": "Volgende", "submit": "Verstuur" },
-  "reset": { "button": "Opnieuw beginnen", "done": "Formulier gewist", "undo": "Ongedaan maken" },
+  "buttons": {
+    "back": "Terug",
+    "next": "Volgende",
+    "submit": "Verstuur"
+  },
+  "singlePage": {
+    "title": "Jouw energievergelijking",
+    "highlight": "energievergelijking",
+    "subtitle": "Jij vult in. Wij vergelijken. Jij bespaart.",
+    "requiredNote": "* Verplicht veld. Geen deadlines, geen aftellers. We bellen je alleen als je daarom vraagt.",
+    "submit": "Vergelijken",
+    "seo": {
+      "title": "Vergelijk je energiecontract",
+      "description": "Vergelijk elektriciteit en gas in een paar minuten: vul je gegevens in en kies wanneer we je mogen bellen."
+    }
+  },
+  "reset": {
+    "button": "Opnieuw beginnen",
+    "done": "Formulier gewist",
+    "undo": "Ongedaan maken"
+  },
   "progress": "Stap {step} van {total}",
   "progressJump": "Ga terug naar stap {step}: {title}",
-  "yesNo": { "yes": "Ja", "no": "Nee" },
+  "yesNo": {
+    "yes": "Ja",
+    "no": "Nee"
+  },
   "phonePrefix": "+32",
   "panel": {
     "energie": {
@@ -77,5 +99,7 @@
     "invalid": "Er ging iets mis met je gegevens. Vernieuw de pagina en probeer het opnieuw.",
     "reload": "Pagina vernieuwen"
   },
-  "settings": { "autoAdvance": true }
+  "settings": {
+    "autoAdvance": true
+  }
 }

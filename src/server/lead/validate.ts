@@ -25,6 +25,7 @@ import type { Field, Flow } from '../../lib/flow/schema';
 import { cleanTrackingValue } from '../../lib/flow/tracking';
 import { PRODUCTS, type AnswerValue, type Derived, type Product } from '../../lib/flow/types';
 import { derive } from '../../lib/flow/validators/postcode';
+import { serverFlowVariants } from './flows';
 
 /** The honeypot: a hidden text input that people leave empty and bots fill in (§9.1 step 3). */
 export const HONEYPOT_FIELD = 'website';
@@ -234,7 +235,11 @@ const SERVER_FLAGS: Derived = { preselected: true, energy_preselected: true };
  * 400 with the issues when the body has unknown keys, bad codes, a missing required answer, a
  * value that doesn't validate (phone, postcode, e-mail…) or doesn't match the flow's version.
  */
-export function parseLeadRequest(body: unknown, flows: Record<Product, Flow>): LeadRequestResult {
+export function parseLeadRequest(
+  body: unknown,
+  flows: Record<Product, Flow>,
+  variants: readonly Flow[] = serverFlowVariants(),
+): LeadRequestResult {
   const forbidden = protoKeys(body);
   if (forbidden.length > 0) {
     return {
@@ -246,7 +251,11 @@ export function parseLeadRequest(body: unknown, flows: Record<Product, Flow>): L
   const parsed = leadRequestBody.safeParse(body);
   if (!parsed.success) return { ok: false, status: 400, issues: zodIssues(parsed.error) };
   const data = parsed.data;
-  const flow = flows[data.product];
+  // The product's flow, or a variant of it (the single-page energy form) named by flow_id.
+  const flow =
+    variants.find(
+      (candidate) => candidate.id === data.flow_id && candidate.product === data.product,
+    ) ?? flows[data.product];
   const issues: string[] = [];
 
   if (data.flow_id !== flow.id) {

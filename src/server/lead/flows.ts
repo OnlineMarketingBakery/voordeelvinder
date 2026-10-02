@@ -12,6 +12,7 @@
 import copyJson from '../../content/flows/nl/_copy.json' with { type: 'json' };
 import sharedJson from '../../content/flows/nl/_shared.json' with { type: 'json' };
 import energieJson from '../../content/flows/nl/energie.json' with { type: 'json' };
+import energieVergelijkerJson from '../../content/flows/nl/energie_vergelijker.json' with { type: 'json' };
 import thuisbatterijJson from '../../content/flows/nl/thuisbatterij.json' with { type: 'json' };
 import zonnepanelenJson from '../../content/flows/nl/zonnepanelen.json' with { type: 'json' };
 import { resolveFlow } from '../../lib/flow/resolve';
@@ -53,7 +54,11 @@ const FILES: Record<Product, unknown> = {
   thuisbatterij: thuisbatterijJson,
 };
 
+/** Other flows for a product (the single-page energy form), told apart by `flow_id`. */
+const VARIANT_FILES: readonly unknown[] = [energieVergelijkerJson];
+
 let flows: Record<Product, Flow> | undefined;
+let variants: readonly Flow[] | undefined;
 
 /** The resolved nl flows by product, as the form pages resolve them (cached). */
 export function serverFlows(): Record<Product, Flow> {
@@ -69,6 +74,23 @@ export function serverFlows(): Record<Product, Flow> {
   }
   flows = resolved;
   return flows;
+}
+
+/** The resolved variant flows (cached): a submission names its flow with `flow_id`. */
+export function serverFlowVariants(): readonly Flow[] {
+  if (variants) return variants;
+  const shared = normaliseSharedFile(sharedJson as unknown as RawSharedFile);
+  variants = VARIANT_FILES.map((raw) => resolveFlow(normaliseFlowFile(raw as RawFlowFile), shared));
+  return variants;
+}
+
+/** The flow a submission was built with: its product's flow, or the variant it names. */
+export function serverFlowFor(product: Product, flowId: string): Flow {
+  const main = serverFlows()[product];
+  if (main.id === flowId) return main;
+  return (
+    serverFlowVariants().find((flow) => flow.id === flowId && flow.product === product) ?? main
+  );
 }
 
 /** The form's interface copy (nl/_copy.json): the payload's yes/no label fallback. */

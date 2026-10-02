@@ -1,0 +1,238 @@
+{
+  "preview": {
+    "notice": "Voorbeeld: de leveranciers, prijzen en beoordelingen op deze pagina zijn plaatsvervangers. De echte vergelijking volgt zodra de tarieven van de leveranciers gekoppeld zijn.",
+    "todo": "2.35"
+  },
+  "results": {
+    "seo": { "title": "Jouw resultaten" },
+    "title": "Jouw resultaten",
+    "highlight": "resultaten",
+    "subtitle": "{count} producten, van goedkoopst naar duurst.",
+    "profile": {
+      "title": "Jouw gegevens",
+      "postcode": "Postcode",
+      "consumption": "Verbruik",
+      "consumptionUnit": "kWh per jaar",
+      "estimated": "Geschat op basis van je woning",
+      "meterType": "Metertype",
+      "solar": "Zonnepanelen",
+      "supplier": "Huidige leverancier",
+      "yes": "Ja",
+      "no": "Nee",
+      "unknown": "Niet ingevuld",
+      "edit": "Pas je gegevens aan"
+    },
+    "current": {
+      "title": "Je huidige contract",
+      "supplierLabel": "Je huidige leverancier",
+      "packageLabel": "Kies je pakket",
+      "packagePlaceholder": "Selecteer je pakket",
+      "button": "Bereken de besparing"
+    },
+    "callback": {
+      "phone": "055 00 00 00",
+      "hours": "Vandaag tot 17:30",
+      "link": "Bel me terug, plan een gesprek"
+    },
+    "filters": {
+      "title": "Filters",
+      "green": "Groene energie",
+      "tariff": "Tarieftype",
+      "tariffOptions": {
+        "all": "Alle tarieven",
+        "fixed": "Vast",
+        "variable": "Variabel",
+        "dynamic": "Dynamisch"
+      },
+      "suppliers": "Leveranciers",
+      "more": "Meer",
+      "less": "Minder",
+      "payment": "Betaalmethode",
+      "paymentOptions": { "direct_debit": "Domiciliëring", "transfer": "Overschrijving" },
+      "discounts": "Kortingen meetellen",
+      "yes": "Ja",
+      "no": "Nee",
+      "chosen": "Je gekozen filters:",
+      "remove": "Filter {name} verwijderen",
+      "empty": "Geen producten met deze filters. Pas je filters aan."
+    },
+    "hero": {
+      "eyebrow": "Schakel over naar nummer 1 en bespaar.",
+      "perYear": "per jaar",
+      "fromTo": "{current}: {currentCost} per jaar → {best}: {bestCost} per jaar",
+      "less": "{percent}% minder"
+    },
+    "monthlyToggle": "Toon de maandelijkse prijs",
+    "yearlyToggle": "Toon de jaarprijs",
+    "card": {
+      "best": "Beste prijs",
+      "updated": "Laatst bijgewerkt: {date}",
+      "comparedTo": "{saving} per jaar goedkoper dan {current}",
+      "perYear": "per jaar",
+      "perMonth": "per maand",
+      "fixed": "Vaste prijs",
+      "variable": "Variabele prijs",
+      "dynamic": "Dynamische prijs",
+      "green": "groene energie",
+      "duration": "Looptijd {months} maanden",
+      "discount": "{amount} korting in het eerste jaar",
+      "reviews": "Tevreden ({count})",
+      "cta": "Kies dit contract",
+      "details": "Productdetails",
+      "price": "Prijsberekening",
+      "rating": "Klantbeoordeling",
+      "detailsBody": "Hier komen de productvoorwaarden van de leverancier.",
+      "priceBody": "Hier komt de opbouw van de prijs: energie, nettarieven, heffingen en kortingen.",
+      "ratingBody": "Hier komen de beoordelingen van klanten."
+    }
+  },
+  "order": {
+    "steps": ["Jouw gegevens", "Aansluiting", "Bevestiging"],
+    "progress": "Stap {step} van {total}",
+    "summary": {
+      "firstYear": "Kosten voor het eerste jaar",
+      "monthly": "Maandelijks voorschot",
+      "saving": "Besparing ten opzichte van je huidige leverancier",
+      "anytime": "Je kunt altijd weer van leverancier wisselen."
+    },
+    "why": {
+      "title": "Waarom VoordeelVinder.be?",
+      "items": [
+        "Vergelijk alle leveranciers in een paar minuten",
+        "Gratis en vrijblijvend: jij beslist aan het einde",
+        "We bellen alleen als je daarom vraagt",
+        "Wij regelen de overstap, je zit nooit zonder stroom",
+        "Eerlijke resultaten, precies zoals ze zijn"
+      ],
+      "rating": "Klantbeoordeling",
+      "ratingValue": "4,6"
+    },
+    "required": "Dit veld is verplicht.",
+    "invalid": {
+      "email": "Vul een geldig e-mailadres in.",
+      "phone": "Vul een geldig Belgisch telefoonnummer in.",
+      "date": "Vul een geldige datum in (dd/mm/jjjj).",
+      "postcode": "Vul een Belgische postcode van 4 cijfers in.",
+      "iban": "Vul een geldig Belgisch rekeningnummer in (BE gevolgd door 14 cijfers).",
+      "ean": "Een EAN-code heeft 18 cijfers en begint met 54."
+    },
+    "details": {
+      "title": "Jouw gegevens",
+      "highlight": "gegevens",
+      "personal": "Je gegevens",
+      "salutation": "Aanspreking",
+      "salutationOptions": { "mr": "Dhr.", "ms": "Mevr." },
+      "firstName": "Voornaam",
+      "lastName": "Achternaam",
+      "birthDate": "Geboortedatum",
+      "birthDatePlaceholder": "dd/mm/jjjj",
+      "email": "E-mail",
+      "phone": "Telefoonnummer",
+      "address": "Aansluitadres",
+      "buildingType": "Type gebouw",
+      "buildingOptions": {
+        "detached": "Vrijstaande woning",
+        "terraced": "Rijwoning",
+        "semi_detached": "Half open bebouwing",
+        "apartment": "Appartement"
+      },
+      "postcode": "Postcode",
+      "street": "Straat",
+      "number": "Nr.",
+      "box": "Bus of verdieping",
+      "vacancy": "Ik wil een leegstandstarief voor dit adres",
+      "situation": "Welke situatie is van toepassing?",
+      "situationOptions": {
+        "switch": "Ik verander van leverancier op mijn huidige adres",
+        "move": "Ik verhuis naar een ander adres",
+        "takeover": "Ik neem het huidige contract over op mijn naam",
+        "cut_off": "Mijn netbeheerder wil mijn meter afsluiten",
+        "open": "Ik wil mijn meter openen"
+      },
+      "situationTip": "Tip: heb je een budgetmeter, kies dan \"Ik neem het huidige contract over op mijn naam\".",
+      "payment": "Betaalmethode",
+      "billingDiffers": "Mijn facturatieadres verschilt van mijn aansluitadres",
+      "paymentMethod": "Betalingsmethode",
+      "paymentOptions": {
+        "direct_debit": "Maandelijkse domiciliëring",
+        "transfer": "Betalen via overschrijving"
+      },
+      "iban": "IBAN",
+      "ibanPlaceholder": "BE68 5390 0754 7034",
+      "paymentNote": "Je betaalvoorkeur voor de voorschotfacturen wordt doorgegeven aan de leverancier.",
+      "terms": "Contractvoorwaarden",
+      "termsLabel": "Ik ga akkoord met de algemene voorwaarden van VoordeelVinder.be en {supplier}",
+      "back": "Terug naar resultaten",
+      "next": "Word klant"
+    },
+    "connection": {
+      "title": "Jouw aansluiting",
+      "highlight": "aansluiting",
+      "electricity": "Elektriciteitsaansluiting",
+      "gas": "Gasaansluiting",
+      "knowsEan": "Ken je de EAN-code van je elektriciteitsmeter?",
+      "knowsGasEan": "Ken je de EAN-code van je gasmeter?",
+      "ean": "EAN-code",
+      "eanPlaceholder": "54…",
+      "eanHint": "18 cijfers, begint met 54.",
+      "meterNumber": "Meternummer",
+      "digitalMeter": "Heb je een digitale meter?",
+      "meterType": "Metertype",
+      "adjust": "Pas je vergelijking aan",
+      "electricCar": "Heb je een elektrische wagen?",
+      "currentSupplier": "Wie is je huidige elektriciteitsleverancier?",
+      "currentGasSupplier": "Wie is je huidige gasleverancier?",
+      "startDate": "Wanneer wil je van leverancier wisselen?",
+      "proposedStart": "Voorgestelde startdatum: {date}",
+      "otherDate": "Ik wil een andere startdatum kiezen",
+      "gasSameDate": "Gas wisselt op dezelfde startdatum als elektriciteit.",
+      "yes": "Ja",
+      "no": "Nee",
+      "back": "Terug naar je gegevens",
+      "next": "Controleer je gegevens"
+    },
+    "review": {
+      "title": "Controleer je gegevens",
+      "highlight": "gegevens",
+      "personal": "Jouw gegevens",
+      "electricity": "Je elektriciteitsaansluiting",
+      "gas": "Je gasaansluiting",
+      "edit": "Wijzig",
+      "labels": {
+        "name": "Naam",
+        "birthDate": "Geboortedatum",
+        "phone": "Telefoonnummer",
+        "email": "E-mailadres",
+        "buildingType": "Type gebouw",
+        "address": "Aansluitadres",
+        "vacancy": "Leegstandstarief",
+        "situation": "Situatie",
+        "payment": "Betaalmethode",
+        "meterType": "Metertype",
+        "digitalMeter": "Digitale meter",
+        "electricCar": "Elektrische wagen",
+        "ean": "EAN-code",
+        "meterNumber": "Meternummer",
+        "currentSupplier": "Huidige leverancier",
+        "startDate": "Startdatum"
+      },
+      "back": "Terug naar je aansluiting",
+      "next": "Bevestig je bestelling"
+    },
+    "thanks": {
+      "seo": { "title": "Bedankt voor je bestelling" },
+      "badge": "Bestelling ontvangen · {reference}",
+      "title": "Bedankt voor je bestelling",
+      "body": "Goed gedaan, {name}. Je aanvraag bij {supplier} is ingediend. Je hoort per e-mail van ons. Op dit moment hoef je verder niets te doen.",
+      "nextTitle": "Wat er daarna gebeurt",
+      "next": [
+        "Je ontvangt een bevestigingsmail met je contract.",
+        "Wij dienen de aanvraag in bij je nieuwe leverancier.",
+        "Zodra ze is doorgestuurd, volgt er een statusupdate per e-mail.",
+        "Je nieuwe leverancier stuurt een welkomstmail en vraagt soms om een extra bevestiging."
+      ],
+      "mail": "Bevestigingsmail bekijken",
+      "contact": "Contact"
+    }
+  }
+}

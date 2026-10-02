@@ -208,20 +208,20 @@ without `?energie=` shows a single "Elektriciteit" card.
 
 ### Shared steps
 
-| Field                                       | Type          | Codes                                                                                 |
-| ------------------------------------------- | ------------- | ------------------------------------------------------------------------------------- |
-| `product_choice`                            | single choice | `electricity`, `gas`, `both` (→ `energy_type`), `zonnepanelen`, `thuisbatterij`       |
-| `postcode`                                  | postcode      | sent as `derived.postcode`                                                            |
-| `is_business`                               | checkbox      | `true` / `false`                                                                      |
-| `business_electricity_band`                 | single choice | `under_100k`, `over_100k` (energy only: `is_business` and electricity or both)        |
-| `business_gas_band`                         | single choice | `under_100k`, `over_100k` (energy only: `is_business` and gas or both)                |
-| `knows_consumption`                         | yes/no        | `yes`, `no`                                                                           |
-| `household_size`                            | select        | `1`, `2`, `3`, `4`, `5_plus`                                                          |
-| `home_type`                                 | select        | `apartment`, `terraced`, `semi_detached`, `detached`                                  |
-| `heat_pump`, `electric_car`                 | yes/no        | `yes`, `no`                                                                           |
-| `first_name`, `last_name`, `phone`, `email` | contact       | `contact.first_name`, `last_name`, `phone_e164`, `phone_display`, `email`             |
-| `call_moment`                               | day + slot    | days `mon`…`fri`, slots `09-10`, `10-11`, `11-12`, `12-13`, `13-14`, `14-15`, `15-16` |
-| `terms`, `newsletter`                       | consent       | `consent.terms`, `consent.newsletter`                                                 |
+| Field                                       | Type          | Codes                                                                                   |
+| ------------------------------------------- | ------------- | --------------------------------------------------------------------------------------- |
+| `product_choice`                            | single choice | `electricity`, `gas`, `both` (→ `energy_type`), `zonnepanelen`, `thuisbatterij`         |
+| `postcode`                                  | postcode      | sent as `derived.postcode`                                                              |
+| `is_business`                               | checkbox      | `true` / `false`                                                                        |
+| `business_electricity_band`                 | removed       | Not in Figma; removed 2026-10-02 (Tanjil, ADR 0014). Code kept reserved, never reuse it |
+| `business_gas_band`                         | removed       | Not in Figma; removed 2026-10-02 (Tanjil, ADR 0014). Code kept reserved, never reuse it |
+| `knows_consumption`                         | yes/no        | `yes`, `no`                                                                             |
+| `household_size`                            | select        | `1`, `2`, `3`, `4`, `5_plus`                                                            |
+| `home_type`                                 | select        | `apartment`, `terraced`, `semi_detached`, `detached`                                    |
+| `heat_pump`, `electric_car`                 | yes/no        | `yes`, `no`                                                                             |
+| `first_name`, `last_name`, `phone`, `email` | contact       | `contact.first_name`, `last_name`, `phone_e164`, `phone_display`, `email`               |
+| `call_moment`                               | removed       | Not in Figma; removed 2026-10-02 (Tanjil, ADR 0014). Code kept reserved, never reuse it |
+| `terms`, `newsletter`                       | consent       | `consent.terms`, `consent.newsletter`                                                   |
 
 ### Energy (brief §7.3)
 
@@ -231,13 +231,46 @@ without `?energie=` shows a single "Elektriciteit" card.
 | `supplier`                   | select        | `engie`, `luminus`, `totalenergies`, `mega`, `eneco`, `octa-plus`, `bolt`, `ecopower`, `elegant`, `energie-be`, `dats-24`, `frank-energie`, `other`, `unknown` |
 | `meter_type`                 | single choice | `single`, `dual`, `single_excl_night`, `dual_excl_night` (electricity or both)                                                                                 |
 | `digital_meter`, `has_solar` | yes/no        | `yes`, `no` (`has_solar`: electricity or both)                                                                                                                 |
-| `social_tariff`              | yes/no        | `yes`, `no`                                                                                                                                                    |
-| `budget_meter`               | single choice | `yes`, `no`, `unknown`                                                                                                                                         |
+| `social_tariff`              | removed       | Not in Figma; removed 2026-10-02 (Tanjil, ADR 0014). Code kept reserved, never reuse it                                                                        |
+| `budget_meter`               | removed       | Not in Figma; removed 2026-10-02 (Tanjil, ADR 0014). Code kept reserved, never reuse it                                                                        |
 | `electricity_kwh`, `gas_kwh` | number        | integers 100–100 000 and 100–150 000                                                                                                                           |
 
 The brief says "codes = slugs" for suppliers: brand names are slugged (`Octa+` → `octa-plus`,
 `Energie.be` → `energie-be`, `DATS 24` → `dats-24`); "Andere" and "Weet ik niet" use `other`
 and `unknown`, like `budget_meter`.
+
+### Energy, single page (`energie_vergelijker.json`, Figma 193:2095)
+
+The main energy form on `/vergelijken/energie` since 2026-10-02 (ADR 0012); the step-by-step
+`energie` flow stays at `/vergelijken/energie/stappen`. Same product (`energie`), same codes for
+every question both ask, sections A to E as steps rendered on one page (`FormPageIsland.tsx`).
+The server tells the two apart by `flow_id`.
+
+- **Same fields as `energie`:** `supplier`, `meter_type`, `digital_meter`, `has_solar`,
+  `knows_consumption`, `electricity_kwh`, `gas_kwh`,
+  `household_size`, `home_type` (same codes; `home_type` and `household_size` are radio rows
+  here), `heat_pump`, `electric_car`, the postcode and business fields, contact and call moment.
+- **Not asked (as in Figma, ADR 0014):** `social_tariff`, `budget_meter`, the business bands and
+  the call moment, like the step form.
+- **`energy_type`** is the field itself here (`both`, `electricity`, `gas`), not implied by
+  `energy_choice`; `?energie=` preselects it.
+- **Checkbox-style yes/no** (`display: "checkbox"`): `digital_meter`, `heat_pump`,
+  `electric_car`, `home_battery`. Unticked is `no`, so the payload is the same as the cards'.
+
+New fields (only in this flow):
+
+| Field                 | Type          | Codes / values                                                                                             |
+| --------------------- | ------------- | ---------------------------------------------------------------------------------------------------------- |
+| `inverter_kw`         | number        | 0.5–100, one decimal ("3,5"); solar panel owners                                                           |
+| `solar_panel_count`   | number        | 1–200, optional; solar panel owners                                                                        |
+| `injection_day_kwh`   | number        | 0–100 000; solar + digital meter                                                                           |
+| `injection_night_kwh` | number        | 0–100 000; solar + digital meter + a dual meter (`dual`, `dual_excl_night`)                                |
+| `home_battery`        | yes/no        | `yes`, `no` (checkbox, "Ik heb een … Thuisbatterij")                                                       |
+| `contract_type`       | single choice | `fixed` Vast tarief, `variable` Variabel tarief, `dynamic` Dynamisch tarief, `all` Alle soorten (optional) |
+| `compare_promotions`  | yes/no        | `yes`, `no` (optional)                                                                                     |
+
+Schema additions for this layout (ignored by the step form): a step's `panels` (tinted boxes with
+an optional note), a field's `panel` and `rowLabel`, a number's `decimals`, a yes/no's `display`.
 
 ### Solar panels (§7.4 DRAFT, codes proposed)
 

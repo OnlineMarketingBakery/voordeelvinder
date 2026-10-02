@@ -61,7 +61,6 @@ const contact: Answers = {
   last_name: 'Peeters',
   phone: '0475 12 34 56',
   email: ' Jan.Peeters@Example.BE ',
-  call_moment: { day: 'wed', slot: '13-14' },
   terms: true,
 };
 
@@ -74,7 +73,6 @@ const energyScript: Record<string, Answers> = {
   supplier: { supplier: 'luminus' },
   meter_type: { meter_type: 'dual' },
   meters_solar: { digital_meter: 'yes', has_solar: 'no' },
-  tariff_meter: { social_tariff: 'no', budget_meter: 'no' },
   knows_consumption: { knows_consumption: 'yes' },
   consumption_kwh: { electricity_kwh: '3.500', gas_kwh: 12000 },
   household: { household_size: '2', home_type: 'terraced' },
@@ -148,12 +146,11 @@ const ENERGY_YES = [
   'supplier',
   'meter_type',
   'meters_solar',
-  'tariff_meter',
   'knows_consumption',
   'consumption_kwh',
   'contact',
 ];
-const ENERGY_NO = [...ENERGY_YES.slice(0, 7), 'household', 'appliances', 'contact'];
+const ENERGY_NO = [...ENERGY_YES.slice(0, 6), 'household', 'appliances', 'contact'];
 
 describe('real flows: validate:flows', () => {
   it('passes on the content folder, with the gas switch on and off', () => {
@@ -162,6 +159,7 @@ describe('real flows: validate:flows', () => {
     expect(locales.map(({ locale }) => locale)).toEqual(['nl']);
     expect(locales[0]!.flows.map(({ path }) => path)).toEqual([
       'nl/energie.json',
+      'nl/energie_vergelijker.json',
       'nl/thuisbatterij.json',
       'nl/zonnepanelen.json',
     ]);
@@ -174,22 +172,22 @@ describe('real flows: validate:flows', () => {
 });
 
 describe('real flows: energy (brief §7.3)', () => {
-  it('"yes" path: 9 screens from step 1', () => {
+  it('"yes" path: 8 screens from step 1 (as in Figma)', () => {
     const run = play(energie, energyScript);
     expect(run.ids).toEqual(ENERGY_YES);
-    expect(run.seen[0]).toEqual({ id: 'product', step: 1, total: 10 });
-    expect(run.seen.at(-1)).toEqual({ id: 'contact', step: 9, total: 9 });
+    expect(run.seen[0]).toEqual({ id: 'product', step: 1, total: 9 });
+    expect(run.seen.at(-1)).toEqual({ id: 'contact', step: 8, total: 8 });
   });
 
-  it('"no" path: 10 screens from step 1', () => {
+  it('"no" path: 9 screens from step 1', () => {
     const run = play(energie, { ...energyScript, knows_consumption: { knows_consumption: 'no' } });
     expect(run.ids).toEqual(ENERGY_NO);
-    expect(run.seen.every(({ total }) => total === 10)).toBe(true);
+    expect(run.seen.every(({ total }) => total === 9)).toBe(true);
     // The design's counters for the "no" branch are wrong (brief §6): these are computed.
-    expect(run.seen.slice(7)).toEqual([
-      { id: 'household', step: 8, total: 10 },
-      { id: 'appliances', step: 9, total: 10 },
-      { id: 'contact', step: 10, total: 10 },
+    expect(run.seen.slice(6)).toEqual([
+      { id: 'household', step: 7, total: 9 },
+      { id: 'appliances', step: 8, total: 9 },
+      { id: 'contact', step: 9, total: 9 },
     ]);
   });
 
@@ -218,39 +216,14 @@ describe('real flows: energy (brief §7.3)', () => {
     expect(run.answers).not.toHaveProperty('gas_kwh');
   });
 
-  it('the business checkbox reveals the band questions per energy type', () => {
-    const postcode = getStep(energie, 'postcode');
-    const shown = (energy_type: string | undefined, is_business: boolean) =>
-      visibleFields(energie, 'postcode', { postcode: '9000', is_business, energy_type }, home).map(
-        (field) => field.id,
-      );
-    expect(shown('electricity', false)).toEqual(['postcode', 'is_business']);
-    expect(shown('electricity', true)).toEqual([
+  it('the business checkbox asks nothing more (the bands are not in Figma)', () => {
+    const shown = visibleFields(
+      energie,
       'postcode',
-      'is_business',
-      'business_electricity_band',
-    ]);
-    expect(shown('gas', true)).toEqual(['postcode', 'is_business', 'business_gas_band']);
-    expect(shown('both', true)).toEqual([
-      'postcode',
-      'is_business',
-      'business_electricity_band',
-      'business_gas_band',
-    ]);
-    // Revealed bands are required.
-    expect(
-      validateStep(
-        energie,
-        'postcode',
-        { postcode: '9000', is_business: true, energy_type: 'both' },
-        home,
-      ).errors,
-    ).toEqual({ business_electricity_band: 'required', business_gas_band: 'required' });
-    const band = postcode.fields.find((field) => field.id === 'business_gas_band')!;
-    expect(band.type === 'single_choice' && band.options.map((option) => option.code)).toEqual([
-      'under_100k',
-      'over_100k',
-    ]);
+      { postcode: '9000', is_business: true, energy_type: 'both' },
+      home,
+    ).map((field) => field.id);
+    expect(shown).toEqual(['postcode', 'is_business']);
   });
 
   it('never shows the bands in the solar and battery flows (energy only)', () => {
@@ -307,7 +280,6 @@ describe('real flows: energy (brief §7.3)', () => {
       'single_excl_night',
       'dual_excl_night',
     ]);
-    expect(codes(energie, 'budget_meter')).toEqual(['yes', 'no', 'unknown']);
     expect(codes(energie, 'household_size')).toEqual(['1', '2', '3', '4', '5_plus']);
     expect(codes(energie, 'home_type')).toEqual([
       'apartment',
@@ -315,20 +287,9 @@ describe('real flows: energy (brief §7.3)', () => {
       'semi_detached',
       'detached',
     ]);
-    expect(codes(energie, 'call_moment')).toEqual([
-      'mon',
-      'tue',
-      'wed',
-      'thu',
-      'fri',
-      '09-10',
-      '10-11',
-      '11-12',
-      '12-13',
-      '13-14',
-      '14-15',
-      '15-16',
-    ]);
+    // Not in Figma, removed 2026-10-02 (Tanjil): the tariff questions and the call moment.
+    expect(codes(energie, 'budget_meter')).toEqual([]);
+    expect(codes(energie, 'call_moment')).toEqual([]);
     const kwh = getStep(energie, 'consumption_kwh').fields;
     expect(kwh.map((field) => field.type === 'number' && [field.min, field.max])).toEqual([
       [100, 100000],
@@ -345,7 +306,7 @@ describe('real flows: preselect (brief §7.6)', () => {
     expect(startStep(energie, initial, energyPreselected)).toBe('postcode');
     const run = play(energie, energyScript, energyPreselected, initial);
     expect(run.ids).toEqual(ENERGY_YES.slice(1));
-    expect(run.seen[0]).toEqual({ id: 'postcode', step: 1, total: 9 });
+    expect(run.seen[0]).toEqual({ id: 'postcode', step: 1, total: 8 });
     expect(previousStep(energie, 'postcode', run.answers, energyPreselected)).toBeNull();
     expect(clearAbandoned(energie, run.answers, energyPreselected)).toMatchObject({
       energy_type: 'both',
@@ -362,7 +323,7 @@ describe('real flows: preselect (brief §7.6)', () => {
     ]);
     const run = play(energie, energyScript, preselected);
     expect(run.ids).toEqual(['energy_choice', ...ENERGY_YES.slice(1)]);
-    expect(run.seen[0]).toEqual({ id: 'energy_choice', step: 1, total: 10 });
+    expect(run.seen[0]).toEqual({ id: 'energy_choice', step: 1, total: 9 });
     // Answering the step keeps it on the path, so "Terug" comes back to it.
     expect(pathSoFar(energie, run.answers, preselected)[0]).toBe('energy_choice');
     expect(previousStep(energie, 'postcode', run.answers, preselected)).toBe('energy_choice');
@@ -398,7 +359,7 @@ describe('real flows: preselect (brief §7.6)', () => {
   it('never shows the energy-type step without a preselect', () => {
     expect(startStep(energie, {}, home)).toBe('product');
     expect(startStep(energie, {}, {})).toBe('product');
-    expect(estimatedTotalSteps(energie, {}, {})).toBe(10);
+    expect(estimatedTotalSteps(energie, {}, {})).toBe(9);
     const answers = { product_choice: 'gas', energy_type: 'gas' };
     expect(nextStep(energie, 'product', answers, home)).toBe('postcode');
   });

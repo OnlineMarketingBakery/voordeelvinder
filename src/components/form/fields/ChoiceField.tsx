@@ -13,9 +13,10 @@
 // the island can tell a tap from the keyboard for auto-advance.
 import type { Field } from '../../../lib/flow/schema';
 import { choiceOptions, domId, fieldLabel } from '../../../lib/form/labels';
+import { useFormLayout } from '../layout';
 import { ChoiceIndicator, Pop } from '../motion';
 import { cx, MaskIcon } from '../ui';
-import { describedBy, FieldHint, FieldMessage, questionClass, type FieldProps } from './shared';
+import { describedBy, FieldHint, FieldMessage, useQuestionClass, type FieldProps } from './shared';
 
 type ChoiceFieldType = Extract<Field, { type: 'single_choice' | 'yes_no' }>;
 
@@ -41,10 +42,97 @@ export function ChoiceField({
 }: Props) {
   const label = fieldLabel(step, field);
   const options = choiceOptions(field, copy);
+  const page = useFormLayout() === 'page';
+  const questionClass = useQuestionClass();
   // Product cards (step 1) are taller, with a larger icon tile (Figma 74 vs 60 px).
   const large = options.some((option) => option.icon !== undefined && option.tone === undefined);
   const labelId = label.byTitle ? titleId : domId.label(field.id);
   const described = describedBy(field, error, warning);
+
+  if (page) {
+    // Yes/no shows plain radio rows here (no Ja/Nee icons); icon cards only where the flow asks.
+    const rows =
+      field.type === 'yes_no' ? options.map((o) => ({ ...o, icon: undefined })) : options;
+    return (
+      <div>
+        {!label.byTitle && (
+          <p id={labelId} className={questionClass}>
+            {label.text}
+            {field.required && <span aria-hidden="true"> *</span>}
+          </p>
+        )}
+        <div
+          role="radiogroup"
+          id={domId.field(field.id)}
+          aria-labelledby={labelId}
+          aria-describedby={described}
+          aria-invalid={error ? 'true' : undefined}
+          aria-required={field.required ? 'true' : undefined}
+          className={cx('grid gap-2.5', pageColumns(rows))}
+        >
+          {rows.map((option) => {
+            const selected = value === option.code;
+            return (
+              <label
+                key={option.code}
+                onPointerDown={(event) => {
+                  if (event.isPrimary && event.button === 0) onPointerPick?.(option.code);
+                }}
+                className="relative block cursor-pointer rounded-lg transition-[scale] duration-(--motion-duration-fast) ease-out select-none motion-safe:active:scale-[0.98]"
+              >
+                <input
+                  type="radio"
+                  className="sr-only"
+                  id={domId.option(field.id, option.code)}
+                  name={field.id}
+                  value={option.code}
+                  checked={selected}
+                  onChange={() => onChange(option.code)}
+                  aria-describedby={described}
+                  onClick={() => onPick?.(option.code)}
+                />
+                <span
+                  className={cx(
+                    'relative isolate flex text-sm text-ink-900',
+                    'transition-[translate] duration-(--motion-duration-base) ease-out motion-safe:pointer-fine:pick-hover:-translate-y-0.5',
+                    option.icon
+                      ? 'min-h-[90px] flex-col items-center justify-center gap-2 px-2 py-3 text-center'
+                      : 'min-h-11 items-center gap-2.5 px-3 py-2',
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cx(
+                      'absolute inset-0 -z-10 overflow-clip rounded-lg border bg-lavender-50',
+                      'transition-[border-color] duration-(--motion-duration-fast) ease-out',
+                      'pick-hover:border-control-border picked:border-purple-600 picked:ring-1 picked:ring-purple-600',
+                      'pick-focus:outline-2 pick-focus:outline-offset-2 pick-focus:outline-purple-500',
+                      error ? 'border-danger' : 'border-lavender-300',
+                    )}
+                  >
+                    <span className="sweep bg-purple-600/10" />
+                  </span>
+                  {option.icon ? (
+                    <Pop selected={selected} className="grid place-items-center">
+                      <MaskIcon src={icons[option.icon]} className="h-8 w-12 text-purple-600" />
+                    </Pop>
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="size-[18px] shrink-0 rounded-full border border-control-border bg-white transition-[border-width,border-color] duration-(--motion-duration-fast) ease-out picked:border-[6px] picked:border-purple-600"
+                    />
+                  )}
+                  <span className="min-w-0">{option.label}</span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        <FieldHint field={field} />
+        <FieldMessage field={field} error={error} warning={warning} />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -145,4 +233,20 @@ export function ChoiceField({
       <FieldMessage field={field} error={error} warning={warning} />
     </div>
   );
+}
+
+/**
+ * The single-page form's grid (Figma 193:2095): long labels two per row, short ones all in one
+ * row from md (yes/no takes half of it), icon cards four per row; on phones one or two per row.
+ */
+function pageColumns(options: readonly { label: string; icon?: string | undefined }[]): string {
+  if (options.some((option) => option.icon)) return 'grid-cols-2 md:grid-cols-4';
+  if (options.some((option) => option.label.length > 28)) return 'grid-cols-1 md:grid-cols-2';
+  const wide: Record<number, string> = {
+    2: 'grid-cols-2 md:grid-cols-4',
+    3: 'grid-cols-1 sm:grid-cols-3',
+    4: 'grid-cols-2 md:grid-cols-4',
+    5: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-5',
+  };
+  return wide[options.length] ?? 'grid-cols-1 md:grid-cols-2';
 }

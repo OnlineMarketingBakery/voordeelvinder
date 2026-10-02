@@ -52,11 +52,11 @@ PORT=3001
 PUBLIC_SITE_URL=https://voordeelvinder.onlinemarketingbakery.nl
 LEAD_BACKUP_DIR=/home/voordeelvinder-9eyyh/lead-backups
 RATE_LIMIT_PER_HOUR=10
-# n8n: staging points at a separate, always-active TEST WORKFLOW (writes only to the test tab;
-# never the partner, Mailchimp journeys or Meta), through that workflow's production URL
-# /webhook/<path>. Never the /webhook-test/ URL, never the production workflow.
-N8N_LEAD_WEBHOOK_URL=https://<n8n>/webhook/<staging-test-workflow-path>
-N8N_NEWSLETTER_WEBHOOK_URL=            # optional; defaults to the lead webhook
+# n8n: the VoordeelVinder - Leads / - Newsletter webhooks (docs/PIPELINE.md, ADR 0011). Staging
+# leads are is_test: true, so n8n writes them to the TEST spreadsheet and stops before every
+# partner. Never the /webhook-test/ URL.
+N8N_LEAD_WEBHOOK_URL=https://<n8n>/webhook/<leads-path>
+N8N_NEWSLETTER_WEBHOOK_URL=https://<n8n>/webhook/<newsletter-path>
 N8N_WEBHOOK_SECRET=<at least 16 characters, same value as in n8n>
 TURNSTILE_SECRET_KEY=                  # empty: Cloudflare's always-passing test secret
 PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
@@ -65,26 +65,26 @@ PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
 
 Lead pipeline settings (`src/server/env.ts`, brief §9.1):
 
-| Variable                     | Staging                                                                                                                  | Production                               |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
-| `N8N_LEAD_WEBHOOK_URL`       | optional, https, **the test workflow's `/webhook/…` URL only** (below); empty = leads are only backed up (`backup_only`) | required, https                          |
-| `N8N_NEWSLETTER_WEBHOOK_URL` | optional (default: the lead webhook)                                                                                     | optional                                 |
-| `N8N_WEBHOOK_SECRET`         | required when a webhook is set; sent as `X-VV-Secret`                                                                    | required                                 |
-| `TURNSTILE_SECRET_KEY`       | optional; empty = test secret `1x0000000000000000000000000000000AA` (always passes)                                      | required; Cloudflare's test keys refused |
-| `PUBLIC_TURNSTILE_SITE_KEY`  | optional; empty = test site key `1x00000000000000000000AA` (build time: redeploy)                                        | required; Cloudflare's test keys refused |
-| `TURNSTILE_VERIFY_URL`       | refused (local and CI only: the e2e siteverify stand-in)                                                                 | refused                                  |
-| `LEAD_BACKUP_DIR`            | absolute, outside the site directory; created with mode 700, files 600                                                   | same                                     |
-| `RATE_LIMIT_PER_HOUR`        | requests per visitor IP per hour on `/api/lead` and `/api/newsletter` (each its own)                                     | same                                     |
+| Variable                     | Staging                                                                                                          | Production                               |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `N8N_LEAD_WEBHOOK_URL`       | optional, https, the Leads workflow's `/webhook/…` URL (below); empty = leads are only backed up (`backup_only`) | required, https                          |
+| `N8N_NEWSLETTER_WEBHOOK_URL` | optional (default: the lead webhook)                                                                             | optional                                 |
+| `N8N_WEBHOOK_SECRET`         | required when a webhook is set; sent as `X-VV-Secret`                                                            | required                                 |
+| `TURNSTILE_SECRET_KEY`       | optional; empty = test secret `1x0000000000000000000000000000000AA` (always passes)                              | required; Cloudflare's test keys refused |
+| `PUBLIC_TURNSTILE_SITE_KEY`  | optional; empty = test site key `1x00000000000000000000AA` (build time: redeploy)                                | required; Cloudflare's test keys refused |
+| `TURNSTILE_VERIFY_URL`       | refused (local and CI only: the e2e siteverify stand-in)                                                         | refused                                  |
+| `LEAD_BACKUP_DIR`            | absolute, outside the site directory; created with mode 700, files 600                                           | same                                     |
+| `RATE_LIMIT_PER_HOUR`        | requests per visitor IP per hour on `/api/lead` and `/api/newsletter` (each its own)                             | same                                     |
 
 **Why not n8n's `/webhook-test/…` URL:** n8n only registers it while someone has "Listen for
 test event" open in the workflow editor, for about two minutes and a single call; the rest of
 the time it answers 404. Every staging forward would then fail (a 404 is not retried),
 `leads:retry` would alert on every run, and the staging checklist ("the lead arrives in n8n")
-could never pass reliably. So staging uses a **separate test workflow that stays active**,
-through its production-style `/webhook/<path>` URL, with its own path and the staging secret.
-That workflow writes only to the test tab of the lead sheet and never reaches the telesales
-partner, Mailchimp journeys or Meta (brief §9.4). It is still a test workflow: never point
-staging at the production workflow's URL.
+could never pass reliably. So staging uses the workflows' production-style `/webhook/<path>`
+URLs. Since ADR 0011 these are the same workflows production uses: every staging lead is
+`is_test: true`, and n8n sends anything but an explicit `is_test: false` to the TEST spreadsheet
+and stops before the telesales partner, Mailchimp and Meta (brief §9.4, `docs/PIPELINE.md`). Set
+2026-10-01/02 (lead and newsletter URLs, secret).
 
 Every lead from staging is a test lead (`is_test: true`) whatever the webhook. The secrets are
 read at runtime: after changing one, `pm2 reload voordeelvinder --update-env` is enough.

@@ -17,7 +17,6 @@ export const contactAnswers: Answers = {
   last_name: 'Peeters',
   phone: '0475 12 34 56',
   email: ' Jan.Peeters@Example.BE ',
-  call_moment: { day: 'wed', slot: '13-14' },
   terms: true,
   newsletter: false,
 };
@@ -31,8 +30,6 @@ export const energyAnswers: Answers = {
   meter_type: 'dual',
   digital_meter: 'yes',
   has_solar: 'no',
-  social_tariff: 'no',
-  budget_meter: 'no',
   knows_consumption: 'yes',
   electricity_kwh: '3.500',
   gas_kwh: 12000,

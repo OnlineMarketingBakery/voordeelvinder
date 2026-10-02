@@ -16,7 +16,7 @@ import {
 import type { Flow, FlowCopy } from '../../lib/flow/schema';
 import type { Product } from '../../lib/flow/types';
 import { isTestEnvironment, type SiteEnv } from '../env';
-import { serverFlowCopy, serverFlows } from './flows';
+import { serverFlowCopy, serverFlowFor } from './flows';
 import { qualify, type Outcome } from './qualify';
 
 export const BRAND = 'voordeelvinder';
@@ -99,7 +99,7 @@ function orderedConsent(consent: Submission['consent']): LeadPayload['consent'] 
 
 /** The payload for n8n (docs/PAYLOAD.md), from a submission rebuilt by parseLeadRequest. */
 export function toPayload(submission: Submission, meta: PayloadMeta): LeadPayload {
-  const flow = serverFlows()[submission.product];
+  const flow = serverFlowFor(submission.product, submission.flow_id);
   return {
     schema_version: SCHEMA_VERSION,
     brand: BRAND,

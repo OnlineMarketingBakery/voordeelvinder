@@ -7,6 +7,7 @@
 // the island would swap out right after hydration (brief §6.1: nothing flashes before
 // hydration). Listed in the sitemap through astro.config.ts (FORM_PAGES).
 import Form from '../../components/form/Form.astro';
+import FormPage from '../../components/form/FormPage.astro';
 import Page from '../../layouts/Page.astro';
 import { PRODUCTS, type Product } from '../../lib/flow/types';
 import { loadFormContent } from '../../lib/form-content';
@@ -19,9 +20,16 @@ if (!(PRODUCTS as readonly (string | undefined)[]).includes(product)) {
   return new Response(null, { status: 404 });
 }
 const { copy } = await loadFormContent();
-const seo = copy.pages[product as Product];
+// Energy gets the single-page form (Figma 193:2095, Tanjil 2026-10-02); the step-by-step form
+// stays at /vergelijken/energie/stappen. Solar panels and home battery keep the steps.
+const single = product === 'energie';
+const seo = single ? copy.singlePage.seo : copy.pages[product as Product];
 ---
 
 <Page title={seo.title} description={seo.description} canonicalPath={`/vergelijken/${product}/`}>
-  <Form entry={product as Product} search={Astro.url.search} />
+  {single ? (
+    <FormPage search={Astro.url.search} />
+  ) : (
+    <Form entry={product as Product} search={Astro.url.search} />
+  )}
 </Page>

@@ -33,6 +33,13 @@ A lead is **`no_promo`** when **any** of these holds, and every one that holds a
   JSONLogic subset, ADR 0006, on `{ answers, derived }`), update this table and
   `tests/unit/server/qualify.test.ts`.
 
+### Since 2026-10-02: only the region applies (ADR 0014)
+
+Neither energy form asks `social_tariff`, `budget_meter` or the business bands any more (not in
+Figma; Tanjil 2026-10-02, until the client decides). The rules above stay in `energie.json`, but
+those three reasons can no longer hold: an energy lead is `no_promo` only outside Flanders
+(`region_not_flanders`), and **every home or business in Flanders is `promo`** (TO CONFIRM).
+
 ### Solar panels and home battery (`zonnepanelen`, `thuisbatterij`)
 
 No rules yet: every lead is **`pending`** with no reasons. Questions, rules and destination are
