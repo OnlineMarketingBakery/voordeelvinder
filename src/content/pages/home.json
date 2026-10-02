@@ -11,7 +11,7 @@
         "text": "Welkom bij VoordeelVinder"
       },
       "title": "Betaal jij te veel voor energie?",
-      "body": "In een paar minuten weet je het zeker. Vul je gegevens in, wij vergelijken Luminus, Mega en TotalEnergies — en je ziet meteen welk contract het voordeligst is voor jouw situatie.",
+      "body": "In een paar minuten weet je het zeker. Vul je gegevens in, wij vergelijken Luminus, Mega en TotalEnergies, en je ziet meteen welk contract het voordeligst is voor jouw situatie.",
       "cta": {
         "label": "Vergelijk nu gratis",
         "href": "/vergelijken"
@@ -53,14 +53,14 @@
       "id": "over-ons",
       "eyebrow": "Over ons",
       "title": "Waarom VoordeelVinder bestaat",
-      "intro": "De meeste Belgen betalen te veel voor energie. Niet omdat ze het niet willen weten — maar omdat vergelijken traag, saai en verwarrend is.",
+      "intro": "De meeste Belgen betalen te veel voor energie. Niet omdat ze het niet willen weten, maar omdat vergelijken traag, saai en verwarrend is.",
       "cardStyle": "translucent",
       "items": [
         {
           "icon": "money",
           "tone": "purple",
           "title": "De meeste Belgen betalen te veel voor energie.",
-          "body": "Niet omdat ze het niet willen weten — maar omdat vergelijken traag, saai en verwarrend is."
+          "body": "Niet omdat ze het niet willen weten, maar omdat vergelijken traag, saai en verwarrend is."
         },
         {
           "icon": "send",
@@ -107,7 +107,7 @@
           "tone": "purple",
           "icon": "decision-making",
           "title": "Jij beslist",
-          "body": "Je ziet meteen wie het voordeligst is voor jou. Kies zelf of je overschakelt — wij regelen dan de rest. Je zit nooit zonder stroom."
+          "body": "Je ziet meteen wie het voordeligst is voor jou. Kies zelf of je overschakelt, wij regelen dan de rest. Je zit nooit zonder stroom."
         }
       ]
     },
@@ -163,7 +163,7 @@
       "tone": "lime",
       "eyebrow": "Zonnepanelen",
       "title": "Betaal minder. Produceer zelf.",
-      "body": "Zonnepanelen zijn een slimme investering — maar de prijzen en aanbieders variëren sterk. VoordeelVinder vergelijkt de beste installateurs en formules voor jouw dak, zonder verborgen kosten.",
+      "body": "Zonnepanelen zijn een slimme investering, maar de prijzen en aanbieders variëren sterk. VoordeelVinder vergelijkt de beste installateurs en formules voor jouw dak, zonder verborgen kosten.",
       "cta": {
         "label": "Bereken je besparing",
         "href": "/vergelijken/zonnepanelen"
@@ -175,7 +175,7 @@
         },
         {
           "title": "Bereken je terugverdientijd",
-          "body": "Op basis van je verbruik en dak tonen we hoeveel je maandelijks bespaart — en wanneer de panelen zichzelf terugverdienen."
+          "body": "Op basis van je verbruik en dak tonen we hoeveel je maandelijks bespaart, en wanneer de panelen zichzelf terugverdienen."
         },
         {
           "title": "Van offerte tot installatie",
@@ -194,7 +194,7 @@
       "tone": "lavender",
       "eyebrow": "Thuisbatterij",
       "title": "Sla je energie op. Gebruik het wanneer jij wil.",
-      "body": "Een thuisbatterij maakt je nog onafhankelijker van het net. Combineer je zonnepanelen met slimme opslag en haal het maximale uit je eigen energie — overdag én 's avonds.",
+      "body": "Een thuisbatterij maakt je nog onafhankelijker van het net. Combineer je zonnepanelen met slimme opslag en haal het maximale uit je eigen energie, overdag én 's avonds.",
       "cta": {
         "label": "Ontdek jouw voordeel",
         "href": "/vergelijken/thuisbatterij"
@@ -210,7 +210,7 @@
         },
         {
           "title": "Gecombineerd voordeel",
-          "body": "Zonnepanelen én thuisbatterij samen? We berekenen het gecombineerde voordeel in één overzicht — duidelijk en zonder jargon."
+          "body": "Zonnepanelen én thuisbatterij samen? We berekenen het gecombineerde voordeel in één overzicht, duidelijk en zonder jargon."
         }
       ],
       "image": {
@@ -246,7 +246,7 @@
         {
           "icon": "charity",
           "title": "Eerlijk",
-          "body": "We tonen de resultaten zoals ze zijn — ook als overstappen weinig oplevert."
+          "body": "We tonen de resultaten zoals ze zijn, ook als overstappen weinig oplevert."
         },
         {
           "icon": "fist",
@@ -259,7 +259,7 @@
       "type": "ctaBand",
       "tone": "purple",
       "title": "Klaar om te zien wat jij betaalt?",
-      "body": "In een paar minuten weet je of je te veel betaalt — en welk contract beter bij je past. Geen verplichtingen, geen verrassingen.",
+      "body": "In een paar minuten weet je of je te veel betaalt, en welk contract beter bij je past. Geen verplichtingen, geen verrassingen.",
       "cta": {
         "label": "Start je vergelijking",
         "href": "/vergelijken"
@@ -356,7 +356,7 @@
       "type": "ctaMascot",
       "title": "Jij vult in.\nWij vergelijken.\nJij bespaart.",
       "highlight": "Wij vergelijken.",
-      "body": "Doe het nu — het duurt een paar minuten en je weet meteen waar je staat.",
+      "body": "Doe het nu: het duurt een paar minuten en je weet meteen waar je staat.",
       "cta": {
         "label": "Start je vergelijking",
         "href": "/vergelijken"

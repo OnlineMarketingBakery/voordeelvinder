@@ -1,14 +1,14 @@
 {
   "seo": {
     "title": "Over ons",
-    "description": "VoordeelVinder werd gebouwd omdat te veel Belgen te veel betalen voor energie. Niet uit onwil — maar omdat de bestaande tools traag, verwarrend en partijdig zijn. Dat doen wij anders."
+    "description": "VoordeelVinder werd gebouwd omdat te veel Belgen te veel betalen voor energie. Niet uit onwil, maar omdat de bestaande tools traag, verwarrend en partijdig zijn. Dat doen wij anders."
   },
   "sections": [
     {
       "type": "hero",
       "variant": "product",
       "title": "Wij geloven dat\nbesparen voor iedereen\nmakkelijk moet zijn.",
-      "body": "VoordeelVinder werd gebouwd omdat te veel Belgen te veel betalen voor energie. Niet uit onwil — maar omdat de bestaande tools traag, verwarrend en partijdig zijn. Dat doen wij anders.",
+      "body": "VoordeelVinder werd gebouwd omdat te veel Belgen te veel betalen voor energie. Niet uit onwil, maar omdat de bestaande tools traag, verwarrend en partijdig zijn. Dat doen wij anders.",
       "cta": {
         "label": "Ontdek jouw voordeel",
         "href": "/vergelijken"
@@ -31,7 +31,7 @@
           "tone": "purple",
           "title": "Vergelijken mag geen hinder zijn.",
           "paragraphs": [
-            "We zagen het steeds opnieuw: mensen die wisten dat ze te veel betaalden voor energie, maar er nooit aan begonnen. Niet omdat ze lui waren — maar omdat de tools die er bestonden hen onmiddellijk doorstuurden naar een verkoper, hen opbelden zonder dat ze erom gevraagd hadden, of hen lieten verdwalen in kleine lettertjes en verborgen kosten."
+            "We zagen het steeds opnieuw: mensen die wisten dat ze te veel betaalden voor energie, maar er nooit aan begonnen. Niet omdat ze lui waren, maar omdat de tools die er bestonden hen onmiddellijk doorstuurden naar een verkoper, hen opbelden zonder dat ze erom gevraagd hadden, of hen lieten verdwalen in kleine lettertjes en verborgen kosten."
           ],
           "accent": "We vroegen ons af: wat als vergelijken gewoon werkte? Snel, eerlijk en volledig in jouw handen?"
         },
@@ -40,7 +40,7 @@
           "tone": "lime",
           "title": "VoordeelVinder is ons antwoord.",
           "paragraphs": [
-            "Een platform dat je in een paar minuten laat zien welke energieleverancier het voordeligst is voor jouw situatie. Geen tussenpersonen. Geen verkoopgesprekken. Geen druk. Alleen een helder resultaat — en de keuze die volledig bij jou ligt."
+            "Een platform dat je in een paar minuten laat zien welke energieleverancier het voordeligst is voor jouw situatie. Geen tussenpersonen. Geen verkoopgesprekken. Geen druk. Alleen een helder resultaat, en de keuze die volledig bij jou ligt."
           ],
           "accent": "Vandaag starten we met energie. Morgen breiden we uit naar telecom, verzekeringen, internet en tv, en zonnepanelen. Één vertrouwde plek voor alles wat je elke maand betaalt."
         }
@@ -64,19 +64,19 @@
         {
           "badge": "Missie",
           "title": "Besparen makkelijk maken.",
-          "body": "We halen het rekenwerk en de twijfel weg, zodat iedereen in een paar minuten weet of hij te veel betaalt — en meteen kan overstappen. Zonder gedoe, zonder druk, zonder kleine lettertjes."
+          "body": "We halen het rekenwerk en de twijfel weg, zodat iedereen in een paar minuten weet of hij te veel betaalt, en meteen kan overstappen. Zonder gedoe, zonder druk, zonder kleine lettertjes."
         },
         {
           "badge": "Visie",
           "title": "Vandaag energie. Morgen alles wat je elke maand betaalt.",
-          "body": "Wij bouwen de vertrouwde plek waar je eenvoudig en snel ontdekt of je kunt besparen op je vaste kosten. In slechts enkele klikken krijg je een helder overzicht van je mogelijkheden, zodat je makkelijk ziet waar het slimmer en voordeliger kan — zonder gedoe, onduidelijke voorwaarden of tijdrovend uitzoekwerk."
+          "body": "Wij bouwen de vertrouwde plek waar je eenvoudig en snel ontdekt of je kunt besparen op je vaste kosten. In slechts enkele klikken krijg je een helder overzicht van je mogelijkheden, zodat je makkelijk ziet waar het slimmer en voordeliger kan, zonder gedoe, onduidelijke voorwaarden of tijdrovend uitzoekwerk."
         }
       ]
     },
     {
       "type": "promises",
       "title": "Wat we nooit doen.",
-      "intro": "De meeste vergelijkers verdienen aan jouw twijfel. Wij niet. Dit zijn onze harde afspraken — geen uitzonderingen, geen kleine lettertjes.",
+      "intro": "De meeste vergelijkers verdienen aan jouw twijfel. Wij niet. Dit zijn onze harde afspraken: geen uitzonderingen, geen kleine lettertjes.",
       "badge": "Nooit",
       "image": {
         "src": "mascot/fox-waving",
@@ -89,7 +89,7 @@
         },
         {
           "title": "We sturen je nooit door naar een verkoper.",
-          "body": "Geen doorverwijzingen, geen commissielinks die je naar een sales funnel trekken. Jij blijft op VoordeelVinder en jij sluit zelf af — of niet."
+          "body": "Geen doorverwijzingen, geen commissielinks die je naar een sales funnel trekken. Jij blijft op VoordeelVinder en jij sluit zelf af. Of niet."
         },
         {
           "title": "We verbergen nooit welke leveranciers we vergelijken.",
@@ -124,7 +124,7 @@
         {
           "badge": "De Verhuizer",
           "statement": "Je verhuist binnenkort of bent net verhuisd. Je moet sowieso een nieuw contract afsluiten.",
-          "occasion": "Aanleiding: nieuw adres, nieuw contract — nu meteen goed kiezen is slimmer dan later overstappen.",
+          "occasion": "Aanleiding: nieuw adres, nieuw contract: nu meteen goed kiezen is slimmer dan later overstappen.",
           "quote": "“Ik wil het snel regelen zonder later spijt te hebben.”",
           "benefit": "In een paar klikken zie je welk contract het voordeligst is voor je nieuwe situatie.",
           "cta": {
@@ -174,7 +174,7 @@
       "type": "ctaBand",
       "tone": "lime",
       "title": "Overtuigd? Zie zelf wat je\nkan besparen.",
-      "body": "In een paar minuten weet je of je te veel betaalt voor energie — en welk contract beter bij jou past. Gratis, vrijblijvend en volledig op jouw tempo.",
+      "body": "In een paar minuten weet je of je te veel betaalt voor energie, en welk contract beter bij jou past. Gratis, vrijblijvend en volledig op jouw tempo.",
       "cta": {
         "label": "Start je vergelijking",
         "href": "/vergelijken"

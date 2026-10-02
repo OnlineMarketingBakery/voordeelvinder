@@ -141,15 +141,15 @@ Energie-, telecom-, mutualiteits- en verzekeringspartners verwerken de ontvangen
 
 Voorbeelden van verwerkers die in onze opdracht kunnenverwerken:
 
-- **sellUp BV** (callcenter — in opdracht van VoordeelVinder);
+- **sellUp BV** (callcenter, in opdracht van VoordeelVinder);
 
-- **Webflow** (website) — dataoverdracht kan buiten de EER plaatsvinden; Webflowvoorziet SCC-mechanismen in haar DPA;
+- **Webflow** (website): dataoverdracht kan buiten de EER plaatsvinden; Webflowvoorziet SCC-mechanismen in haar DPA;
 
-- **Genesys Cloud** (contact center) — mogelijke overdracht buiten de EER met SCC;
+- **Genesys Cloud** (contact center): mogelijke overdracht buiten de EER met SCC;
 
-- **Microsoft Azure** (datalake — West Europe primair, North Europe secundair);
+- **Microsoft Azure** (datalake, West Europe primair, North Europe secundair);
 
-- **Mailchimp** (nieuwsbrieven/marketing) — overdracht naar VS met SCC;
+- **Mailchimp** (nieuwsbrieven/marketing): overdracht naar VS met SCC;
 
 - **Mollie** (betalingsverwerking voor premium);
 
@@ -215,4 +215,4 @@ Soms kunnen we een verzoek geheel of gedeeltelijk weigerenof beperken, bv. door:
 ## 11. Klachten bij toezichthouder
 
 Je kan klacht indienen bij deGegevensbeschermingsautoriteit (GBA/APD):
-Drukpersstraat 35, 1000 Brussel — contact@apd-gba.be — +32 (0)2 274 48 00.
+Drukpersstraat 35, 1000 Brussel, contact@apd-gba.be, +32 (0)2 274 48 00.

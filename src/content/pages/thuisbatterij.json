@@ -8,7 +8,7 @@
       "type": "hero",
       "variant": "product",
       "title": "Sla je energie op.\nGebruik het wanneer jij wil.",
-      "body": "Een thuisbatterij maakt je nog onafhankelijker van het net. Sla de stroom op die je zonnepanelen overdag produceren en gebruik die 's avonds — wanneer het jou uitkomt. VoordeelVinder vergelijkt de beste thuisbatterijen voor jouw situatie.",
+      "body": "Een thuisbatterij maakt je nog onafhankelijker van het net. Sla de stroom op die je zonnepanelen overdag produceren en gebruik die 's avonds, wanneer het jou uitkomt. VoordeelVinder vergelijkt de beste thuisbatterijen voor jouw situatie.",
       "cta": {
         "label": "Ontdek jouw voordeel",
         "href": "/vergelijken/thuisbatterij"
@@ -29,7 +29,7 @@
     {
       "type": "features",
       "title": "Meer uit je eigen energie halen",
-      "intro": "Met alleen zonnepanelen profiteer je vooral overdag. Een thuisbatterij laat je ook 's avonds en 's nachts genieten van je eigen stroom — en verkleint je afhankelijkheid van het net nog verder.",
+      "intro": "Met alleen zonnepanelen profiteer je vooral overdag. Een thuisbatterij laat je ook 's avonds en 's nachts genieten van je eigen stroom, en verkleint je afhankelijkheid van het net nog verder.",
       "cardStyle": "solid",
       "items": [
         {
@@ -78,7 +78,7 @@
           "tone": "purple",
           "icon": "decision-making",
           "title": "Jij kiest, wij begeleiden",
-          "body": "Helder overzicht, geen druk. Jij beslist wanneer je de stap zet. Wij regelen de rest — van offerte tot installatie."
+          "body": "Helder overzicht, geen druk. Jij beslist wanneer je de stap zet. Wij regelen de rest, van offerte tot installatie."
         }
       ]
     },
@@ -108,7 +108,7 @@
         {
           "icon": "book",
           "title": "Optimaal gecombineerd",
-          "body": "Zonnepanelen én thuisbatterij? We berekenen het gecombineerde voordeel in één overzicht — zonder jargon.",
+          "body": "Zonnepanelen én thuisbatterij? We berekenen het gecombineerde voordeel in één overzicht, zonder jargon.",
           "tone": "purple"
         },
         {
